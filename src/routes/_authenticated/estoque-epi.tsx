@@ -12,13 +12,16 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   Boxes,
+  CalendarDays,
   ClipboardCheck,
   Edit3,
   FileSpreadsheet,
   History,
   Loader2,
   PackageCheck,
+  PackageMinus,
   PackageOpen,
+  PackagePlus,
   Plus,
   RefreshCw,
   Search,
@@ -145,7 +148,10 @@ function EstoqueEpiPage() {
     useState<EstoqueMovementType>("entrada");
   const [collabDialog, setCollabDialog] =
     useState<EstoqueColaborador | "new" | null>(null);
+  const [entryOpen, setEntryOpen] = useState(false);
+  const [entryItemId, setEntryItemId] = useState<string | null>(null);
   const [deliveryOpen, setDeliveryOpen] = useState(false);
+  const [deliveryItemId, setDeliveryItemId] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     try {
@@ -279,7 +285,7 @@ function EstoqueEpiPage() {
   return (
     <PageShell
       title="Estoque EPI & Uniformes"
-      description="Controle integrado de uniformes, EPIs, entradas, saídas e retiradas por colaborador."
+      description="Entrada de materiais, retirada por colaborador e saldo de EPIs/uniformes em um fluxo simples e rastreável."
       actions={
         <div className="flex flex-wrap gap-2">
           <Button
@@ -307,6 +313,74 @@ function EstoqueEpiPage() {
       }
     >
       <div className="space-y-4">
+        <GlassCard className="!p-3">
+          <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_repeat(3,minmax(180px,auto))] lg:items-center">
+            <div className="min-w-0 px-1 py-1">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-primary">
+                Operação rápida
+              </p>
+              <h2 className="mt-1 text-sm font-semibold">O que você precisa registrar?</h2>
+              <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+                Entrada aumenta o saldo. Saída registra o colaborador e a data da retirada. Ajustes ficam dentro do item.
+              </p>
+            </div>
+
+            <Button
+              variant="outline"
+              className="h-auto min-h-14 justify-start rounded-xl border-emerald-500/20 bg-emerald-500/[0.04] px-3 py-2.5 text-left hover:bg-emerald-500/[0.08]"
+              onClick={() => {
+                setEntryItemId(null);
+                setEntryOpen(true);
+              }}
+            >
+              <span className="mr-2.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
+                <PackagePlus className="h-4 w-4" />
+              </span>
+              <span>
+                <span className="block text-xs font-semibold">Registrar entrada</span>
+                <span className="mt-0.5 block text-[9px] font-normal text-muted-foreground">
+                  Item, quantidade e data de entrada
+                </span>
+              </span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="h-auto min-h-14 justify-start rounded-xl border-sky-500/20 bg-sky-500/[0.04] px-3 py-2.5 text-left hover:bg-sky-500/[0.08]"
+              onClick={() => {
+                setDeliveryItemId(null);
+                setDeliveryOpen(true);
+              }}
+            >
+              <span className="mr-2.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600">
+                <PackageMinus className="h-4 w-4" />
+              </span>
+              <span>
+                <span className="block text-xs font-semibold">Registrar saída</span>
+                <span className="mt-0.5 block text-[9px] font-normal text-muted-foreground">
+                  Colaborador, data e itens retirados
+                </span>
+              </span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="h-auto min-h-14 justify-start rounded-xl px-3 py-2.5 text-left"
+              onClick={() => setItemDialog("new")}
+            >
+              <span className="mr-2.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
+                <Plus className="h-4 w-4" />
+              </span>
+              <span>
+                <span className="block text-xs font-semibold">Cadastrar item</span>
+                <span className="mt-0.5 block text-[9px] font-normal text-muted-foreground">
+                  Novo EPI, uniforme ou material
+                </span>
+              </span>
+            </Button>
+          </div>
+        </GlassCard>
+
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <MetricCard
             icon={Boxes}
@@ -346,7 +420,7 @@ function EstoqueEpiPage() {
             <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-xl bg-muted/25 p-1">
               <TabsTrigger value="visao" className="gap-2">
                 <ShieldCheck className="h-4 w-4" />
-                Visão geral
+                Início
               </TabsTrigger>
               <TabsTrigger value="estoque" className="gap-2">
                 <PackageOpen className="h-4 w-4" />
@@ -354,11 +428,11 @@ function EstoqueEpiPage() {
               </TabsTrigger>
               <TabsTrigger value="retiradas" className="gap-2">
                 <PackageCheck className="h-4 w-4" />
-                Retiradas
+                Saídas
               </TabsTrigger>
               <TabsTrigger value="movimentos" className="gap-2">
                 <History className="h-4 w-4" />
-                Movimentações
+                Histórico
               </TabsTrigger>
               <TabsTrigger value="colaboradores" className="gap-2">
                 <Users className="h-4 w-4" />
@@ -383,7 +457,15 @@ function EstoqueEpiPage() {
                           key={item.id}
                           item={item}
                           compact
-                          onMovement={(kind) => {
+                          onEntry={() => {
+                            setEntryItemId(item.id);
+                            setEntryOpen(true);
+                          }}
+                          onWithdraw={() => {
+                            setDeliveryItemId(item.id);
+                            setDeliveryOpen(true);
+                          }}
+                          onAdjust={(kind) => {
                             setMovementKind(kind);
                             setMovementItem(item);
                           }}
@@ -452,8 +534,8 @@ function EstoqueEpiPage() {
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <SectionTitle
                     icon={PackageOpen}
-                    title="Catálogo e saldo"
-                    description="A base original da sua planilha já foi importada para este controle."
+                    title="Estoque atual"
+                    description="Consulte o saldo e use Entrada, Saída ou Ajuste diretamente no item."
                   />
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -521,7 +603,15 @@ function EstoqueEpiPage() {
                     <StockRow
                       key={item.id}
                       item={item}
-                      onMovement={(kind) => {
+                      onEntry={() => {
+                        setEntryItemId(item.id);
+                        setEntryOpen(true);
+                      }}
+                      onWithdraw={() => {
+                        setDeliveryItemId(item.id);
+                        setDeliveryOpen(true);
+                      }}
+                      onAdjust={(kind) => {
                         setMovementKind(kind);
                         setMovementItem(item);
                       }}
@@ -537,19 +627,22 @@ function EstoqueEpiPage() {
                 <GlassCard className="!p-4">
                   <SectionTitle
                     icon={PackageCheck}
-                    title="Entrega de EPI / uniforme"
-                    description="Registre uma retirada vinculada ao colaborador."
+                    title="Saída para colaborador"
+                    description="Toda saída registra obrigatoriamente quem retirou e a data da retirada."
                   />
                   <Button
                     className="mt-4 w-full"
-                    onClick={() => setDeliveryOpen(true)}
+                    onClick={() => {
+                      setDeliveryItemId(null);
+                      setDeliveryOpen(true);
+                    }}
                   >
                     <ClipboardCheck className="mr-2 h-4 w-4" />
-                    Registrar retirada
+                    Registrar saída
                   </Button>
                   <div className="mt-4 rounded-xl border border-border/45 bg-background/30 p-3 text-xs text-muted-foreground">
-                    A entrega pode conter vários itens. Cada saída reduz o saldo
-                    automaticamente e fica vinculada ao colaborador para auditoria.
+                    Selecione o colaborador, informe a data e inclua um ou mais itens.
+                    O saldo é reduzido automaticamente e o histórico fica disponível para auditoria.
                   </div>
                 </GlassCard>
 
@@ -568,8 +661,8 @@ function EstoqueEpiPage() {
               <GlassCard className="!p-4">
                 <SectionTitle
                   icon={History}
-                  title="Livro de movimentações"
-                  description="Rastreabilidade completa de entradas, saídas, devoluções, ajustes e descartes."
+                  title="Histórico do estoque"
+                  description="Veja quando entrou, quando saiu, quem retirou e todas as correções de inventário."
                 />
                 <MovementList movimentos={data.movimentos} />
               </GlassCard>
@@ -644,6 +737,21 @@ function EstoqueEpiPage() {
         }}
       />
 
+      <EntryDialog
+        open={entryOpen}
+        initialItemId={entryItemId}
+        items={activeItems}
+        onClose={() => {
+          setEntryOpen(false);
+          setEntryItemId(null);
+        }}
+        onSaved={async () => {
+          setEntryOpen(false);
+          setEntryItemId(null);
+          await reload();
+        }}
+      />
+
       <MovementDialog
         item={movementItem}
         initialType={movementKind}
@@ -666,11 +774,16 @@ function EstoqueEpiPage() {
 
       <DeliveryDialog
         open={deliveryOpen}
+        initialItemId={deliveryItemId}
         items={activeItems}
         colaboradores={data.colaboradores.filter((c) => c.ativo)}
-        onClose={() => setDeliveryOpen(false)}
+        onClose={() => {
+          setDeliveryOpen(false);
+          setDeliveryItemId(null);
+        }}
         onSaved={async () => {
           setDeliveryOpen(false);
+          setDeliveryItemId(null);
           await reload();
         }}
       />
