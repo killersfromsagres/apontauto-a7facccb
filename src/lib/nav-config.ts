@@ -10,6 +10,7 @@ import {
   HardHat,
   WashingMachine,
   PackageOpen,
+  Shirt,
   Scale,
   Thermometer,
   ScrollText,
@@ -87,6 +88,7 @@ export const sections: MenuSection[] = [
   { kind: "group", key: "materiais-grp", title: "Materiais e Serviços", icon: ClipboardList, items: [
     { key: "solicitacao-materiais", title: "Solicitação de Materiais", short: "Solicitar", url: "/solicitacao-materiais", icon: Boxes, keywords: ["pedido", "material", "catálogo", "suprimentos"] },
     { key: "corretiva-pecas-status", aliases: ["central-materiais-unificada", "controle-materiais"], title: "Central de Materiais", short: "Central", url: "/corretiva-pecas-status", icon: PackageOpen, keywords: ["central", "materiais", "peças", "solicitações", "compras", "centro de custo", "facilities"] },
+    { key: "estoque-epi", title: "Estoque EPI & Uniformes", short: "Estoque EPI", url: "/estoque-epi", icon: Shirt, keywords: ["estoque", "epi", "uniforme", "ca", "retirada", "entrada", "saída", "colaborador"] },
     { key: "lavanderia", title: "Controle de Lavanderia", short: "Lavanderia", url: "/lavanderia", icon: WashingMachine },
     { key: "mensageria", title: "Mensageria e Malotes", short: "Malotes", url: "/mensageria", icon: PackageOpen, keywords: ["mensageria", "malote", "correspondência", "protocolo", "recebimento", "entrega"] },
   ]},
