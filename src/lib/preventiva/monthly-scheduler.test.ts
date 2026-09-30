@@ -202,6 +202,51 @@ describe("scheduleTeamMonth", () => {
     ]);
   });
 
+  it("mantém pelo menos uma preventiva em cada dia útil quando há volume suficiente", () => {
+    const equipe: Equipe = "CIVIL";
+    const periodStart = new Date(2026, 9, 5);
+    const periodEnd = new Date(2026, 9, 9);
+    const periodWeeks = weeksBetween(periodStart, periodEnd);
+
+    const slaConcentradas = Array.from({ length: 5 }, (_, index) => ({
+      ...os(
+        `SLA-${index + 1}`,
+        equipe,
+        "Preventiva",
+        "2026-10-09",
+      ),
+      predio: "B200",
+      andar: `${index + 1}º Andar`,
+    }));
+    const cicloNormal = Array.from({ length: 10 }, (_, index) => ({
+      ...os(`NORMAL-${index + 1}`, equipe),
+      predio: index < 5 ? "A160" : "A220",
+      andar: `${(index % 5) + 1}º Andar`,
+    }));
+
+    const result = scheduleTeamMonth({
+      equipe,
+      preventivas: [...slaConcentradas, ...cicloNormal],
+      corretivas: [],
+      weeks: periodWeeks,
+      from: periodStart,
+      until: periodEnd,
+      minutosPorOS: 60,
+      reserveCorrectiveSlots: true,
+    });
+
+    expect(result.preventiveDaysWithoutWork).toEqual([]);
+    expect(result.loadsByWeek[0]).toHaveLength(5);
+    expect(
+      result.loadsByWeek[0].every((load) => load.preventiveCount >= 1),
+    ).toBe(true);
+    expect(
+      result.buckets[0].porDia.every((items) =>
+        items.some((item) => item.tipo !== "Corretiva"),
+      ),
+    ).toBe(true);
+  });
+
   it("usa a reserva de corretivas quando necessário para proteger SLA D-1", () => {
     const equipe: Equipe = "HIDRÁULICA";
     const from = new Date(2026, 9, 1);

@@ -102,6 +102,8 @@ export interface TeamMonthlySchedule {
   slaManagedPreventivas: number;
   slaOnTimePreventivas: number;
   slaAtRiskPreventivas: TriagedOS[];
+  preventiveDaysCovered: number;
+  preventiveDaysWithoutWork: string[];
 }
 
 const norm = (value: unknown) =>
@@ -615,6 +617,86 @@ function latestAvailableDayOnOrBefore(
   return -1;
 }
 
+function canSchedulePreventiveOnDate(item: TriagedOS, date: Date): boolean {
+  const deadline = preventiveExecutionDeadline(item);
+  if (!deadline) return true;
+  const scheduled = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    12,
+  ).getTime();
+  const limit = new Date(
+    deadline.getFullYear(),
+    deadline.getMonth(),
+    deadline.getDate(),
+    23,
+    59,
+    59,
+    999,
+  ).getTime();
+  return scheduled <= limit;
+}
+
+/**
+ * Garante presença preventiva ao longo dos dias úteis quando há volume
+ * suficiente. A redistribuição nunca move uma OS para depois do D-1 do SLA.
+ */
+function ensureDailyPreventiveCoverage(
+  scheduledByDay: TriagedOS[][],
+  businessDays: Date[],
+  capacityPerDay: number,
+): void {
+  const totalScheduled = scheduledByDay.reduce(
+    (sum, items) => sum + items.length,
+    0,
+  );
+  if (totalScheduled < businessDays.length) return;
+
+  for (let targetIndex = 0; targetIndex < scheduledByDay.length; targetIndex += 1) {
+    if (scheduledByDay[targetIndex].length > 0) continue;
+    if (scheduledByDay[targetIndex].length >= capacityPerDay) continue;
+
+    const targetDate = businessDays[targetIndex];
+    let donorIndex = -1;
+    let donorItemIndex = -1;
+    let bestScore = Number.POSITIVE_INFINITY;
+
+    for (let sourceIndex = 0; sourceIndex < scheduledByDay.length; sourceIndex += 1) {
+      if (sourceIndex === targetIndex) continue;
+      const source = scheduledByDay[sourceIndex];
+      if (source.length <= 1) continue;
+
+      for (let itemIndex = source.length - 1; itemIndex >= 0; itemIndex -= 1) {
+        const item = source[itemIndex];
+        if (Boolean(item.raw?.programacaoSLARisco)) continue;
+        if (!canSchedulePreventiveOnDate(item, targetDate)) continue;
+
+        // Preferimos trazer uma OS de um dia posterior (adiantamento seguro).
+        // Em empate, escolhemos o dia mais próximo para preservar a rota mensal.
+        const directionPenalty = sourceIndex > targetIndex ? 0 : 1000;
+        const distance = Math.abs(sourceIndex - targetIndex);
+        const slaPenalty = preventiveExecutionDeadline(item) ? 10 : 0;
+        const score = directionPenalty + distance + slaPenalty;
+
+        if (score < bestScore) {
+          bestScore = score;
+          donorIndex = sourceIndex;
+          donorItemIndex = itemIndex;
+        }
+      }
+    }
+
+    if (donorIndex < 0 || donorItemIndex < 0) continue;
+
+    const [moved] = scheduledByDay[donorIndex].splice(donorItemIndex, 1);
+    const deadline = preventiveExecutionDeadline(moved);
+    scheduledByDay[targetIndex].push(
+      annotatePreventiveSchedule(moved, targetDate, deadline, false),
+    );
+  }
+}
+
 export function scheduleTeamMonth(options: {
   equipe: Equipe;
   preventivas: TriagedOS[];
@@ -783,6 +865,20 @@ export function scheduleTeamMonth(options: {
   });
   overflowPreventivas.push(...orderedStandard.slice(standardIndex));
 
+  // Mesmo com vários SLAs concentrados em poucos dias, a equipe precisa de
+  // preventivas todos os dias. Se houver quantidade suficiente, redistribuímos
+  // uma preventiva para cada dia útil sem jamais ultrapassar o D-1 do SLA.
+  ensureDailyPreventiveCoverage(
+    scheduledPreventivesByDay,
+    businessDays,
+    capSlots,
+  );
+  preventiveCountsByDay.splice(
+    0,
+    preventiveCountsByDay.length,
+    ...scheduledPreventivesByDay.map((items) => items.length),
+  );
+
   const corretivas = sortByLocation(options.corretivas);
   const internalCorrectiveCapacities = preventiveCountsByDay.map((used) =>
     options.reserveCorrectiveSlots
@@ -869,6 +965,11 @@ export function scheduleTeamMonth(options: {
     0,
     slaManagedPreventivas - slaAtRiskPreventivas.length,
   );
+  const preventiveDaysWithoutWork = businessDays
+    .filter((_, index) => scheduledPreventivesByDay[index].length === 0)
+    .map(isoDate);
+  const preventiveDaysCovered =
+    businessDays.length - preventiveDaysWithoutWork.length;
 
   return {
     buckets,
@@ -880,6 +981,8 @@ export function scheduleTeamMonth(options: {
     slaManagedPreventivas,
     slaOnTimePreventivas,
     slaAtRiskPreventivas,
+    preventiveDaysCovered,
+    preventiveDaysWithoutWork,
   };
 }
 
