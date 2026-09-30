@@ -535,16 +535,14 @@ function ProgramacaoPage() {
 
           const filenameBase =
             slot.id === "CCH"
-              ? "Civil e Hidraulica"
+              ? "CIVIL"
               : slot.id === "REFRIG"
-                ? "Refrigeracao"
-                : "Eletrica";
-          const fileStart = format(week.monday, "dd-MM-yyyy");
-          const fileEnd = format(week.friday, "dd-MM-yyyy");
+                ? "REFRIGERAÇÃO"
+                : "ELÉTRICA";
           const id = `${slot.id}-${periodStart}-${Date.now()}-${weekIndex}`;
           const item: GeneratedFile = {
             id,
-            filename: `${filenameBase} SEMANA ${week.isoWeek} ${fileStart} a ${fileEnd}.xlsx`,
+            filename: `${filenameBase} SEMANA ${week.isoWeek}.xlsx`,
             blob,
             week: week.isoWeek,
             slot: slot.id,
