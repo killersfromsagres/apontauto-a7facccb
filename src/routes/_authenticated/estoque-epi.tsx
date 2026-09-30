@@ -537,7 +537,7 @@ function EstoqueEpiPage() {
                     title="Reposição e atenção"
                     description="Itens zerados, críticos ou abaixo do estoque ideal."
                   />
-                  <div className="mt-3 space-y-1.5">
+                  <div className="mt-3 max-h-[52vh] space-y-1.5 overflow-y-auto pr-1">
                     {attentionItems.length === 0 ? (
                       <EmptyState text="Nenhum item exige reposição agora." />
                     ) : (
@@ -657,7 +657,7 @@ function EstoqueEpiPage() {
                     <SelectTrigger>
                       <SelectValue placeholder="Categoria" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-56">
                       <SelectItem value="TODAS">Todas as categorias</SelectItem>
                       {[
                         ...new Set(data.items.map((item) => item.categoria)),
@@ -674,7 +674,7 @@ function EstoqueEpiPage() {
                     <SelectTrigger>
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-56">
                       {[
                         "TODOS",
                         "ZERADO",
@@ -692,7 +692,15 @@ function EstoqueEpiPage() {
                   </Select>
                 </div>
 
-                <div className="mt-3 space-y-1.5">
+                <div className="mt-3 flex items-center justify-between gap-2 px-1">
+                  <p className="text-[9px] text-muted-foreground">
+                    {filteredItems.length} item(ns) encontrado(s)
+                  </p>
+                  <span className="text-[8px] text-muted-foreground/70">
+                    Role dentro da lista para navegar
+                  </span>
+                </div>
+                <div className="mt-2 max-h-[58vh] space-y-1.5 overflow-y-auto pr-1">
                   {filteredItems.map((item) => (
                     <StockRow
                       key={item.id}
@@ -838,7 +846,7 @@ function EstoqueEpiPage() {
                     </div>
                     <Select value={collabStatus} onValueChange={setCollabStatus}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-56">
                         <SelectItem value="TODOS">Todas as situações</SelectItem>
                         <SelectItem value="NORMAL">Normal</SelectItem>
                         <SelectItem value="FÉRIAS">Férias</SelectItem>
@@ -849,7 +857,7 @@ function EstoqueEpiPage() {
                     </Select>
                     <Select value={collabTeam} onValueChange={setCollabTeam}>
                       <SelectTrigger><SelectValue placeholder="Centro / equipe" /></SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-56">
                         <SelectItem value="TODOS">Todos os centros / equipes</SelectItem>
                         {collaboratorTeams.map((team) => (
                           <SelectItem key={team} value={team}>{team}</SelectItem>
@@ -869,7 +877,8 @@ function EstoqueEpiPage() {
                     )}
                   </div>
 
-                  <div className="mt-2 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="mt-2 max-h-[58vh] overflow-y-auto pr-1">
+                    <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                     {filteredCollaborators.map((colab) => (
                       <button
                         type="button"
@@ -917,6 +926,7 @@ function EstoqueEpiPage() {
                         </div>
                       </button>
                     ))}
+                    </div>
                   </div>
                 </GlassCard>
               </div>
@@ -1223,7 +1233,7 @@ function MovementList({ movimentos }: { movimentos: EstoqueMovimento[] }) {
   if (movimentos.length === 0) return <EmptyState text="Sem movimentações registradas." />;
 
   return (
-    <div className="mt-3 overflow-hidden rounded-xl border border-border/45">
+    <div className="mt-3 max-h-[52vh] overflow-y-auto rounded-xl border border-border/45">
       {movimentos.map((mov, index) => (
         <div
           key={mov.id}
@@ -2450,7 +2460,7 @@ function CollaboratorAutocomplete({
         )
       : colaboradores;
 
-    return source.slice(0, 8);
+    return source.slice(0, 40);
   }, [colaboradores, query]);
 
   return (
@@ -2482,13 +2492,17 @@ function CollaboratorAutocomplete({
 
       {focused && (
         <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[80] overflow-hidden rounded-xl border border-border/60 bg-popover shadow-xl">
-          <div className="max-h-64 overflow-y-auto p-1">
+          <div className="flex items-center justify-between border-b border-border/40 px-2.5 py-1.5 text-[8px] text-muted-foreground">
+            <span>Sugestões</span>
+            <span>Role para ver mais</span>
+          </div>
+          <div className="max-h-44 overflow-y-auto overscroll-contain p-1">
             {suggestions.length > 0 ? (
               suggestions.map((colab) => (
                 <button
                   key={colab.id}
                   type="button"
-                  className="flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition hover:bg-accent/70 focus:bg-accent/70 focus:outline-none"
+                  className="flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-accent/70 focus:bg-accent/70 focus:outline-none"
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
                     onValueChange(colab.id);
@@ -2496,7 +2510,7 @@ function CollaboratorAutocomplete({
                     setFocused(false);
                   }}
                 >
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-sky-500/[0.08] text-sky-600">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-sky-500/[0.08] text-sky-600">
                     <UserRound className="h-3.5 w-3.5" />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -2585,7 +2599,7 @@ function ItemAutocomplete({
           .toLocaleLowerCase("pt-BR")
           .includes(q);
       })
-      .slice(0, 8);
+      .slice(0, 40);
   }, [items, onlyInStock, query]);
 
   return (
@@ -2626,7 +2640,7 @@ function ItemAutocomplete({
                 <button
                   key={item.id}
                   type="button"
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition hover:bg-accent/70 focus:bg-accent/70 focus:outline-none"
+                  className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-accent/70 focus:bg-accent/70 focus:outline-none"
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
                     onValueChange(item.id);
@@ -2634,7 +2648,7 @@ function ItemAutocomplete({
                     setFocused(false);
                   }}
                 >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/[0.07] text-primary">
                     <PackageOpen className="h-3.5 w-3.5" />
                   </span>
                   <span className="min-w-0 flex-1">
