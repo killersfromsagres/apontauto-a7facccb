@@ -162,10 +162,13 @@ export async function generateSlaDeadlineReport(
   summary.getCell("B7").value = "Preventivas";
   summary.getCell("C7").value = "SLA mais próximo";
   summary.getCell("D7").value = "Executar até";
-  const summaryHeader = summary.getRange("A7:D7");
-  summaryHeader.eachCell((cell) => {
+  summary.getRow(7).eachCell((cell) => {
     cell.font = { bold: true, color: WHITE };
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_COLOR } };
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: HEADER_COLOR },
+    };
     cell.alignment = { horizontal: "center", vertical: "middle" };
   });
 
@@ -385,7 +388,7 @@ export async function generateSlaDeadlineReport(
   };
 
   const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer as ArrayBuffer], {
+  const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
 
