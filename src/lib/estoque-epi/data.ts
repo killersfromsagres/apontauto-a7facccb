@@ -37,6 +37,33 @@ export interface EstoqueColaborador {
   cargo: string | null;
   unidade: string | null;
   ativo: boolean;
+  empresa_codigo: string | null;
+  filial_codigo: string | null;
+  filial_descricao: string | null;
+  regional: string | null;
+  local_trabalho: string | null;
+  data_treinamento: string | null;
+  data_admissao: string | null;
+  data_demissao: string | null;
+  centro_custo: string | null;
+  centro_resultado: string | null;
+  supervisor: string | null;
+  gerente: string | null;
+  gerente_regional: string | null;
+  cliente_codigo: string | null;
+  cliente: string | null;
+  setor_negocio: string | null;
+  codigo_funcao: string | null;
+  funcao: string | null;
+  escala: string | null;
+  situacao_sra: string | null;
+  sexo: string | null;
+  categoria_colaborador: string | null;
+  horario_trabalho: string | null;
+  intervalo_trabalho: string | null;
+  origem_sra: boolean;
+  sra_linha: number | null;
+  sra_synced_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -79,6 +106,10 @@ export interface EstoqueEntrega {
   colaborador_nome: string;
   colaborador_matricula: string | null;
   colaborador_setor: string | null;
+  colaborador_funcao: string | null;
+  colaborador_centro_resultado: string | null;
+  colaborador_situacao_sra: string | null;
+  colaborador_supervisor: string | null;
   data_entrega: string;
   observacao: string | null;
   created_at: string;
@@ -237,6 +268,52 @@ export async function saveEstoqueItem(
     estoque_atual: 0,
   });
   if (error) throw error;
+}
+
+export interface SraCollaboratorRow {
+  matricula: string;
+  nome: string;
+  empresa_codigo?: string | null;
+  filial_codigo?: string | null;
+  filial_descricao?: string | null;
+  regional?: string | null;
+  local_trabalho?: string | null;
+  data_treinamento?: string | null;
+  data_admissao?: string | null;
+  data_demissao?: string | null;
+  centro_custo?: string | null;
+  centro_resultado?: string | null;
+  supervisor?: string | null;
+  gerente?: string | null;
+  gerente_regional?: string | null;
+  cliente_codigo?: string | null;
+  cliente?: string | null;
+  setor_negocio?: string | null;
+  codigo_funcao?: string | null;
+  funcao?: string | null;
+  escala?: string | null;
+  situacao_sra?: string | null;
+  sexo?: string | null;
+  categoria_colaborador?: string | null;
+  horario_trabalho?: string | null;
+  intervalo_trabalho?: string | null;
+  sra_linha?: number | null;
+}
+
+export async function syncSraCollaborators(rows: SraCollaboratorRow[]) {
+  if (!rows.length) throw new Error("Nenhum colaborador válido encontrado no SRA.");
+
+  const { data, error } = await db.rpc("sincronizar_colaboradores_sra", {
+    _rows: rows,
+  });
+  if (error) throw error;
+
+  return data as {
+    created?: number;
+    updated?: number;
+    skipped?: number;
+    total?: number;
+  };
 }
 
 export async function saveEstoqueColaborador(
