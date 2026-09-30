@@ -119,7 +119,7 @@ export async function saveHistorico(item: HistoricoItem): Promise<void> {
       .upload(path, item.blob, {
         contentType:
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        upsert: true,
+        upsert: false,
       });
     if (uploadError) throw uploadError;
 
