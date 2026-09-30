@@ -95,6 +95,10 @@ const snapshot: EstoqueSnapshot = {
       colaborador_nome: "Colaborador Teste",
       colaborador_matricula: "123",
       colaborador_setor: "Manutenção",
+      colaborador_funcao: "Técnico",
+      colaborador_centro_resultado: "53945 - MANUT",
+      colaborador_situacao_sra: "NORMAL",
+      colaborador_supervisor: "Supervisor Teste",
       data_entrega: "2026-09-30",
       observacao: "Entrega inicial",
       created_at: "2026-09-30T12:05:00Z",
@@ -137,6 +141,8 @@ describe("generateEstoqueWorkbook", () => {
 
     const withdrawals = workbook.getWorksheet("RETIRADAS")!;
     expect(withdrawals.getCell("B6").text).toBe("Colaborador Teste");
-    expect(withdrawals.getCell("E6").text).toBe("Luva nitrílica");
+    expect(withdrawals.getCell("D6").text).toBe("Técnico");
+    expect(withdrawals.getCell("E6").text).toBe("53945 - MANUT");
+    expect(withdrawals.getCell("H6").text).toBe("Luva nitrílica");
   });
 });
