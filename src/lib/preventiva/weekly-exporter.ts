@@ -231,6 +231,11 @@ function sortDayItems(items: TriagedOS[]): TriagedOS[] {
         Number(Boolean(b.raw?.programacaoBackorder)) -
         Number(Boolean(a.raw?.programacaoBackorder));
       if (backorderOrder !== 0) return backorderOrder;
+
+      const hydraulicOrder =
+        Number(b.raw?.programacaoUrgenciaHidraulica ?? 0) -
+        Number(a.raw?.programacaoUrgenciaHidraulica ?? 0);
+      if (hydraulicOrder !== 0) return hydraulicOrder;
     }
 
     const buildingOrder = compareBuildings(a.predio, b.predio);
