@@ -11,7 +11,7 @@ import {
   sortCorrectiveRows,
   type CorrectiveSourceRow,
 } from "./monthly-scheduler";
-import type { Equipe, TriagedOS } from "./triage";
+import { triage, type Equipe, type TriagedOS } from "./triage";
 
 function os(
   id: string,
@@ -260,6 +260,74 @@ describe("scheduleTeamMonth", () => {
     expect(flat.indexOf("B200")).toBeGreaterThan(flat.lastIndexOf("A160"));
   });
 
+});
+
+describe("classificação técnica definitiva das corretivas", () => {
+  it("corrige Chaveiro mesmo quando a equipe persistida está como Hidráulica", () => {
+    expect(
+      resolveCorrectiveTeam({
+        numero_os: "224226",
+        nome_os:
+          "Reparo na fechadura e na mola hidráulica da porta da portaria",
+        equipe: "Hidráulica",
+        predio: "C45",
+      }),
+    ).toBe("CHAVEIRO");
+
+    expect(
+      resolveCorrectiveTeam({
+        numero_os: "224371",
+        nome_os: "Realizar cópia da chave do banheiro masculino",
+        equipe: "Hidráulica",
+        local: "Banheiro masculino",
+      }),
+    ).toBe("CHAVEIRO");
+  });
+
+  it("corrige Elétrica mesmo quando a equipe persistida está como Civil", () => {
+    expect(
+      resolveCorrectiveTeam({
+        numero_os: "E-001",
+        nome_os: "Trocar luminária e tomada queimada na parede",
+        equipe: "Civil",
+        local: "Corredor",
+      }),
+    ).toBe("ELÉTRICA");
+  });
+});
+
+describe("triagem das preventivas Civil/Chaveiro", () => {
+  it("mantém preventivas de calhas sempre com Civil", () => {
+    const result = triage([
+      {
+        categoria: "CIVIL",
+        nomeOS: "Limpeza preventiva de calhas",
+        descricao: "Inspecionar e limpar calhas do telhado",
+        predio: "A160",
+        andar: "Cobertura",
+        terminoSLATs: Number.MAX_SAFE_INTEGER,
+      } as any,
+    ]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].equipe).toBe("CIVIL");
+  });
+
+  it("mantém preventiva de fechadura/porta com Chaveiro", () => {
+    const result = triage([
+      {
+        categoria: "CIVIL",
+        nomeOS: "Inspeção de fechadura e chave da porta",
+        descricao: "Verificar fechadura, trinco e chave",
+        predio: "A160",
+        andar: "Térreo",
+        terminoSLATs: Number.MAX_SAFE_INTEGER,
+      } as any,
+    ]);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].equipe).toBe("CHAVEIRO");
+  });
 });
 
 describe("classificação hidráulica operacional", () => {
