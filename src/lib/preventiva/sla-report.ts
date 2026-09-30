@@ -133,7 +133,7 @@ export async function generateSlaDeadlineReport(
   summary.mergeCells("A1:D2");
   const title = summary.getCell("A1");
   title.value = "CONTROLE PREMIUM • TÉRMINO SLA";
-  title.font = { name: "Aptos Display", size: 20, bold: true, color: WHITE };
+  title.font = { name: "Aptos Display", size: 20, bold: true, color: { argb: WHITE } };
   title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_COLOR } };
   title.alignment = { vertical: "middle", horizontal: "left" };
 
@@ -141,7 +141,7 @@ export async function generateSlaDeadlineReport(
   const subtitle = summary.getCell("A3");
   subtitle.value =
     "Preventivas com Término SLA antes do dia 28 • Separadas por equipe";
-  subtitle.font = { name: "Aptos", size: 10, color: MUTED_COLOR };
+  subtitle.font = { name: "Aptos", size: 10, color: { argb: MUTED_COLOR } };
   subtitle.alignment = { vertical: "middle" };
 
   summary.getCell("A5").value = "Mês de referência";
@@ -154,7 +154,7 @@ export async function generateSlaDeadlineReport(
 
   ["A5", "C5"].forEach((cellRef) => {
     const cell = summary.getCell(cellRef);
-    cell.font = { bold: true, color: TEXT_COLOR };
+    cell.font = { bold: true, color: { argb: TEXT_COLOR } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: LIGHT_BG } };
   });
 
@@ -163,7 +163,7 @@ export async function generateSlaDeadlineReport(
   summary.getCell("C7").value = "SLA mais próximo";
   summary.getCell("D7").value = "Executar até";
   summary.getRow(7).eachCell((cell) => {
-    cell.font = { bold: true, color: WHITE };
+    cell.font = { bold: true, color: { argb: WHITE } };
     cell.fill = {
       type: "pattern",
       pattern: "solid",
@@ -183,7 +183,7 @@ export async function generateSlaDeadlineReport(
     summary.getCell(summaryRow, 2).value = rows.length;
     summary.getCell(summaryRow, 3).value = formatDate(earliest);
     summary.getCell(summaryRow, 4).value = formatDate(deadline);
-    summary.getCell(summaryRow, 1).font = { bold: true, color: teamColor };
+    summary.getCell(summaryRow, 1).font = { bold: true, color: { argb: teamColor } };
     summary.getCell(summaryRow, 2).alignment = { horizontal: "center" };
     summary.getCell(summaryRow, 3).alignment = { horizontal: "center" };
     summary.getCell(summaryRow, 4).alignment = { horizontal: "center" };
@@ -192,8 +192,8 @@ export async function generateSlaDeadlineReport(
 
   summary.getCell(summaryRow + 1, 1).value = "TOTAL";
   summary.getCell(summaryRow + 1, 2).value = filtered.length;
-  summary.getCell(summaryRow + 1, 1).font = { bold: true, color: WHITE };
-  summary.getCell(summaryRow + 1, 2).font = { bold: true, color: WHITE };
+  summary.getCell(summaryRow + 1, 1).font = { bold: true, color: { argb: WHITE } };
+  summary.getCell(summaryRow + 1, 2).font = { bold: true, color: { argb: WHITE } };
   summary.getCell(summaryRow + 1, 1).fill = {
     type: "pattern",
     pattern: "solid",
@@ -219,7 +219,7 @@ export async function generateSlaDeadlineReport(
       name: "Aptos Display",
       size: 17,
       bold: true,
-      color: WHITE,
+      color: { argb: WHITE },
     };
     teamTitle.fill = {
       type: "pattern",
@@ -232,7 +232,7 @@ export async function generateSlaDeadlineReport(
     const teamSubtitle = sheet.getCell("A3");
     teamSubtitle.value =
       `${rows.length} preventiva(s) com vencimento antes do dia 28 • Atualizado ${new Date().toLocaleString("pt-BR")}`;
-    teamSubtitle.font = { size: 9, color: MUTED_COLOR };
+    teamSubtitle.font = { size: 9, color: { argb: MUTED_COLOR } };
 
     const headers = [
       "Prioridade",
@@ -252,7 +252,7 @@ export async function generateSlaDeadlineReport(
     const headerRow = sheet.addRow(headers);
     headerRow.height = 28;
     headerRow.eachCell((cell) => {
-      cell.font = { name: "Aptos", size: 9, bold: true, color: WHITE };
+      cell.font = { name: "Aptos", size: 9, bold: true, color: { argb: WHITE } };
       cell.fill = {
         type: "pattern",
         pattern: "solid",
@@ -301,7 +301,7 @@ export async function generateSlaDeadlineReport(
 
       row.height = 34;
       row.eachCell((cell) => {
-        cell.font = { name: "Aptos", size: 9, color: TEXT_COLOR };
+        cell.font = { name: "Aptos", size: 9, color: { argb: TEXT_COLOR } };
         cell.alignment = { vertical: "middle", wrapText: true };
         cell.border = {
           bottom: { style: "hair", color: { argb: BORDER_COLOR } },
@@ -330,7 +330,7 @@ export async function generateSlaDeadlineReport(
           pattern: "solid",
           fgColor: { argb: WARNING_BG },
         };
-        row.getCell(4).font = { bold: true, color: WARNING_TEXT };
+        row.getCell(4).font = { bold: true, color: { argb: WARNING_TEXT } };
       }
       [2, 3, 4, 5, 6, 10, 11].forEach((col) => {
         row.getCell(col).alignment = {
@@ -375,7 +375,7 @@ export async function generateSlaDeadlineReport(
     const empty = summary.getCell("A8");
     empty.value =
       "Nenhuma preventiva com Término SLA antes do dia 28 foi encontrada nos arquivos anexados.";
-    empty.font = { italic: true, color: MUTED_COLOR };
+    empty.font = { italic: true, color: { argb: MUTED_COLOR } };
     empty.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
   }
 
