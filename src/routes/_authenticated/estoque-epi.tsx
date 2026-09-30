@@ -464,18 +464,6 @@ function EstoqueEpiPage() {
                       <Plus className="mr-2 h-4 w-4" />
                       Novo item
                     </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        const first = activeItems[0];
-                        if (!first) return toast.warning("Cadastre um item primeiro.");
-                        setMovementKind("entrada");
-                        setMovementItem(first);
-                      }}
-                    >
-                      <ArrowDownToLine className="mr-2 h-4 w-4" />
-                      Registrar movimento
-                    </Button>
                   </div>
                 </div>
 
@@ -1067,6 +1055,20 @@ function ItemDialog({
               onChange={(e) => setForm({ ...form, unidade: e.target.value })}
             />
           </Field>
+          <Field label="Status">
+            <Select
+              value={form.ativo === false ? "INATIVO" : "ATIVO"}
+              onValueChange={(value) =>
+                setForm({ ...form, ativo: value === "ATIVO" })
+              }
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ATIVO">Ativo</SelectItem>
+                <SelectItem value="INATIVO">Inativo</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
@@ -1315,6 +1317,20 @@ function CollaboratorDialog({
               onChange={(e) => setForm({ ...form, unidade: e.target.value })}
             />
           </Field>
+          <Field label="Status">
+            <Select
+              value={form.ativo === false ? "INATIVO" : "ATIVO"}
+              onValueChange={(value) =>
+                setForm({ ...form, ativo: value === "ATIVO" })
+              }
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ATIVO">Ativo</SelectItem>
+                <SelectItem value="INATIVO">Inativo</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
@@ -1380,8 +1396,12 @@ function DeliveryDialog({
     if (!selectedItem || !Number.isFinite(amount) || amount <= 0) return;
     const item = items.find((entry) => entry.id === selectedItem);
     if (!item) return;
-    if (amount > item.estoque_atual) {
-      toast.warning(`Saldo disponível: ${item.estoque_atual} ${item.unidade}.`);
+    const alreadySelected =
+      cart.find((entry) => entry.itemId === selectedItem)?.quantidade ?? 0;
+    if (alreadySelected + amount > item.estoque_atual) {
+      toast.warning(
+        `Saldo disponível: ${item.estoque_atual} ${item.unidade}. Já selecionado: ${alreadySelected}.`,
+      );
       return;
     }
     setCart((current) => {
