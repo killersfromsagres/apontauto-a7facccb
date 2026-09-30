@@ -181,14 +181,33 @@ const DUE_ORDER = {
   NO_DUE: 4,
 } as const;
 
+function hydraulicUrgencyScore(row: CorrectiveSourceRow): number {
+  const team = resolveProgramCorrectiveTeam(row);
+  if (team !== "HIDRÁULICA") return 0;
+
+  const text = normalizeText(
+    `${row.nome_os ?? ""} ${row.tipo ?? ""} ${row.ativo ?? ""} ${row.equipamento ?? ""} ${row.predio ?? ""} ${row.andar ?? ""} ${row.local ?? ""}`,
+  );
+
+  let score = 0;
+  if (/ENTUP|DESENTUP|ESGOTO|RETORNO DE ESGOTO/.test(text)) score += 100;
+  if (/BANHEIRO|SANITARIO|VASO|MICTORIO/.test(text)) score += 70;
+  if (/COZINHA/.test(text)) score += 55;
+  if (/\bC70\b/.test(text)) score += 45;
+  if (/VAZAMENTO|ROMPIMENTO|ALAGAMENTO/.test(text)) score += 35;
+  if (/PIA|TORNEIRA|RALO/.test(text)) score += 20;
+  return score;
+}
+
 /**
  * Ordem operacional da fila:
  * 1. Reprogramações pendentes ("não realizado");
  * 2. Backorders;
- * 3. SLA/data programada mais urgente (vencido → vence logo → semana);
- * 4. criticidade e score;
- * 5. chamados mais antigos;
- * 6. número da OS como desempate estável.
+ * 3. urgências hidráulicas operacionais (entupimento, banheiro, cozinha/C70 etc.);
+ * 4. SLA/data programada mais urgente (vencido → vence logo → semana);
+ * 5. criticidade e score;
+ * 6. chamados mais antigos;
+ * 7. número da OS como desempate estável.
  */
 function sortCandidates(
   rows: CorrectiveSourceRow[],
@@ -220,6 +239,13 @@ function sortCandidates(
     const backorderOrder =
       Number(bPriority.isBackorder) - Number(aPriority.isBackorder);
     if (backorderOrder !== 0) return backorderOrder;
+
+    // Dentro da Hidráulica, falhas que impactam sanitários e operação
+    // (entupimentos, banheiros, cozinha/C70, vazamentos) sobem antes das
+    // corretivas hidráulicas comuns.
+    const hydraulicOrder =
+      hydraulicUrgencyScore(b) - hydraulicUrgencyScore(a);
+    if (hydraulicOrder !== 0) return hydraulicOrder;
 
     const dueStateOrder =
       DUE_ORDER[aPriority.dueState] - DUE_ORDER[bPriority.dueState];
