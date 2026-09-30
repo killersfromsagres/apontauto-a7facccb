@@ -286,8 +286,8 @@ function EstoqueEpiPage() {
       normal: situations.get("NORMAL") ?? 0,
       ferias: situations.get("FÉRIAS") ?? 0,
       afastado: situations.get("AFASTADO") ?? 0,
-      trainingDate: trainingDates.at(-1) ?? null,
-      lastSync: syncDates.at(-1) ?? null,
+      trainingDate: trainingDates[trainingDates.length - 1] ?? null,
+      lastSync: syncDates[syncDates.length - 1] ?? null,
     };
   }, [data.colaboradores]);
 
@@ -1024,6 +1024,42 @@ function MetricCard({
         </div>
       </div>
     </GlassCard>
+  );
+}
+
+function SraMetric({
+  label,
+  value,
+  detail,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  tone?: "default" | "warning";
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-xl border px-3 py-2.5",
+        tone === "warning"
+          ? "border-amber-500/20 bg-amber-500/[0.04]"
+          : "border-border/45 bg-background/30",
+      )}
+    >
+      <p className="text-[8px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-1 text-base font-bold tracking-tight",
+          tone === "warning" && "text-amber-600 dark:text-amber-300",
+        )}
+      >
+        {value}
+      </p>
+      <p className="mt-0.5 truncate text-[8px] text-muted-foreground">{detail}</p>
+    </div>
   );
 }
 
@@ -1820,7 +1856,7 @@ function CollaboratorDialog({
 
   return (
     <Dialog open={Boolean(target)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {collaborator ? "Editar colaborador" : "Novo colaborador"}
@@ -1875,6 +1911,40 @@ function CollaboratorDialog({
             </Select>
           </Field>
         </div>
+        {collaborator?.origem_sra && (
+          <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.035] p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold">Perfil funcional SRA</p>
+                <p className="mt-0.5 text-[9px] text-muted-foreground">
+                  Informações corporativas usadas para identificar a retirada no almoxarifado.
+                </p>
+              </div>
+              <Badge
+                variant="outline"
+                className="rounded-full border-emerald-500/20 text-[8px] text-emerald-600 dark:text-emerald-300"
+              >
+                Sincronizado
+              </Badge>
+            </div>
+
+            <div className="mt-3 grid gap-x-4 gap-y-2 sm:grid-cols-2">
+              <SraInfo label="Função" value={collaborator.funcao || collaborator.cargo} />
+              <SraInfo label="Situação" value={collaborator.situacao_sra} />
+              <SraInfo label="Centro / equipe" value={collaborator.centro_resultado} />
+              <SraInfo label="Setor do negócio" value={collaborator.setor_negocio || collaborator.setor} />
+              <SraInfo label="Admissão" value={collaborator.data_admissao ? fmtDate(collaborator.data_admissao) : null} />
+              <SraInfo label="Treinamento NR 23" value={collaborator.data_treinamento ? fmtDate(collaborator.data_treinamento) : null} />
+              <SraInfo label="Escala" value={collaborator.escala} />
+              <SraInfo label="Horário" value={collaborator.horario_trabalho} />
+              <SraInfo label="Intervalo" value={collaborator.intervalo_trabalho} />
+              <SraInfo label="Supervisor" value={collaborator.supervisor} />
+              <SraInfo label="Gerente" value={collaborator.gerente} />
+              <SraInfo label="Local" value={collaborator.local_trabalho || collaborator.unidade} />
+            </div>
+          </div>
+        )}
+
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button
@@ -2142,6 +2212,25 @@ function DeliveryDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function SraInfo({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | null;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
+        {label}
+      </p>
+      <p className="mt-0.5 truncate text-[10px] font-medium" title={value || "—"}>
+        {value || "—"}
+      </p>
+    </div>
   );
 }
 
