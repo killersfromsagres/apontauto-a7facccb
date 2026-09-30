@@ -43,7 +43,13 @@ export const HVAC_OBJECT =
   /\b(ar condicionado|ar condicionados|split|splits|fancoil|fan coil|fan coils|cassete|cassettes|condensadoras?|evaporadoras?|chiller|chillers|vrf|vrv|hvac|compressores? frigorificos?|gas refrigerante|serpentinas?|camaras? frias?|freezers?|geladeiras?|refrigeradores?)\b/;
 
 const LOCK_OBJECT =
-  /\b(fechaduras?|miolos?(?: de fechadura)?|cadeados?|copias? de chaves?|chaves? quebradas?|destrancar|porta travada|porta trancada|trincos?|linguetas?|macanetas?|cilindros?(?: de fechadura)?|molas? de porta)\b/;
+  /\b(fechaduras?|miolos?(?: de fechadura)?|cadeados?|copias? de chaves?|chaves? quebradas?|destrancar|porta travada|porta trancada|trincos?|linguetas?|macanetas?|cilindros?(?: de fechadura)?|molas? de porta|dobradicas?|barras? antipanico|puxadores?)\b/;
+
+const LOCK_HARDWARE_REQUEST =
+  /\b(copia|copiar|confeccionar|fazer|trocar|substituir|reparar|ajustar|regular|instalar|fixar)(?:\s+[a-z0-9]+){0,6}\s+(chaves?|fechaduras?|miolos?|macanetas?|trincos?|linguetas?|cilindros?|dobradicas?|molas?(?:\s+hidraulicas?)?(?:\s+de)?\s+porta|barras? antipanico|puxadores?)\b|\b(portas?)(?:\s+[a-z0-9]+){0,5}\s+(nao fecha|nao fechando|travada|trancada|emperrada|desalinhada)\b|\bmolas? hidraulicas? (?:da|de) porta\b/;
+
+const ELECTRICAL_HARD_REQUEST =
+  /\b(trocar|substituir|instalar|reparar|adequar|corrigir|verificar|manutencao)(?:\s+[a-z0-9]+){0,7}\s+(lampadas?|luminarias?|tomadas?|interruptores?|disjuntores?|refletores?|reatores?|fotocelulas?|sensores? de presenca|quadros? eletricos?|paineis? eletricos?|fiacao|cabeamento eletrico|pontos? de energia|pontos? eletricos?)\b|\b(sem luz|falta de energia|curto circuito|tomada queimada|lampada queimada|luminaria queimada)\b/;
 
 const PAINT_OBJECT =
   /\b(pintura|pintar|repintura|repintar|tintas?|verniz|retoques? de pintura|demarcacao de piso|sinalizacao de piso|faixas? amarelas?|pintura de piso|pintura de parede)\b/;
@@ -161,6 +167,26 @@ export function analyzeCorrectiveTechnicalDomain(
   const hasElectrical = ELECTRICAL_OBJECT.test(primaryText);
   const hasHydraulic = HYDRAULIC_OBJECT.test(primaryText);
   const hasWiringRequest = ELECTRICAL_WIRING_REQUEST.test(primaryText);
+  const hasLockHardware = LOCK_OBJECT.test(primaryText) || LOCK_HARDWARE_REQUEST.test(primaryText);
+  const hasElectricalHardRequest = ELECTRICAL_HARD_REQUEST.test(primaryText);
+
+  // Regras de domínio "donas" do chamado. Elas existem para impedir que palavras
+  // de contexto (ex.: banheiro, hidráulica da mola de porta, piso/parede) desviem
+  // uma OS tecnicamente inequívoca para outra equipe.
+  if (hasLockHardware) {
+    scores.Chaveiro += 220;
+    scores.Hidráulica = Math.min(scores.Hidráulica, 24);
+    scores.Civil = Math.min(scores.Civil, 30);
+    scores.Elétrica = Math.min(scores.Elétrica, 30);
+    evidence.unshift("agente técnico: ferragem/fechamento de porta é Chaveiro");
+  }
+
+  if (hasElectricalHardRequest && !hasHvac) {
+    scores.Elétrica += 210;
+    scores.Civil = Math.min(scores.Civil, 24);
+    scores.Hidráulica = Math.min(scores.Hidráulica, 28);
+    evidence.unshift("agente técnico: solicitação elétrica inequívoca");
+  }
 
   if (hasWiringRequest) {
     scores.Elétrica += 150;
@@ -205,7 +231,11 @@ export function analyzeCorrectiveTechnicalDomain(
   // Regra operacional solicitada: Civil não absorve corretivas técnicas de
   // elétrica/hidráulica. Quando o componente técnico está claro, Civil e
   // Limpeza ficam apenas como evidência residual.
-  if ((hasElectrical || hasWiringRequest) && !hasHydraulic && !hasHvac) {
+  if (
+    (hasElectrical || hasWiringRequest || hasElectricalHardRequest) &&
+    !hasHydraulic &&
+    !hasHvac
+  ) {
     scores.Civil = Math.min(scores.Civil, scores.Elétrica * 0.18);
     scores.Limpeza = Math.min(scores.Limpeza, scores.Elétrica * 0.18);
   }

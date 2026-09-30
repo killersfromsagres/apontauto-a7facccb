@@ -66,6 +66,30 @@ describe("designateCorrectiveTeam", () => {
     expect(result.confianca).toBe("alta");
   });
 
+  it("não confunde mola hidráulica de porta com Hidráulica", () => {
+    const result = designateCorrectiveTeam({
+      nome_os:
+        "Solicito reparo para fechadura e mola hidráulica da porta com parafusos soltando",
+      predio: "C45",
+      equipe: "Hidráulica",
+    });
+
+    expect(result.equipe).toBe("Chaveiro");
+    expect(result.confianca).toBe("alta");
+    expect(result.ambiguo).toBe(false);
+  });
+
+  it("não deixa banheiro desviar uma cópia de chave para Hidráulica", () => {
+    const result = designateCorrectiveTeam({
+      nome_os: "Realizar cópia da chave do banheiro masculino individual",
+      local: "Banheiro masculino",
+      equipe: "Hidráulica",
+    });
+
+    expect(result.equipe).toBe("Chaveiro");
+    expect(result.confianca).toBe("alta");
+  });
+
   it("designa torneira, sifão e registro para Hidráulica", () => {
     expect(
       designateCorrectiveTeam({

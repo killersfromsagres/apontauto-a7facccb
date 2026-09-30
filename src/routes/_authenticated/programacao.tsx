@@ -107,10 +107,10 @@ interface SlotDef {
 const SLOTS: SlotDef[] = [
   {
     id: "CCH",
-    label: "CIVIL / HIDRÁULICA • CHAVEIRO MANUAL",
-    hint: "Automático: Civil 00:30 e Hidráulica 01:00. Chaveiro é preenchido manualmente.",
+    label: "CIVIL / HIDRÁULICA / CHAVEIRO",
+    hint: "Automático: Civil 00:30, Hidráulica 01:00 e Chaveiro 00:30. Calhas ficam com Civil; corretivas de Chaveiro entram no final do dia.",
     color: EQUIPE_COLOR.CIVIL,
-    equipes: ["CIVIL", "HIDRÁULICA"],
+    equipes: ["CIVIL", "HIDRÁULICA", "CHAVEIRO"],
   },
   {
     id: "REFRIG",
@@ -166,7 +166,7 @@ function predioMatches(predio: string, buildings: string[]): boolean {
 function filterForSlot(items: TriagedOS[], slot: SlotId): TriagedOS[] {
   if (slot === "CCH") {
     return items.filter((item) =>
-      ["CIVIL", "HIDRÁULICA"].includes(item.equipe),
+      ["CIVIL", "HIDRÁULICA", "CHAVEIRO"].includes(item.equipe),
     );
   }
   if (slot === "ELETRICA")
@@ -467,7 +467,7 @@ function ProgramacaoPage() {
         const preventiveItems = filterForSlot(triage(read.rows), slot.id);
         if (preventiveItems.length === 0) {
           messages.push(
-            `${slot.label}: nenhuma preventiva reconhecida; as semanas serão compostas pelas corretivas prioritárias disponíveis.`,
+            `${slot.label}: nenhuma preventiva reconhecida; as semanas serão compostas pelas corretivas disponíveis.`,
           );
         }
 
@@ -574,7 +574,7 @@ function ProgramacaoPage() {
             bucketsPorEquipe.set(equipe, augmented.bucket);
             cargasPorEquipe.set(equipe, augmented.loads);
             messages.push(
-              `Semana ${week.isoWeek} • ${equipe}: ${mappedCorrectiveCount} corretiva(s) adicionada(s) ao final dos dias, com backorders e urgências operacionais na frente da fila corretiva.`,
+              `Semana ${week.isoWeek} • ${equipe}: ${mappedCorrectiveCount} corretiva(s) adicionada(s) somente após as preventivas de cada dia, mantendo backorders e urgências operacionais na frente da fila corretiva.`,
             );
           }
 

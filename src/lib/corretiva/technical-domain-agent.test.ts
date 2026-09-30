@@ -75,4 +75,39 @@ describe("agente técnico de domínio das corretivas", () => {
     expect(result.equipe).toBe("Elétrica");
     expect(result.decisive).toBe(true);
   });
+
+  it("mola hidráulica de porta e fechadura pertencem ao Chaveiro", () => {
+    const result = analyzeCorrectiveTechnicalDomain({
+      nome_os:
+        "Reparar fechadura da portaria e mola hidráulica da porta com parafusos soltando",
+      equipe: "Hidráulica",
+      predio: "C45",
+    });
+
+    expect(result.equipe).toBe("Chaveiro");
+    expect(result.decisive).toBe(true);
+    expect(result.scores.Chaveiro).toBeGreaterThan(result.scores.Hidráulica);
+  });
+
+  it("cópia de chave em banheiro continua sendo Chaveiro", () => {
+    const result = analyzeCorrectiveTechnicalDomain({
+      nome_os: "Realizar cópia da chave do banheiro masculino individual",
+      local: "Banheiro masculino",
+      equipe: "Hidráulica",
+    });
+
+    expect(result.equipe).toBe("Chaveiro");
+    expect(result.decisive).toBe(true);
+  });
+
+  it("troca de luminária em parede continua sendo Elétrica", () => {
+    const result = analyzeCorrectiveTechnicalDomain({
+      nome_os: "Trocar luminária queimada fixada na parede do corredor",
+      equipe: "Civil",
+    });
+
+    expect(result.equipe).toBe("Elétrica");
+    expect(result.decisive).toBe(true);
+    expect(result.scores.Elétrica).toBeGreaterThan(result.scores.Civil);
+  });
 });
