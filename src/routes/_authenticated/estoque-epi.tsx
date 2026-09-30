@@ -697,10 +697,10 @@ function EstoqueEpiPage() {
                     {filteredItems.length} item(ns) encontrado(s)
                   </p>
                   <span className="text-[8px] text-muted-foreground/70">
-                    Role dentro da lista para navegar
+                    Lista compacta com rolagem
                   </span>
                 </div>
-                <div className="mt-2 max-h-[58vh] space-y-1.5 overflow-y-auto pr-1">
+                <div className="mt-2 max-h-[58vh] space-y-1.5 overflow-y-auto overscroll-contain pr-1">
                   {filteredItems.map((item) => (
                     <StockRow
                       key={item.id}
@@ -877,7 +877,7 @@ function EstoqueEpiPage() {
                     )}
                   </div>
 
-                  <div className="mt-2 max-h-[58vh] overflow-y-auto pr-1">
+                  <div className="mt-2 max-h-[58vh] overflow-y-auto overscroll-contain pr-1">
                     <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                     {filteredCollaborators.map((colab) => (
                       <button
@@ -1292,7 +1292,7 @@ function DeliveryList({ entregas }: { entregas: EstoqueEntrega[] }) {
   if (entregas.length === 0) return <EmptyState text="Nenhuma retirada registrada." />;
 
   return (
-    <div className="mt-3 space-y-1.5">
+    <div className="mt-3 max-h-[52vh] space-y-1.5 overflow-y-auto overscroll-contain pr-1">
       {entregas.map((entrega) => {
         const qty = (entrega.itens ?? []).reduce(
           (sum, item) => sum + Number(item.quantidade || 0),
@@ -2634,7 +2634,11 @@ function ItemAutocomplete({
 
       {focused && (
         <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[80] overflow-hidden rounded-xl border border-border/60 bg-popover shadow-xl">
-          <div className="max-h-64 overflow-y-auto p-1">
+          <div className="flex items-center justify-between border-b border-border/40 px-2.5 py-1.5 text-[8px] text-muted-foreground">
+            <span>Sugestões</span>
+            <span>Role para ver mais</span>
+          </div>
+          <div className="max-h-44 overflow-y-auto overscroll-contain p-1">
             {suggestions.length > 0 ? (
               suggestions.map((item) => (
                 <button
