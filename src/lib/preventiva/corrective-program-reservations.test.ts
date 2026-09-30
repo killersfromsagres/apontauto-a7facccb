@@ -334,7 +334,7 @@ describe("corrective program reservations", () => {
     ).toBe(true);
   });
 
-  it("recoloca não realizado no topo da próxima programação mesmo com histórico anterior", () => {
+  it("recoloca não realizado na fila normal sem prioridade artificial", () => {
     const original = row("id-reprogram", "8801", "2026-09-18", "observacao");
     allocateCorrectivesForWeekTeam({
       rows: [original],
@@ -362,7 +362,7 @@ describe("corrective program reservations", () => {
     });
 
     expect(next.rows).toHaveLength(1);
-    expect(next.rows[0].numero_os).toBe("8801");
+    expect(next.rows[0].numero_os).toBe("9901");
   });
 
   it("não agenda novamente uma OS marcada no servidor como em programação", () => {
