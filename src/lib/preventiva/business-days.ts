@@ -58,6 +58,30 @@ export function isBusinessDay(d: Date, holidays?: Set<string>): boolean {
   return !hs.has(iso(d));
 }
 
+/**
+ * Retorna o dia útil imediatamente anterior à data informada.
+ * Se a véspera cair em sábado, domingo ou feriado, continua retrocedendo.
+ */
+export function previousBusinessDay(date: Date): Date {
+  let cursor = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate() - 1,
+    12,
+  );
+
+  while (!isBusinessDay(cursor)) {
+    cursor = new Date(
+      cursor.getFullYear(),
+      cursor.getMonth(),
+      cursor.getDate() - 1,
+      12,
+    );
+  }
+
+  return cursor;
+}
+
 /** Dias úteis (incluindo hoje) até o último dia do mês corrente. */
 export function businessDaysUntilEndOfMonth(from: Date = new Date()): Date[] {
   const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
