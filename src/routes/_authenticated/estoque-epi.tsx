@@ -25,7 +25,6 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
-  Shirt,
   UserRoundPlus,
   Users,
   WalletCards,
@@ -195,7 +194,7 @@ function EstoqueEpiPage() {
       attention: attention.length,
       zeroed: zeroed.length,
     };
-  }, [activeItems, data.colaboradores]);
+  }, [activeItems]);
 
   const movementDatesByItem = useMemo(() => {
     const result = new Map<string, { entrada?: string; saida?: string }>();
@@ -218,23 +217,6 @@ function EstoqueEpiPage() {
     return result;
   }, [data.movimentos]);
 
-  const categories = useMemo(() => {
-    const map = new Map<string, { items: number; qty: number; value: number }>();
-    activeItems.forEach((item) => {
-      const current = map.get(item.categoria) ?? {
-        items: 0,
-        qty: 0,
-        value: 0,
-      };
-      current.items += 1;
-      current.qty += Number(item.estoque_atual || 0);
-      current.value += inventoryValue(item);
-      map.set(item.categoria, current);
-    });
-    return [...map.entries()].sort((a, b) =>
-      a[0].localeCompare(b[0], "pt-BR"),
-    );
-  }, [activeItems]);
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLocaleLowerCase("pt-BR");
@@ -493,43 +475,46 @@ function EstoqueEpiPage() {
 
                 <GlassCard className="!p-4">
                   <SectionTitle
-                    icon={Shirt}
-                    title="Distribuição por categoria"
-                    description="Quantidade física e valor por grupo."
+                    icon={ClipboardCheck}
+                    title="Como usar"
+                    description="Três passos simples para manter o estoque correto."
                   />
                   <div className="mt-3 space-y-2">
-                    {categories.map(([name, stats]) => {
-                      const share =
-                        kpis.totalQty > 0
-                          ? Math.min(100, (stats.qty / kpis.totalQty) * 100)
-                          : 0;
-                      return (
-                        <div
-                          key={name}
-                          className="rounded-xl border border-border/45 bg-background/35 p-3"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate text-xs font-semibold">
-                                {name}
-                              </p>
-                              <p className="mt-0.5 text-[10px] text-muted-foreground">
-                                {stats.items} itens · {stats.qty.toLocaleString("pt-BR")} un.
-                              </p>
-                            </div>
-                            <span className="text-[10px] font-semibold text-muted-foreground">
-                              {money(stats.value)}
-                            </span>
-                          </div>
-                          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted/40">
-                            <div
-                              className="h-full rounded-full bg-primary/70"
-                              style={{ width: `${share}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+                    <div className="flex gap-3 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.035] p-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
+                        <span className="text-xs font-bold">1</span>
+                      </span>
+                      <div>
+                        <p className="text-xs font-semibold">Quando receber material</p>
+                        <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
+                          Clique em <strong>Registrar entrada</strong>, selecione o item, informe a quantidade e a data real da entrada.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 rounded-xl border border-sky-500/15 bg-sky-500/[0.035] p-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600">
+                        <span className="text-xs font-bold">2</span>
+                      </span>
+                      <div>
+                        <p className="text-xs font-semibold">Quando alguém retirar EPI ou uniforme</p>
+                        <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
+                          Clique em <strong>Registrar saída</strong>. O nome do colaborador e a data da retirada são obrigatórios.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 rounded-xl border border-border/50 bg-background/35 p-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
+                        <span className="text-xs font-bold">3</span>
+                      </span>
+                      <div>
+                        <p className="text-xs font-semibold">Acompanhe pelo histórico</p>
+                        <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
+                          Consulte entradas, saídas e saldos ou use <strong>Baixar planilha</strong> para gerar o Excel atualizado.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </GlassCard>
 
