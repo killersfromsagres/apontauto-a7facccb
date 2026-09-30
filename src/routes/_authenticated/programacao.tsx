@@ -11,7 +11,9 @@ import {
   CalendarIcon,
   CheckCircle2,
   Clock3,
+  Cloud,
   Download,
+  FileDown,
   FileCheck2,
   FileSpreadsheet,
   Gauge,
@@ -57,6 +59,7 @@ import {
 import {
   clearHistorico,
   deleteHistorico,
+  getHistoricoBlob,
   listHistorico,
   saveHistorico,
   type HistoricoItem,
@@ -81,6 +84,7 @@ import {
   type TriagedOS,
 } from "@/lib/preventiva/triage";
 import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
+import { generateSlaDeadlineReport } from "@/lib/preventiva/sla-report";
 import {
   polishWeeklyProgramacao,
   printWeeklyProgramacaoColor,
@@ -268,6 +272,8 @@ function ProgramacaoPage() {
     { ...MINUTOS_PADRAO_POR_EQUIPE },
   );
   const [processing, setProcessing] = useState(false);
+  const [slaProcessing, setSlaProcessing] = useState(false);
+  const [historyBusyId, setHistoryBusyId] = useState<string | null>(null);
   const [generated, setGenerated] = useState<GeneratedFile[]>([]);
   const [alerts, setAlerts] = useState<FileAlert[]>([]);
   const [statusMessages, setStatusMessages] = useState<string[]>([]);
@@ -330,6 +336,96 @@ function ProgramacaoPage() {
       );
     }
   }, []);
+
+  const collectCurrentPreventives = useCallback(async (): Promise<TriagedOS[]> => {
+    const items: TriagedOS[] = [];
+    for (const slot of SLOTS) {
+      const file = slotFiles[slot.id];
+      if (!file) continue;
+      const read = await readPreventivaFiles([file]);
+      items.push(...filterForSlot(triage(read.rows), slot.id));
+    }
+    return items;
+  }, [slotFiles]);
+
+  const handleDownloadSla = useCallback(async () => {
+    if (!hasAnyFile || slaProcessing) {
+      if (!hasAnyFile) toast.warning("Anexe as planilhas mensais primeiro.");
+      return;
+    }
+
+    setSlaProcessing(true);
+    try {
+      const preventiveItems = await collectCurrentPreventives();
+      const report = await generateSlaDeadlineReport(
+        preventiveItems,
+        startDate,
+      );
+      downloadBlob(report.blob, report.filename);
+      toast.success(
+        report.total > 0
+          ? `Relatório atualizado: ${report.total} preventiva(s) com Término SLA antes do dia 28.`
+          : "Relatório atualizado. Nenhuma preventiva com Término SLA antes do dia 28 foi encontrada.",
+      );
+    } catch (error) {
+      console.error("[Programacao] Falha ao gerar relatório de SLA:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível gerar o relatório de Término SLA.",
+      );
+    } finally {
+      setSlaProcessing(false);
+    }
+  }, [
+    collectCurrentPreventives,
+    hasAnyFile,
+    slaProcessing,
+    startDate,
+  ]);
+
+  const historyBlob = useCallback(async (item: HistoricoItem) => {
+    setHistoryBusyId(item.id);
+    try {
+      return await getHistoricoBlob(item);
+    } finally {
+      setHistoryBusyId(null);
+    }
+  }, []);
+
+  const handleHistoryDownload = useCallback(
+    async (item: HistoricoItem) => {
+      try {
+        const blob = await historyBlob(item);
+        downloadBlob(blob, item.filename);
+      } catch (error) {
+        console.error(error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível recuperar a planilha do histórico.",
+        );
+      }
+    },
+    [historyBlob],
+  );
+
+  const handleHistoryPrint = useCallback(
+    async (item: HistoricoItem) => {
+      try {
+        const blob = await historyBlob(item);
+        await handlePrint(blob);
+      } catch (error) {
+        console.error(error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível recuperar a planilha para impressão.",
+        );
+      }
+    },
+    [handlePrint, historyBlob],
+  );
 
   const generate = async () => {
     if (!hasAnyFile) {
@@ -397,26 +493,8 @@ function ProgramacaoPage() {
             0,
           );
           messages.push(
-            `${equipe}: ${schedule.scheduledPreventivas} preventiva(s) distribuída(s); ` +
-              `saldo mensal preventivo ${formatMinutes(remaining)}. Meta de corretivas: ${CORRECTIVES_PER_DAY} por dia útil, ajustada automaticamente quando uma preventiva precisa ocupar a reserva para cumprir SLA D-1.`,
+            `${equipe}: ${schedule.scheduledPreventivas} preventiva(s) em sequência contínua de Prédio → Andar → Local; saldo mensal ${formatMinutes(remaining)}. As corretivas ficam no final de cada dia.`,
           );
-
-          if (schedule.slaManagedPreventivas > 0) {
-            messages.push(
-              `${equipe}: SLA D-1 protegido em ${schedule.slaOnTimePreventivas}/${schedule.slaManagedPreventivas} preventiva(s) com Término SLA dentro do período. Cada OS foi posicionada até o dia útil anterior ao vencimento, respeitando prédio e andar dentro do dia.`,
-            );
-          }
-
-          if (schedule.slaAtRiskPreventivas.length > 0) {
-            const osEmRisco = schedule.slaAtRiskPreventivas
-              .slice(0, 8)
-              .map((item) => item.os)
-              .filter(Boolean)
-              .join(", ");
-            messages.push(
-              `ATENÇÃO • ${equipe}: ${schedule.slaAtRiskPreventivas.length} preventiva(s) não cabem antes do SLA com a capacidade atual de 09:00/dia${osEmRisco ? ` (OS: ${osEmRisco})` : ""}. O sistema as colocou na primeira vaga possível; revise capacidade/equipe antes de publicar.`,
-            );
-          }
 
           if (schedule.preventiveDaysWithoutWork.length === 0) {
             messages.push(
@@ -424,7 +502,7 @@ function ProgramacaoPage() {
             );
           } else {
             messages.push(
-              `ATENÇÃO • ${equipe}: ${schedule.preventiveDaysWithoutWork.length} dia(s) útil(eis) ficaram sem preventiva por falta de OS compatível com capacidade/SLA: ${schedule.preventiveDaysWithoutWork.join(", ")}.`,
+              `ATENÇÃO • ${equipe}: ${schedule.preventiveDaysWithoutWork.length} dia(s) útil(eis) ficaram sem preventiva porque o volume mensal não foi suficiente para preencher toda a capacidade: ${schedule.preventiveDaysWithoutWork.join(", ")}.`,
             );
           }
 
@@ -496,7 +574,7 @@ function ProgramacaoPage() {
             bucketsPorEquipe.set(equipe, augmented.bucket);
             cargasPorEquipe.set(equipe, augmented.loads);
             messages.push(
-              `Semana ${week.isoWeek} • ${equipe}: ${mappedCorrectiveCount} corretiva(s) prioritária(s). A quantidade diária foi ajustada à capacidade restante depois da proteção dos SLA D-1.`,
+              `Semana ${week.isoWeek} • ${equipe}: ${mappedCorrectiveCount} corretiva(s) adicionada(s) ao final dos dias, com backorders e urgências operacionais na frente da fila corretiva.`,
             );
           }
 
@@ -609,7 +687,7 @@ function ProgramacaoPage() {
           });
         } catch (historyError) {
           console.warn(
-            `[Programacao] Não foi possível salvar ${item.filename} no histórico local:`,
+            `[Programacao] Não foi possível persistir ${item.filename} no histórico:`,
             historyError,
           );
         }
@@ -620,7 +698,7 @@ function ProgramacaoPage() {
       setGenerated((current) => [...output, ...current]);
       await reloadHistorico();
       toast.success(
-        `${output.length} planilha(s) semanal(is) gerada(s). A montagem prioriza preventivas em todos os dias úteis, mantém SLA D-1 e rota por prédio/andar, e coloca as corretivas somente no final de cada dia.`,
+        `${output.length} planilha(s) semanal(is) gerada(s). Preventivas seguem Prédio → Andar → Local sem aleatoriedade; corretivas entram somente no final dos dias, priorizando backorders e urgências.`,
       );
     } catch (error) {
       console.error(error);
@@ -649,16 +727,31 @@ function ProgramacaoPage() {
   return (
     <PageShell
       title="Programação"
-      description="Planejamento semanal de manutenção com capacidade por equipe, preventivas organizadas e corretivas priorizadas por backorder, SLA e urgência."
+      description="Planejamento semanal sequencial por prédio e andar, com preventivas primeiro e corretivas priorizadas no final de cada dia."
       actions={
-        <Button
-          variant="glass"
-          onClick={downloadTemplate}
-          className="group h-10 rounded-xl border-emerald-500/20 bg-emerald-500/[0.04] px-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:shadow-md"
-        >
-          <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500 transition-transform duration-200 group-hover:scale-110" />
-          Baixar modelo
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="glass"
+            onClick={() => void handleDownloadSla()}
+            disabled={!hasAnyFile || slaProcessing}
+            className="group h-10 rounded-xl border-amber-500/20 bg-amber-500/[0.04] px-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-500/40 hover:bg-amber-500/10 hover:shadow-md"
+          >
+            {slaProcessing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FileDown className="mr-2 h-4 w-4 text-amber-500 transition-transform duration-200 group-hover:scale-110" />
+            )}
+            Baixar Término SLA
+          </Button>
+          <Button
+            variant="glass"
+            onClick={downloadTemplate}
+            className="group h-10 rounded-xl border-emerald-500/20 bg-emerald-500/[0.04] px-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:shadow-md"
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500 transition-transform duration-200 group-hover:scale-110" />
+            Baixar modelo
+          </Button>
+        </div>
       }
     >
       <div className="space-y-6 pb-4">
@@ -801,106 +894,118 @@ function ProgramacaoPage() {
         </GlassCard>
 
         {(alerts.length > 0 || statusMessages.length > 0) && (
-          <GlassCard>
-            <div className="space-y-4">
-              <SectionHeading
-                step="03"
-                icon={Activity}
-                title="Relatório operacional"
-                description="Resumo da triagem, capacidade e distribuição calculada pelo sistema."
-              />
+          <GlassCard className="!p-3">
+            <details className="group">
+              <summary className="flex cursor-pointer list-none items-center gap-3 rounded-xl px-1 py-1 outline-none">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
+                  <Activity className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-semibold">Relatório da geração</span>
+                  <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                    Sequência de prédios, capacidade e corretivas priorizadas
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {alerts.length > 0 && (
+                    <Badge variant="outline" className="rounded-full border-amber-500/25 px-2 text-[9px] text-amber-600 dark:text-amber-300">
+                      {alerts.length} alerta(s)
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="rounded-full px-2 text-[9px]">
+                    {statusMessages.length} informação(ões)
+                  </Badge>
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-open:rotate-90" />
+                </span>
+              </summary>
 
-              {alerts.length > 0 && (
-                <div className="grid gap-2 md:grid-cols-2">
-                  {alerts.map((alert) => (
-                    <div
-                      key={`${alert.arquivo}-${alert.real}`}
-                      className="flex gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3 text-xs text-amber-700 dark:text-amber-300"
-                    >
-                      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
-                        <AlertTriangle className="h-3.5 w-3.5" />
-                      </span>
-                      <span className="leading-5">
-                        <strong>{alert.arquivo}</strong>: conteúdo identificado como {alert.real}.
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {statusMessages.length > 0 && (
-                <div className="grid gap-2 lg:grid-cols-2">
-                  {statusMessages.map((message, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 rounded-xl border border-border/50 bg-background/35 p-3 transition-colors duration-200 hover:bg-background/55"
-                    >
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                      <p className="text-xs leading-5 text-muted-foreground">{message}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+              <div className="mt-3 grid gap-2 border-t border-border/40 pt-3 md:grid-cols-2">
+                {alerts.map((alert) => (
+                  <div
+                    key={`${alert.arquivo}-${alert.real}`}
+                    className="flex items-start gap-2 rounded-lg border border-amber-500/15 bg-amber-500/[0.05] p-2.5"
+                  >
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                    <p className="text-[10px] leading-4 text-muted-foreground">
+                      <strong className="text-foreground">{alert.arquivo}</strong>: conteúdo identificado como {alert.real}.
+                    </p>
+                  </div>
+                ))}
+                {statusMessages.map((message, index) => (
+                  <div
+                    key={index}
+                    className="flex items-start gap-2 rounded-lg border border-border/40 bg-background/30 p-2.5"
+                  >
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                    <p className="text-[10px] leading-4 text-muted-foreground">{message}</p>
+                  </div>
+                ))}
+              </div>
+            </details>
           </GlassCard>
         )}
 
         {generated.length > 0 && (
-          <GlassCard>
-            <div className="space-y-4">
+          <GlassCard className="!p-4">
+            <div className="space-y-3">
               <SectionHeading
                 step="04"
                 icon={FileCheck2}
-                title="Planilhas prontas"
-                description="Arquivos semanais gerados e prontos para download ou impressão."
+                title="Relatório semanal"
+                description="Arquivos gerados desta programação, em um formato compacto para baixar ou imprimir."
                 aside={
-                  <Badge className="rounded-full px-3 py-1 text-[10px]">
+                  <Badge className="rounded-full px-2.5 py-1 text-[9px]">
                     {generated.length} arquivo(s)
                   </Badge>
                 }
               />
-              <div className="grid gap-3 xl:grid-cols-2">
+
+              <div className="divide-y divide-border/40 overflow-hidden rounded-xl border border-border/50 bg-background/25">
                 {generated.map((file) => (
                   <div
                     key={file.id}
-                    className="group relative overflow-hidden rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:bg-background/60 hover:shadow-md"
+                    className="flex flex-col gap-3 px-3 py-2.5 transition-colors hover:bg-background/50 sm:flex-row sm:items-center"
                   >
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/15 bg-emerald-500/[0.07] text-emerald-500">
-                        <FileSpreadsheet className="h-5 w-5" />
-                      </div>
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/[0.07] text-emerald-500">
+                        <FileSpreadsheet className="h-4 w-4" />
+                      </span>
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="min-w-0 flex-1 truncate text-sm font-semibold" title={file.filename}>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <p className="truncate text-xs font-semibold" title={file.filename}>
                             {file.filename}
                           </p>
-                          <Badge variant="outline" className="shrink-0 rounded-full text-[9px]">
+                          <Badge variant="outline" className="hidden shrink-0 rounded-full px-2 text-[8px] sm:inline-flex">
                             Semana {file.week}
                           </Badge>
                         </div>
-                        <p className="mt-1 truncate text-[11px] text-muted-foreground">
-                          {file.slotLabel}
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                          <ResultChip label="Preventivas" value={file.preventiveCount} />
-                          <ResultChip label="Corretivas" value={file.correctiveCount} emphasis />
-                          <ResultChip label="Saldo" value={formatMinutes(file.remainingMinutes)} />
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                          <ResultChip label="Prev." value={file.preventiveCount} compact />
+                          <ResultChip label="Corr." value={file.correctiveCount} compact emphasis />
+                          <span className="hidden text-[9px] text-muted-foreground lg:inline">
+                            {file.slotLabel}
+                          </span>
                         </div>
                       </div>
                     </div>
-                    <div className="mt-4 grid grid-cols-2 gap-2">
+
+                    <div className="grid grid-cols-2 gap-1.5 sm:flex sm:shrink-0">
                       <Button
+                        size="sm"
                         variant="secondary"
-                        className="h-10 rounded-xl transition-all duration-200 hover:bg-accent"
+                        className="h-8 rounded-lg px-3 text-[10px]"
                         onClick={() => downloadBlob(file.blob, file.filename)}
                       >
-                        <Download className="mr-2 h-4 w-4" /> Baixar
+                        <Download className="mr-1.5 h-3.5 w-3.5" />
+                        Baixar
                       </Button>
                       <Button
-                        className="h-10 rounded-xl transition-all duration-200"
+                        size="sm"
+                        className="h-8 rounded-lg px-3 text-[10px]"
                         onClick={() => void handlePrint(file.blob)}
                       >
-                        <Printer className="mr-2 h-4 w-4" /> Imprimir
+                        <Printer className="mr-1.5 h-3.5 w-3.5" />
+                        Imprimir
                       </Button>
                     </div>
                   </div>
@@ -916,7 +1021,7 @@ function ProgramacaoPage() {
               <SectionHeading
                 icon={History}
                 title="Histórico semanal"
-                description="Programações salvas neste navegador, organizadas por semana e período."
+                description="Arquivos persistentes na sua conta. Atualize a página ou apague o download do computador e baixe novamente quando precisar."
               />
               {historico.length > 0 && (
                 <Button
@@ -939,7 +1044,7 @@ function ProgramacaoPage() {
                 <History className="mb-3 h-6 w-6 text-muted-foreground/50" />
                 <p className="text-sm font-medium">Nenhuma programação no histórico</p>
                 <p className="mt-1 max-w-md text-xs leading-5 text-muted-foreground">
-                  Quando você gerar uma programação, os arquivos ficarão disponíveis aqui para baixar ou imprimir novamente.
+                  Quando você gerar uma programação, a planilha será salva na nuvem da sua conta para download e impressão futura.
                 </p>
               </div>
             ) : (
@@ -960,6 +1065,20 @@ function ProgramacaoPage() {
                           {items[0].periodStart ?? "arquivo anterior"} a {items[0].periodEnd ?? "—"}
                         </span>
                       </span>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "hidden gap-1 rounded-full text-[9px] sm:inline-flex",
+                          items.every((item) => item.persistent !== false)
+                            ? "border-emerald-500/20 text-emerald-600 dark:text-emerald-300"
+                            : "border-amber-500/20 text-amber-600 dark:text-amber-300",
+                        )}
+                      >
+                        <Cloud className="h-3 w-3" />
+                        {items.every((item) => item.persistent !== false)
+                          ? "Nuvem"
+                          : "Contingência local"}
+                      </Badge>
                       <Badge variant="outline" className="rounded-full text-[9px]">
                         {items.length} arquivo(s)
                       </Badge>
@@ -972,7 +1091,20 @@ function ProgramacaoPage() {
                           className="flex flex-col gap-3 rounded-xl border border-border/40 bg-background/50 p-3 transition-colors duration-200 hover:bg-background/70 sm:flex-row sm:items-center sm:justify-between"
                         >
                           <div className="min-w-0">
-                            <p className="truncate text-xs font-semibold">{item.slotLabel}</p>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <p className="truncate text-xs font-semibold">{item.slotLabel}</p>
+                              <span
+                                className={cn(
+                                  "inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide",
+                                  item.persistent !== false
+                                    ? "border-emerald-500/20 bg-emerald-500/[0.05] text-emerald-600 dark:text-emerald-300"
+                                    : "border-amber-500/20 bg-amber-500/[0.05] text-amber-600 dark:text-amber-300",
+                                )}
+                              >
+                                <Cloud className="h-2.5 w-2.5" />
+                                {item.persistent !== false ? "Nuvem" : "Local"}
+                              </span>
+                            </div>
                             <div className="mt-1.5 flex flex-wrap gap-1.5">
                               <ResultChip label="Prev." value={item.preventiveCount ?? item.totalOS} compact />
                               <ResultChip label="Corr." value={item.correctiveCount ?? 0} compact emphasis />
@@ -984,16 +1116,22 @@ function ProgramacaoPage() {
                               size="sm"
                               variant="secondary"
                               className="rounded-lg"
-                              onClick={() => downloadBlob(item.blob, item.filename)}
+                              disabled={historyBusyId === item.id}
+                              onClick={() => void handleHistoryDownload(item)}
                               aria-label="Baixar"
                               title="Baixar arquivo"
                             >
-                              <Download className="h-3.5 w-3.5" />
+                              {historyBusyId === item.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Download className="h-3.5 w-3.5" />
+                              )}
                             </Button>
                             <Button
                               size="sm"
                               className="rounded-lg"
-                              onClick={() => void handlePrint(item.blob)}
+                              disabled={historyBusyId === item.id}
+                              onClick={() => void handleHistoryPrint(item)}
                               aria-label="Imprimir"
                               title="Imprimir programação"
                             >
@@ -1004,7 +1142,7 @@ function ProgramacaoPage() {
                               variant="ghost"
                               className="rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                               onClick={async () => {
-                                await deleteHistorico(item.id);
+                                await deleteHistorico(item);
                                 await reloadHistorico();
                               }}
                               aria-label="Excluir"
