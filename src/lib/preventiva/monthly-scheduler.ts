@@ -534,22 +534,6 @@ function weekIndexForDate(date: Date, weeks: WeekInfo[]): number {
   });
 }
 
-/** Distribui o total mensal de forma uniforme por todos os dias úteis. */
-function balancedDailyQuota(
-  total: number,
-  dayPosition: number,
-  dayCount: number,
-  dailyCapacity: number,
-): number {
-  if (total <= 0 || dayCount <= 0 || dailyCapacity <= 0) return 0;
-  const schedulable = Math.min(total, dayCount * dailyCapacity);
-  const base = Math.floor(schedulable / dayCount);
-  const remainder = schedulable % dayCount;
-  const before = Math.floor((dayPosition * remainder) / dayCount);
-  const after = Math.floor(((dayPosition + 1) * remainder) / dayCount);
-  return Math.min(dailyCapacity, base + (after > before ? 1 : 0));
-}
-
 function balancedQuotasForCapacities(
   total: number,
   capacities: number[],
@@ -658,16 +642,14 @@ export function scheduleTeamMonth(options: {
   const loadsByWeek: DailyTeamLoad[][] = options.weeks.map(() => []);
   const businessDays = businessDaysUntil(options.from, options.until);
 
-  const reservedExternalCorrectives = options.reserveCorrectiveSlots
-    ? Math.min(maxCorrectivesPerDay, capSlots)
-    : 0;
+  const intendedCorrectiveReserve =
+    options.reserveCorrectiveSlots || options.corretivas.length > 0
+      ? Math.min(maxCorrectivesPerDay, capSlots)
+      : 0;
   const standardPreventiveCapacity = Math.max(
     0,
-    capSlots - reservedExternalCorrectives,
+    capSlots - intendedCorrectiveReserve,
   );
-  const internalCorrectiveCapacityPerDay = options.reserveCorrectiveSlots
-    ? 0
-    : Math.min(maxCorrectivesPerDay, capSlots);
 
   const scheduledPreventivesByDay = businessDays.map(
     () => [] as TriagedOS[],
@@ -802,9 +784,17 @@ export function scheduleTeamMonth(options: {
   overflowPreventivas.push(...orderedStandard.slice(standardIndex));
 
   const corretivas = sortByLocation(options.corretivas);
-  const scheduledCorrectiveTarget = Math.min(
+  const internalCorrectiveCapacities = preventiveCountsByDay.map((used) =>
+    options.reserveCorrectiveSlots
+      ? 0
+      : Math.min(
+          maxCorrectivesPerDay,
+          Math.max(0, capSlots - used),
+        ),
+  );
+  const correctiveQuotas = balancedQuotasForCapacities(
     corretivas.length,
-    businessDays.length * internalCorrectiveCapacityPerDay,
+    internalCorrectiveCapacities,
   );
   let corretivaIndex = 0;
 
@@ -832,12 +822,7 @@ export function scheduleTeamMonth(options: {
       },
     );
 
-    const correctiveCount = balancedDailyQuota(
-      scheduledCorrectiveTarget,
-      dayPosition,
-      businessDays.length,
-      internalCorrectiveCapacityPerDay,
-    );
+    const correctiveCount = correctiveQuotas[dayPosition] ?? 0;
     const dayCorretivas = corretivas.slice(
       corretivaIndex,
       corretivaIndex + correctiveCount,
@@ -853,9 +838,10 @@ export function scheduleTeamMonth(options: {
       0,
       capSlots - dayPreventivas.length,
     );
-    const correctiveCapacity = options.reserveCorrectiveSlots
-      ? Math.min(maxCorrectivesPerDay, availableSlotsAfterPreventives)
-      : internalCorrectiveCapacityPerDay;
+    const correctiveCapacity = Math.min(
+      maxCorrectivesPerDay,
+      availableSlotsAfterPreventives,
+    );
 
     loadsByWeek[weekIndex].push({
       date: new Date(date),
