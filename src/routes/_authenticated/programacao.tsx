@@ -946,61 +946,66 @@ function ProgramacaoPage() {
         )}
 
         {generated.length > 0 && (
-          <GlassCard>
-            <div className="space-y-4">
+          <GlassCard className="!p-4">
+            <div className="space-y-3">
               <SectionHeading
                 step="04"
                 icon={FileCheck2}
-                title="Planilhas prontas"
-                description="Arquivos semanais gerados e prontos para download ou impressão."
+                title="Relatório semanal"
+                description="Arquivos gerados desta programação, em um formato compacto para baixar ou imprimir."
                 aside={
-                  <Badge className="rounded-full px-3 py-1 text-[10px]">
+                  <Badge className="rounded-full px-2.5 py-1 text-[9px]">
                     {generated.length} arquivo(s)
                   </Badge>
                 }
               />
-              <div className="grid gap-3 xl:grid-cols-2">
+
+              <div className="divide-y divide-border/40 overflow-hidden rounded-xl border border-border/50 bg-background/25">
                 {generated.map((file) => (
                   <div
                     key={file.id}
-                    className="group relative overflow-hidden rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:bg-background/60 hover:shadow-md"
+                    className="flex flex-col gap-3 px-3 py-2.5 transition-colors hover:bg-background/50 sm:flex-row sm:items-center"
                   >
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/15 bg-emerald-500/[0.07] text-emerald-500">
-                        <FileSpreadsheet className="h-5 w-5" />
-                      </div>
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/[0.07] text-emerald-500">
+                        <FileSpreadsheet className="h-4 w-4" />
+                      </span>
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="min-w-0 flex-1 truncate text-sm font-semibold" title={file.filename}>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <p className="truncate text-xs font-semibold" title={file.filename}>
                             {file.filename}
                           </p>
-                          <Badge variant="outline" className="shrink-0 rounded-full text-[9px]">
+                          <Badge variant="outline" className="hidden shrink-0 rounded-full px-2 text-[8px] sm:inline-flex">
                             Semana {file.week}
                           </Badge>
                         </div>
-                        <p className="mt-1 truncate text-[11px] text-muted-foreground">
-                          {file.slotLabel}
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                          <ResultChip label="Preventivas" value={file.preventiveCount} />
-                          <ResultChip label="Corretivas" value={file.correctiveCount} emphasis />
-                          <ResultChip label="Saldo" value={formatMinutes(file.remainingMinutes)} />
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                          <ResultChip label="Prev." value={file.preventiveCount} compact />
+                          <ResultChip label="Corr." value={file.correctiveCount} compact emphasis />
+                          <span className="hidden text-[9px] text-muted-foreground lg:inline">
+                            {file.slotLabel}
+                          </span>
                         </div>
                       </div>
                     </div>
-                    <div className="mt-4 grid grid-cols-2 gap-2">
+
+                    <div className="grid grid-cols-2 gap-1.5 sm:flex sm:shrink-0">
                       <Button
+                        size="sm"
                         variant="secondary"
-                        className="h-10 rounded-xl transition-all duration-200 hover:bg-accent"
+                        className="h-8 rounded-lg px-3 text-[10px]"
                         onClick={() => downloadBlob(file.blob, file.filename)}
                       >
-                        <Download className="mr-2 h-4 w-4" /> Baixar
+                        <Download className="mr-1.5 h-3.5 w-3.5" />
+                        Baixar
                       </Button>
                       <Button
-                        className="h-10 rounded-xl transition-all duration-200"
+                        size="sm"
+                        className="h-8 rounded-lg px-3 text-[10px]"
                         onClick={() => void handlePrint(file.blob)}
                       >
-                        <Printer className="mr-2 h-4 w-4" /> Imprimir
+                        <Printer className="mr-1.5 h-3.5 w-3.5" />
+                        Imprimir
                       </Button>
                     </div>
                   </div>
