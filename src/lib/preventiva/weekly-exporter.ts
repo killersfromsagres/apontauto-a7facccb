@@ -313,7 +313,7 @@ function styleProgramSheet(
     const dayCell = ws.getCell(rowIndex, 1);
     dayCell.value = [
       `${DAY_NAMES[dayIndex]} • ${formatDate(date)} • ${items.length} OS (${correctiveCount} CORRETIVAS)`,
-      slaPriorityCount > 0 ? `${slaPriorityCount} SLA PRIORITÁRIO${slaPriorityCount > 1 ? "S" : ""}` : "",
+      slaPriorityCount > 0 ? `${slaPriorityCount} SLA D-1` : "",
     ].filter(Boolean).join(" • ");
     dayCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PALETTE.teal } };
     dayCell.font = {

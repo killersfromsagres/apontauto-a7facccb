@@ -101,6 +101,27 @@ describe("corrective program reservations", () => {
     ).toEqual([0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
   });
 
+  it("reduz corretivas nos dias em que SLA D-1 consumiu a reserva", () => {
+    const rows = Array.from({ length: 10 }, (_, index) =>
+      row(`id-cap-${index}`, String(1500 + index), "2026-10-30"),
+    );
+
+    const allocation = allocateCorrectivesForWeekTeam({
+      rows,
+      equipe: "CIVIL",
+      periodStart: "2026-10-05",
+      periodEnd: "2026-10-09",
+      referenceDate: new Date(2026, 9, 5),
+      perDay: 2,
+      businessDays: 5,
+      perDayCapacities: [1, 0, 2, 1, 0],
+    });
+
+    expect(allocation.rows).toHaveLength(4);
+    expect(allocation.byDay.map((items) => items.length)).toEqual([1, 0, 2, 1, 0]);
+    expect(listCorrectiveProgramReservations()).toHaveLength(4);
+  });
+
   it.each([
     { total: 5, expected: [1, 1, 1, 1, 1] },
     { total: 6, expected: [2, 1, 1, 1, 1] },
