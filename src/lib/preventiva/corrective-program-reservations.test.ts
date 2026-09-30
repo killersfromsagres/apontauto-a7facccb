@@ -212,6 +212,64 @@ describe("corrective program reservations", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("na Hidráulica prioriza backorder e depois ocorrências operacionais urgentes", () => {
+    const referenceDate = new Date(2026, 8, 14);
+    const rows: CorrectiveSourceRow[] = [
+      row(
+        "hid-backorder",
+        "H100",
+        "2026-09-30",
+        "observacao",
+        "HIDRÁULICA",
+        "Backorder",
+        "Ajuste hidráulico pendente",
+      ),
+      row(
+        "hid-common",
+        "H400",
+        "2026-09-15",
+        "observacao",
+        "HIDRÁULICA",
+        "Corretiva",
+        "Reparo preventivo de registro",
+      ),
+      row(
+        "hid-banheiro",
+        "H300",
+        "2026-09-30",
+        "observacao",
+        "HIDRÁULICA",
+        "Corretiva",
+        "Banheiro C70 com vaso sem escoamento",
+      ),
+      row(
+        "hid-entupimento",
+        "H200",
+        "2026-09-30",
+        "observacao",
+        "HIDRÁULICA",
+        "Corretiva",
+        "Entupimento crítico na cozinha",
+      ),
+    ];
+
+    const selected = selectCorrectiveRowsForWeekTeam({
+      rows,
+      equipe: "HIDRÁULICA",
+      periodStart: "2026-09-14",
+      periodEnd: "2026-09-18",
+      referenceDate,
+      limit: 4,
+    });
+
+    expect(selected.map((item) => item.numero_os)).toEqual([
+      "H100",
+      "H200",
+      "H300",
+      "H400",
+    ]);
+  });
+
   it("não reutiliza uma OS já reservada por outra equipe/semana", () => {
     const rows = Array.from({ length: 12 }, (_, index) =>
       row(`id-${index}`, String(3000 + index), "2026-09-30"),
