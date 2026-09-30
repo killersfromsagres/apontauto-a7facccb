@@ -126,31 +126,31 @@ describe("scheduleTeamMonth", () => {
     expect(result.loadsByWeek[0][0].remainingMinutes).toBe(510);
   });
 
-  it("programa cada Término SLA no D-1 útil e preserva prédio/andar dentro do dia", () => {
+  it("mantém a programação principal em sequência alfabética de prédio mesmo quando o SLA é diferente", () => {
     const equipe: Equipe = "ELÉTRICA";
     const from = new Date(2026, 9, 1);
     const until = new Date(2026, 9, 9);
     const octoberWeeks = weeksBetween(from, until);
     const rows = [
       {
-        ...os("SLA-02-B2", equipe, "Preventiva", "2026-10-02"),
+        ...os("B-SLA-02", equipe, "Preventiva", "2026-10-02"),
         predio: "B200",
         andar: "2º Andar",
       },
       {
-        ...os("SLA-02-A1", equipe, "Preventiva", "2026-10-02"),
+        ...os("A-SLA-09", equipe, "Preventiva", "2026-10-09"),
         predio: "A100",
         andar: "1º Andar",
       },
       {
-        ...os("SLA-09-B1", equipe, "Preventiva", "2026-10-09"),
-        predio: "B200",
-        andar: "1º Andar",
+        ...os("A-TERREO", equipe, "Preventiva", "2026-10-20"),
+        predio: "A100",
+        andar: "Térreo",
       },
       {
-        ...os("SLA-09-BT", equipe, "Preventiva", "2026-10-09"),
-        predio: "B200",
-        andar: "Térreo",
+        ...os("C-SLA-05", equipe, "Preventiva", "2026-10-05"),
+        predio: "C70",
+        andar: "1º Andar",
       },
     ];
 
@@ -158,16 +158,13 @@ describe("scheduleTeamMonth", () => {
     expect(preventiveExecutionDeadline(rows[0])?.toISOString().slice(0, 10)).toBe(
       "2026-10-01",
     );
-    expect(preventiveExecutionDeadline(rows[2])?.toISOString().slice(0, 10)).toBe(
-      "2026-10-08",
-    );
 
     const queue = buildPreventiveExecutionQueue(rows);
     expect(queue.map((item) => item.os)).toEqual([
-      "SLA-02-A1",
-      "SLA-02-B2",
-      "SLA-09-BT",
-      "SLA-09-B1",
+      "A-TERREO",
+      "A-SLA-09",
+      "B-SLA-02",
+      "C-SLA-05",
     ]);
 
     const result = scheduleTeamMonth({
@@ -184,22 +181,9 @@ describe("scheduleTeamMonth", () => {
     const scheduled = octoberWeeks.flatMap((week, weekIndex) =>
       result.buckets[weekIndex].porDia.flat(),
     );
-    const byId = new Map(scheduled.map((item) => [item.os, item]));
-
-    expect(byId.get("SLA-02-A1")?.raw.programacaoDataAgendada).toBe("2026-10-01");
-    expect(byId.get("SLA-02-B2")?.raw.programacaoDataAgendada).toBe("2026-10-01");
-    expect(byId.get("SLA-09-BT")?.raw.programacaoDataAgendada).toBe("2026-10-08");
-    expect(byId.get("SLA-09-B1")?.raw.programacaoDataAgendada).toBe("2026-10-08");
-    expect(result.slaOnTimePreventivas).toBe(4);
+    expect(scheduled.map((item) => item.os)).toEqual(queue.map((item) => item.os));
+    expect(result.slaManagedPreventivas).toBe(0);
     expect(result.slaAtRiskPreventivas).toHaveLength(0);
-
-    const dayOne = scheduled
-      .filter((item) => item.raw.programacaoDataAgendada === "2026-10-01")
-      .map((item) => [item.predio, item.andar]);
-    expect(dayOne).toEqual([
-      ["A100", "1º Andar"],
-      ["B200", "2º Andar"],
-    ]);
   });
 
   it("mantém pelo menos uma preventiva em cada dia útil quando há volume suficiente", () => {
@@ -247,15 +231,15 @@ describe("scheduleTeamMonth", () => {
     ).toBe(true);
   });
 
-  it("usa a reserva de corretivas quando necessário para proteger SLA D-1", () => {
+  it("preserva duas vagas de corretiva por dia sem quebrar a sequência dos prédios", () => {
     const equipe: Equipe = "HIDRÁULICA";
-    const from = new Date(2026, 9, 1);
-    const until = new Date(2026, 9, 2);
+    const from = new Date(2026, 9, 5);
+    const until = new Date(2026, 9, 9);
     const octoberWeeks = weeksBetween(from, until);
-    const preventivas = Array.from({ length: 8 }, (_, index) => ({
-      ...os(`SLA-${index + 1}`, equipe, "Preventiva", "2026-10-02"),
-      predio: "A160",
-      andar: `${index + 1}º Andar`,
+    const preventivas = Array.from({ length: 20 }, (_, index) => ({
+      ...os(`P-${index + 1}`, equipe),
+      predio: index < 10 ? "A160" : "B200",
+      andar: `${(index % 5) + 1}º Andar`,
     }));
 
     const result = scheduleTeamMonth({
@@ -269,15 +253,12 @@ describe("scheduleTeamMonth", () => {
       reserveCorrectiveSlots: true,
     });
 
-    const octoberFirst = result.loadsByWeek
-      .flat()
-      .find((load) => load.dateKey === "2026-10-01");
-
-    expect(octoberFirst?.preventiveCount).toBe(8);
-    expect(octoberFirst?.correctiveCapacity).toBe(1);
-    expect(result.slaOnTimePreventivas).toBe(8);
-    expect(result.slaAtRiskPreventivas).toHaveLength(0);
+    expect(result.loadsByWeek[0].every((load) => load.preventiveCount <= 7)).toBe(true);
+    expect(result.loadsByWeek[0].every((load) => load.correctiveCapacity === 2)).toBe(true);
+    const flat = result.buckets[0].porDia.flat().map((item) => item.predio);
+    expect(flat.indexOf("B200")).toBeGreaterThan(flat.lastIndexOf("A160"));
   });
+
 });
 
 describe("prioridade das corretivas", () => {
