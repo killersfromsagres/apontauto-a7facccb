@@ -176,7 +176,7 @@ describe("generateWeeklyProgramacao", () => {
     expect(html).toContain("background-color:#0B1F33");
   });
 
-  it("coloca backorders no topo da programação antes das demais OS", async () => {
+  it("coloca preventivas primeiro e deixa backorders no topo apenas entre as corretivas", async () => {
     const monday = new Date(2026, 8, 14);
     const week = weeksBetween(monday, new Date(2026, 8, 18))[0];
     const preventive = os("PREV-1", "CIVIL", "");
@@ -213,8 +213,8 @@ describe("generateWeeklyProgramacao", () => {
     await workbook.xlsx.load(await blob.arrayBuffer());
     const program = workbook.getWorksheet("PROGRAMAÇÃO")!;
 
-    expect(program.getCell("A4").text).toBe("BACK-1");
-    expect(program.getCell("A5").text).toBe("PREV-1");
+    expect(program.getCell("A4").text).toBe("PREV-1");
+    expect(program.getCell("A5").text).toBe("BACK-1");
     expect(program.getCell("A6").text).toBe("CORR-1");
   });
 
