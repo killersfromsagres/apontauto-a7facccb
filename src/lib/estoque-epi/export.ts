@@ -129,7 +129,11 @@ function configureSheet(sheet: any) {
     "&LApont Auto • Estoque EPI & Uniformes&C&P / &N&RAtualizado automaticamente";
 }
 
-function addStockSheet(workbook: any, items: EstoqueItem[]) {
+function addStockSheet(
+  workbook: any,
+  items: EstoqueItem[],
+  movimentos: EstoqueMovimento[],
+) {
   const sheet = workbook.addWorksheet("ESTOQUE", {
     views: [{ state: "frozen", ySplit: 5, showGridLines: false }],
   });
@@ -137,7 +141,7 @@ function addStockSheet(workbook: any, items: EstoqueItem[]) {
     sheet,
     "ESTOQUE • EPI & UNIFORMES",
     `Posição atual • ${items.length} itens ativos/inativos • Gerado em ${new Date().toLocaleString("pt-BR")}`,
-    13,
+    18,
   );
   sheet.addRow([]);
   const header = sheet.addRow([
@@ -147,18 +151,57 @@ function addStockSheet(workbook: any, items: EstoqueItem[]) {
     "Tamanho",
     "CA",
     "Un.",
-    "Saldo",
+    "Entradas",
+    "Saídas",
+    "Saldo atual",
     "Mínimo",
     "Ideal",
+    "% do ideal",
     "Status",
+    "Sugestão de compra",
     "Valor unitário",
     "Valor em estoque",
-    "Ativo",
+    "Comprado",
+    "Entregue",
   ]);
   applyHeader(header);
 
+  const movementTotals = new Map<
+    string,
+    { entradas: number; saidas: number; comprado: number; entregue: number }
+  >();
+  movimentos.forEach((mov) => {
+    const current = movementTotals.get(mov.item_id) ?? {
+      entradas: 0,
+      saidas: 0,
+      comprado: 0,
+      entregue: 0,
+    };
+    const value = Number(mov.valor_unitario ?? 0) * Number(mov.quantidade ?? 0);
+    if (["entrada", "devolucao", "ajuste_positivo"].includes(mov.tipo)) {
+      current.entradas += Number(mov.quantidade ?? 0);
+      current.comprado += value;
+    } else {
+      current.saidas += Number(mov.quantidade ?? 0);
+      current.entregue += value;
+    }
+    movementTotals.set(mov.item_id, current);
+  });
+
   items.forEach((item, index) => {
     const status = estoqueStatus(item);
+    const movement = movementTotals.get(item.id) ?? {
+      entradas: 0,
+      saidas: 0,
+      comprado: 0,
+      entregue: 0,
+    };
+    const ideal = Number(item.estoque_ideal ?? 0);
+    const percentIdeal =
+      ideal > 0 ? Number(item.estoque_atual ?? 0) / ideal : null;
+    const purchaseSuggestion =
+      ideal > 0 ? Math.max(0, ideal - Number(item.estoque_atual ?? 0)) : 0;
+
     const row = sheet.addRow([
       item.codigo ?? "",
       item.descricao,
@@ -166,35 +209,45 @@ function addStockSheet(workbook: any, items: EstoqueItem[]) {
       item.tamanho ?? "",
       item.ca_numero ?? "",
       item.unidade,
+      movement.entradas,
+      movement.saidas,
       item.estoque_atual,
       item.estoque_minimo ?? "",
       item.estoque_ideal ?? "",
+      percentIdeal ?? "",
       status,
+      purchaseSuggestion || "",
       item.valor_unitario ?? "",
       inventoryValue(item),
-      item.ativo ? "SIM" : "NÃO",
+      movement.comprado,
+      movement.entregue,
     ]);
     styleBodyRow(row, index);
-    [1, 4, 5, 6, 7, 8, 9, 10, 13].forEach((col) => {
+    [1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].forEach((col) => {
       row.getCell(col).alignment = {
         horizontal: "center",
         vertical: "middle",
         wrapText: true,
       };
     });
-    row.getCell(10).font = {
+    row.getCell(12).numFmt = '0.0%';
+    row.getCell(13).font = {
       bold: true,
       color: { argb: statusColor(status) },
     };
-    row.getCell(11).numFmt = 'R$ #,##0.00';
-    row.getCell(12).numFmt = 'R$ #,##0.00';
+    row.getCell(15).numFmt = 'R$ #,##0.00';
+    row.getCell(16).numFmt = 'R$ #,##0.00';
+    row.getCell(17).numFmt = 'R$ #,##0.00';
+    row.getCell(18).numFmt = 'R$ #,##0.00';
   });
 
-  const widths = [12, 44, 24, 10, 14, 8, 10, 10, 10, 12, 14, 16, 8];
+  const widths = [
+    12, 44, 24, 10, 14, 8, 10, 10, 11, 10, 10, 11, 12, 16, 14, 16, 14, 14,
+  ];
   widths.forEach((width, index) => (sheet.getColumn(index + 1).width = width));
   sheet.autoFilter = {
     from: { row: 5, column: 1 },
-    to: { row: Math.max(5, 5 + items.length), column: 13 },
+    to: { row: Math.max(5, 5 + items.length), column: 18 },
   };
   configureSheet(sheet);
 }
@@ -542,7 +595,7 @@ export async function generateEstoqueWorkbook(snapshot: EstoqueSnapshot) {
   workbook.created = new Date();
 
   addSummarySheet(workbook, snapshot);
-  addStockSheet(workbook, snapshot.items);
+  addStockSheet(workbook, snapshot.items, snapshot.movimentos);
   addMovementSheet(workbook, snapshot.movimentos);
   addDeliverySheet(workbook, snapshot.entregas);
   addCollaboratorSheet(workbook, snapshot.colaboradores, snapshot.entregas);
