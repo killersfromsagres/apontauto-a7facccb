@@ -288,48 +288,25 @@ describe("generateWeeklyProgramacao", () => {
     ]);
   });
 
-  it("mantém SLA D-1 no topo do dia e organiza os prioritários por prédio e andar", async () => {
+  it("ignora prioridade SLA na programação principal e mantém prédio/andar em sequência", async () => {
     const monday = new Date(2026, 8, 14);
     const week = weeksBetween(monday, new Date(2026, 8, 18))[0];
 
-    const priorityB2 = {
-      ...os("URG-B-2", "CIVIL", ""),
-      predio: "B200",
-      andar: "2º Andar",
-      local: "Sala B2",
-      terminoSLA: "2026-09-16",
-      terminoSLATs: new Date(2026, 8, 16).getTime(),
-      raw: { programacaoSLAPrioritaria: true },
-    };
-    const priorityB1 = {
-      ...os("URG-B-1", "CIVIL", ""),
+    const bPriority = {
+      ...os("B-SLA", "CIVIL", ""),
       predio: "B200",
       andar: "1º Andar",
-      local: "Sala B1",
       terminoSLA: "2026-09-15",
       terminoSLATs: new Date(2026, 8, 15).getTime(),
       raw: { programacaoSLAPrioritaria: true },
     };
-    const standardA = {
-      ...os("PADRAO-A", "CIVIL", ""),
+    const aStandard = {
+      ...os("A-NORMAL", "CIVIL", ""),
       predio: "A160",
       andar: "Térreo",
-      local: "Sala A",
       terminoSLA: "2026-09-28",
       terminoSLATs: new Date(2026, 8, 28).getTime(),
       raw: { programacaoSLAPrioritaria: false },
-    };
-
-    const load: DailyTeamLoad = {
-      date: monday,
-      dateKey: "2026-09-14",
-      dayIndex: 0,
-      preventiveCount: 3,
-      correctiveCount: 0,
-      scheduledMinutes: 90,
-      remainingMinutes: 450,
-      targetMinutes: 540,
-      correctiveDeficit: 2,
     };
 
     const blob = await generateWeeklyProgramacao({
@@ -340,12 +317,11 @@ describe("generateWeeklyProgramacao", () => {
           "CIVIL",
           {
             week,
-            os: [standardA, priorityB2, priorityB1],
-            porDia: [[standardA, priorityB2, priorityB1], [], [], [], []],
+            os: [bPriority, aStandard],
+            porDia: [[bPriority, aStandard], [], [], [], []],
           },
         ],
       ]),
-      cargasPorEquipe: new Map([["CIVIL", [load]]]),
       minutosPorEquipe: { CIVIL: 30 },
       ativoIndex: new Map(),
     });
@@ -354,22 +330,13 @@ describe("generateWeeklyProgramacao", () => {
     await workbook.xlsx.load(await blob.arrayBuffer());
     const program = workbook.getWorksheet("PROGRAMAÇÃO")!;
 
-    expect([4, 5, 6].map((row) => program.getCell(row, 1).text)).toEqual([
-      "URG-B-1",
-      "URG-B-2",
-      "PADRAO-A",
+    expect([4, 5].map((row) => program.getCell(row, 1).text)).toEqual([
+      "A-NORMAL",
+      "B-SLA",
     ]);
-    expect([4, 5].map((row) => program.getCell(row, 4).text)).toEqual([
-      "1º Andar",
-      "2º Andar",
-    ]);
-    expect(program.getCell("A2").text).toContain("2 SLA D-1");
-    expect((program.getCell("G4").fill as any).fgColor.argb).toBe("FFFFF4D6");
-
-    const slaSheet = workbook.getWorksheet("SLA APONTAMENTO")!;
-    expect(slaSheet.getCell("A5").text).toBe("URG-B-1");
-    expect(slaSheet.getCell("B5").text).toBe("15/09/2026");
+    expect(program.getCell("A2").text).not.toContain("SLA D-1");
   });
+
 });
 
 describe("abas de impressão por equipe", () => {
