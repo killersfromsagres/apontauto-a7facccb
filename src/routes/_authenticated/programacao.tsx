@@ -199,11 +199,17 @@ function appendReservedCorrectives(
   const nextLoads = loads.map((load) => ({
     ...load,
     correctiveCount: 0,
-    correctiveDeficit: CORRECTIVES_PER_DAY,
+    correctiveDeficit:
+      load.correctiveCapacity ?? CORRECTIVES_PER_DAY,
   }));
 
   correctivesByDay.slice(0, 5).forEach((dayItems, dayIndex) => {
-    const limitedItems = dayItems.slice(0, CORRECTIVES_PER_DAY);
+    const loadIndex = nextLoads.findIndex((load) => load.dayIndex === dayIndex);
+    const dayCapacity =
+      loadIndex >= 0
+        ? nextLoads[loadIndex].correctiveCapacity ?? CORRECTIVES_PER_DAY
+        : CORRECTIVES_PER_DAY;
+    const limitedItems = dayItems.slice(0, Math.max(0, dayCapacity));
     if (limitedItems.length === 0) return;
 
     nextBucket.os.push(...limitedItems);
@@ -213,7 +219,6 @@ function appendReservedCorrectives(
     ];
 
     const addedMinutes = limitedItems.length * minutesPerOs;
-    const loadIndex = nextLoads.findIndex((load) => load.dayIndex === dayIndex);
     if (loadIndex >= 0) {
       const targetLoad = nextLoads[loadIndex];
       const scheduledMinutes = targetLoad.scheduledMinutes + addedMinutes;
@@ -227,7 +232,7 @@ function appendReservedCorrectives(
         ),
         correctiveDeficit: Math.max(
           0,
-          CORRECTIVES_PER_DAY - limitedItems.length,
+          dayCapacity - limitedItems.length,
         ),
       };
     } else {
