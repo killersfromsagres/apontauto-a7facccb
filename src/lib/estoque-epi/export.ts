@@ -326,7 +326,7 @@ function addDeliverySheet(workbook: any, entregas: EstoqueEntrega[]) {
     sheet,
     "RETIRADAS POR COLABORADOR",
     "Histórico auditável de EPI e uniformes entregues aos colaboradores",
-    11,
+    14,
     GREEN,
   );
   sheet.addRow([]);
@@ -334,6 +334,9 @@ function addDeliverySheet(workbook: any, entregas: EstoqueEntrega[]) {
     "Data da retirada",
     "Colaborador",
     "Matrícula",
+    "Função",
+    "Centro / Equipe",
+    "Situação SRA",
     "Setor",
     "Item",
     "CA",
@@ -355,6 +358,9 @@ function addDeliverySheet(workbook: any, entregas: EstoqueEntrega[]) {
         fmtDate(entrega.data_entrega),
         entrega.colaborador_nome,
         entrega.colaborador_matricula ?? "",
+        entrega.colaborador_funcao ?? "",
+        entrega.colaborador_centro_resultado ?? "",
+        entrega.colaborador_situacao_sra ?? "",
         entrega.colaborador_setor ?? "",
         item?.descricao ?? "",
         item?.ca_numero ?? "",
@@ -365,16 +371,16 @@ function addDeliverySheet(workbook: any, entregas: EstoqueEntrega[]) {
         entrega.id,
       ]);
       styleBodyRow(row, index++);
-      row.getCell(8).numFmt = 'R$ #,##0.00';
-      row.getCell(9).numFmt = 'R$ #,##0.00';
+      row.getCell(11).numFmt = 'R$ #,##0.00';
+      row.getCell(12).numFmt = 'R$ #,##0.00';
     });
   });
 
-  const widths = [12, 28, 14, 22, 42, 14, 9, 14, 14, 34, 38];
+  const widths = [12, 28, 14, 28, 38, 14, 22, 42, 14, 9, 14, 14, 34, 38];
   widths.forEach((width, index2) => (sheet.getColumn(index2 + 1).width = width));
   sheet.autoFilter = {
     from: { row: 5, column: 1 },
-    to: { row: Math.max(5, 5 + index), column: 11 },
+    to: { row: Math.max(5, 5 + index), column: 14 },
   };
   configureSheet(sheet);
 }
@@ -401,22 +407,32 @@ function addCollaboratorSheet(
   });
   addTitle(
     sheet,
-    "COLABORADORES • CONTROLE DE RETIRADAS",
-    "Cadastro vinculado às entregas de EPI e uniformes",
-    9,
+    "COLABORADORES • SRA + ALMOXARIFADO",
+    "Dados operacionais do SRA vinculados às retiradas de EPI e uniformes",
+    19,
     GREEN,
   );
   sheet.addRow([]);
   const header = sheet.addRow([
     "Nome",
     "Matrícula",
-    "Setor",
-    "Cargo",
-    "Unidade",
-    "Status",
+    "Função",
+    "Setor do negócio",
+    "Centro / Equipe",
+    "Situação SRA",
+    "Local",
+    "Admissão",
+    "Treinamento NR 23",
+    "Escala",
+    "Horário",
+    "Intervalo",
+    "Supervisor",
+    "Cliente",
+    "Origem",
     "Retiradas",
     "Itens entregues",
-    "Cadastro",
+    "Última sincronização",
+    "Ativo",
   ]);
   applyHeader(header);
 
@@ -425,22 +441,32 @@ function addCollaboratorSheet(
     const row = sheet.addRow([
       colab.nome,
       colab.matricula ?? "",
-      colab.setor ?? "",
-      colab.cargo ?? "",
-      colab.unidade ?? "",
-      colab.ativo ? "ATIVO" : "INATIVO",
+      colab.funcao ?? colab.cargo ?? "",
+      colab.setor_negocio ?? colab.setor ?? "",
+      colab.centro_resultado ?? "",
+      colab.situacao_sra ?? "",
+      colab.local_trabalho ?? colab.unidade ?? "",
+      fmtDate(colab.data_admissao),
+      fmtDate(colab.data_treinamento),
+      colab.escala ?? "",
+      colab.horario_trabalho ?? "",
+      colab.intervalo_trabalho ?? "",
+      colab.supervisor ?? "",
+      colab.cliente ?? "",
+      colab.origem_sra ? "SRA" : "MANUAL",
       stats.retiradas,
       stats.itens,
-      fmtDate(colab.created_at),
+      fmtDate(colab.sra_synced_at ?? colab.updated_at),
+      colab.ativo ? "SIM" : "NÃO",
     ]);
     styleBodyRow(row, index);
   });
 
-  const widths = [30, 14, 22, 22, 18, 12, 10, 14, 12];
+  const widths = [30, 14, 28, 26, 38, 14, 22, 12, 16, 32, 18, 18, 26, 16, 10, 10, 14, 18, 9];
   widths.forEach((width, index) => (sheet.getColumn(index + 1).width = width));
   sheet.autoFilter = {
     from: { row: 5, column: 1 },
-    to: { row: Math.max(5, 5 + colaboradores.length), column: 9 },
+    to: { row: Math.max(5, 5 + colaboradores.length), column: 19 },
   };
   configureSheet(sheet);
 }

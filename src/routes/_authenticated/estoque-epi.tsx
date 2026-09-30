@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -67,6 +68,7 @@ import {
   registerEstoqueMovement,
   saveEstoqueColaborador,
   saveEstoqueItem,
+  syncSraCollaborators,
   type EstoqueColaborador,
   type EstoqueColaboradorInput,
   type EstoqueEntrega,
@@ -77,6 +79,7 @@ import {
   type EstoqueSnapshot,
 } from "@/lib/estoque-epi/data";
 import { generateEstoqueWorkbook } from "@/lib/estoque-epi/export";
+import { parseSraWorkbook } from "@/lib/estoque-epi/sra-import";
 
 export const Route = createFileRoute("/_authenticated/estoque-epi")({
   component: EstoqueEpiPage,
@@ -139,6 +142,11 @@ function EstoqueEpiPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("TODAS");
   const [statusFilter, setStatusFilter] = useState("TODOS");
+  const [collabSearch, setCollabSearch] = useState("");
+  const [collabStatus, setCollabStatus] = useState("TODOS");
+  const [collabTeam, setCollabTeam] = useState("TODOS");
+  const [sraImporting, setSraImporting] = useState(false);
+  const sraInputRef = useRef<HTMLInputElement>(null);
 
   const [itemDialog, setItemDialog] = useState<EstoqueItem | "new" | null>(null);
   const [movementItem, setMovementItem] = useState<EstoqueItem | null>(null);
@@ -256,6 +264,88 @@ function EstoqueEpiPage() {
         .slice(0, 12),
     [activeItems],
   );
+
+  const sraStats = useMemo(() => {
+    const sra = data.colaboradores.filter((item) => item.origem_sra);
+    const situations = new Map<string, number>();
+    sra.forEach((item) => {
+      const key = item.situacao_sra?.trim() || "SEM SITUAÇÃO";
+      situations.set(key, (situations.get(key) ?? 0) + 1);
+    });
+    const trainingDates = sra
+      .map((item) => item.data_treinamento)
+      .filter((value): value is string => Boolean(value))
+      .sort();
+    const syncDates = sra
+      .map((item) => item.sra_synced_at)
+      .filter((value): value is string => Boolean(value))
+      .sort();
+
+    return {
+      total: sra.length,
+      normal: situations.get("NORMAL") ?? 0,
+      ferias: situations.get("FÉRIAS") ?? 0,
+      afastado: situations.get("AFASTADO") ?? 0,
+      trainingDate: trainingDates[trainingDates.length - 1] ?? null,
+      lastSync: syncDates[syncDates.length - 1] ?? null,
+    };
+  }, [data.colaboradores]);
+
+  const collaboratorTeams = useMemo(
+    () =>
+      [...new Set(
+        data.colaboradores
+          .map((item) => item.centro_resultado)
+          .filter((value): value is string => Boolean(value)),
+      )].sort((a, b) => a.localeCompare(b, "pt-BR")),
+    [data.colaboradores],
+  );
+
+  const filteredCollaborators = useMemo(() => {
+    const q = collabSearch.trim().toLocaleLowerCase("pt-BR");
+    return data.colaboradores.filter((colab) => {
+      const matchesSearch =
+        !q ||
+        [
+          colab.nome,
+          colab.matricula,
+          colab.funcao,
+          colab.cargo,
+          colab.centro_resultado,
+          colab.setor_negocio,
+          colab.local_trabalho,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLocaleLowerCase("pt-BR")
+          .includes(q);
+      const matchesStatus =
+        collabStatus === "TODOS" ||
+        (colab.situacao_sra || (colab.ativo ? "ATIVO" : "INATIVO")) ===
+          collabStatus;
+      const matchesTeam =
+        collabTeam === "TODOS" || colab.centro_resultado === collabTeam;
+      return matchesSearch && matchesStatus && matchesTeam;
+    });
+  }, [collabSearch, collabStatus, collabTeam, data.colaboradores]);
+
+  const handleSraImport = async (file: File) => {
+    setSraImporting(true);
+    try {
+      const rows = await parseSraWorkbook(file);
+      const result = await syncSraCollaborators(rows);
+      await reload();
+      toast.success(
+        `SRA sincronizado: ${result.total ?? rows.length} colaborador(es) processado(s).`,
+      );
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.message ?? "Falha ao sincronizar o arquivo SRA.");
+    } finally {
+      setSraImporting(false);
+      if (sraInputRef.current) sraInputRef.current.value = "";
+    }
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -671,60 +761,161 @@ function EstoqueEpiPage() {
             </TabsContent>
 
             <TabsContent value="colaboradores" className="mt-3">
-              <GlassCard className="!p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <SectionTitle
-                    icon={Users}
-                    title="Cadastro de colaboradores"
-                    description="Pessoas que podem receber uniformes e EPIs."
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => setCollabDialog("new")}
-                  >
-                    <UserRoundPlus className="mr-2 h-4 w-4" />
-                    Novo colaborador
-                  </Button>
-                </div>
+              <div className="space-y-3">
+                <GlassCard className="!p-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <SectionTitle
+                      icon={Users}
+                      title="Colaboradores • SRA"
+                      description="Base funcional integrada ao almoxarifado para identificar corretamente cada retirada."
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <input
+                        ref={sraInputRef}
+                        type="file"
+                        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        className="hidden"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) void handleSraImport(file);
+                        }}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={sraImporting}
+                        onClick={() => sraInputRef.current?.click()}
+                      >
+                        {sraImporting ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" />
+                        )}
+                        Atualizar SRA
+                      </Button>
+                      <Button size="sm" onClick={() => setCollabDialog("new")}>
+                        <UserRoundPlus className="mr-2 h-4 w-4" />
+                        Novo colaborador
+                      </Button>
+                    </div>
+                  </div>
 
-                <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-                  {data.colaboradores.map((colab) => (
-                    <button
-                      type="button"
-                      key={colab.id}
-                      onClick={() => setCollabDialog(colab)}
-                      className="rounded-xl border border-border/50 bg-background/30 p-3 text-left transition hover:border-primary/25 hover:bg-background/50"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold">
-                            {colab.nome}
-                          </p>
-                          <p className="mt-1 text-[10px] text-muted-foreground">
-                            {colab.matricula || "Sem matrícula"} ·{" "}
-                            {colab.setor || "Sem setor"}
-                          </p>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                    <SraMetric label="No SRA" value={String(sraStats.total)} detail="Colaboradores sincronizados" />
+                    <SraMetric label="Normal" value={String(sraStats.normal)} detail="Situação ativa no SRA" />
+                    <SraMetric label="Férias" value={String(sraStats.ferias)} detail="Identificados no arquivo" />
+                    <SraMetric label="Afastado" value={String(sraStats.afastado)} detail="Identificados no arquivo" tone="warning" />
+                    <SraMetric
+                      label="Treinamento NR 23"
+                      value={sraStats.trainingDate ? fmtDate(sraStats.trainingDate) : "—"}
+                      detail={sraStats.lastSync ? `SRA atualizado em ${fmtDate(sraStats.lastSync)}` : "Sem sincronização"}
+                    />
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-border/45 bg-background/25 p-3">
+                    <p className="text-[10px] leading-4 text-muted-foreground">
+                      O almoxarifado usa os dados operacionais do SRA: matrícula, função, setor, centro/equipe,
+                      situação, admissão, escala, horário, supervisão e treinamento. Dados bancários e documentos
+                      pessoais que não são necessários para entrega de EPI não são importados.
+                    </p>
+                  </div>
+                </GlassCard>
+
+                <GlassCard className="!p-4">
+                  <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_190px_280px]">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        value={collabSearch}
+                        onChange={(event) => setCollabSearch(event.target.value)}
+                        className="pl-9"
+                        placeholder="Buscar por nome, matrícula, função ou equipe..."
+                      />
+                    </div>
+                    <Select value={collabStatus} onValueChange={setCollabStatus}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TODOS">Todas as situações</SelectItem>
+                        <SelectItem value="NORMAL">Normal</SelectItem>
+                        <SelectItem value="FÉRIAS">Férias</SelectItem>
+                        <SelectItem value="AFASTADO">Afastado</SelectItem>
+                        <SelectItem value="ATIVO">Ativo manual</SelectItem>
+                        <SelectItem value="INATIVO">Inativo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={collabTeam} onValueChange={setCollabTeam}>
+                      <SelectTrigger><SelectValue placeholder="Centro / equipe" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TODOS">Todos os centros / equipes</SelectItem>
+                        {collaboratorTeams.map((team) => (
+                          <SelectItem key={team} value={team}>{team}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between px-1">
+                    <p className="text-[9px] text-muted-foreground">
+                      {filteredCollaborators.length} de {data.colaboradores.length} colaborador(es)
+                    </p>
+                    {sraStats.lastSync && (
+                      <Badge variant="outline" className="rounded-full text-[8px]">
+                        SRA sincronizado
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="mt-2 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                    {filteredCollaborators.map((colab) => (
+                      <button
+                        type="button"
+                        key={colab.id}
+                        onClick={() => setCollabDialog(colab)}
+                        className="rounded-xl border border-border/50 bg-background/30 p-3 text-left transition hover:border-primary/25 hover:bg-background/50"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <p className="truncate text-xs font-semibold">{colab.nome}</p>
+                              {colab.origem_sra && (
+                                <Badge variant="outline" className="shrink-0 rounded-full border-emerald-500/20 px-1.5 text-[7px] text-emerald-600 dark:text-emerald-300">
+                                  SRA
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="mt-1 truncate text-[9px] text-muted-foreground">
+                              Matrícula {colab.matricula || "—"} · {colab.funcao || colab.cargo || "Função não informada"}
+                            </p>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "shrink-0 rounded-full text-[8px]",
+                              colab.situacao_sra === "AFASTADO"
+                                ? "border-amber-500/20 text-amber-600 dark:text-amber-300"
+                                : colab.situacao_sra === "FÉRIAS"
+                                  ? "border-sky-500/20 text-sky-600 dark:text-sky-300"
+                                  : colab.ativo
+                                    ? "border-emerald-500/20 text-emerald-600 dark:text-emerald-300"
+                                    : "text-muted-foreground",
+                            )}
+                          >
+                            {colab.situacao_sra || (colab.ativo ? "ATIVO" : "INATIVO")}
+                          </Badge>
                         </div>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "rounded-full text-[9px]",
-                            colab.ativo
-                              ? "border-emerald-500/20 text-emerald-600 dark:text-emerald-300"
-                              : "text-muted-foreground",
-                          )}
-                        >
-                          {colab.ativo ? "Ativo" : "Inativo"}
-                        </Badge>
-                      </div>
-                      <p className="mt-2 text-[10px] text-muted-foreground">
-                        {colab.cargo || "Cargo não informado"}
-                        {colab.unidade ? ` · ${colab.unidade}` : ""}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </GlassCard>
+
+                        <div className="mt-2 space-y-1 text-[9px] text-muted-foreground">
+                          <p className="truncate">{colab.centro_resultado || colab.setor || "Centro/equipe não informado"}</p>
+                          <div className="flex flex-wrap gap-x-2 gap-y-1">
+                            {colab.horario_trabalho && <span>{colab.horario_trabalho}</span>}
+                            {colab.data_admissao && <span>Admissão {fmtDate(colab.data_admissao)}</span>}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </GlassCard>
+              </div>
             </TabsContent>
           </Tabs>
         </GlassCard>
@@ -833,6 +1024,42 @@ function MetricCard({
         </div>
       </div>
     </GlassCard>
+  );
+}
+
+function SraMetric({
+  label,
+  value,
+  detail,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  tone?: "default" | "warning";
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-xl border px-3 py-2.5",
+        tone === "warning"
+          ? "border-amber-500/20 bg-amber-500/[0.04]"
+          : "border-border/45 bg-background/30",
+      )}
+    >
+      <p className="text-[8px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-1 text-base font-bold tracking-tight",
+          tone === "warning" && "text-amber-600 dark:text-amber-300",
+        )}
+      >
+        {value}
+      </p>
+      <p className="mt-0.5 truncate text-[8px] text-muted-foreground">{detail}</p>
+    </div>
   );
 }
 
@@ -1068,9 +1295,24 @@ function DeliveryList({ entregas }: { entregas: EstoqueEntrega[] }) {
                   {entrega.colaborador_nome}
                 </p>
                 <p className="mt-1 text-[9px] text-muted-foreground">
-                  {fmtDate(entrega.data_entrega)} ·{" "}
-                  {entrega.colaborador_setor || "Setor não informado"}
+                  {fmtDate(entrega.data_entrega)}
+                  {entrega.colaborador_matricula ? ` · Mat. ${entrega.colaborador_matricula}` : ""}
+                  {entrega.colaborador_funcao ? ` · ${entrega.colaborador_funcao}` : ""}
                 </p>
+                {(entrega.colaborador_centro_resultado || entrega.colaborador_situacao_sra) && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    {entrega.colaborador_situacao_sra && (
+                      <Badge variant="outline" className="rounded-full px-1.5 text-[7px]">
+                        {entrega.colaborador_situacao_sra}
+                      </Badge>
+                    )}
+                    {entrega.colaborador_centro_resultado && (
+                      <span className="max-w-[360px] truncate text-[8px] text-muted-foreground/80">
+                        {entrega.colaborador_centro_resultado}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <Badge variant="outline" className="rounded-full text-[9px]">
                 {qty} item(ns)
@@ -1629,7 +1871,7 @@ function CollaboratorDialog({
 
   return (
     <Dialog open={Boolean(target)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {collaborator ? "Editar colaborador" : "Novo colaborador"}
@@ -1684,6 +1926,40 @@ function CollaboratorDialog({
             </Select>
           </Field>
         </div>
+        {collaborator?.origem_sra && (
+          <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.035] p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold">Perfil funcional SRA</p>
+                <p className="mt-0.5 text-[9px] text-muted-foreground">
+                  Informações corporativas usadas para identificar a retirada no almoxarifado.
+                </p>
+              </div>
+              <Badge
+                variant="outline"
+                className="rounded-full border-emerald-500/20 text-[8px] text-emerald-600 dark:text-emerald-300"
+              >
+                Sincronizado
+              </Badge>
+            </div>
+
+            <div className="mt-3 grid gap-x-4 gap-y-2 sm:grid-cols-2">
+              <SraInfo label="Função" value={collaborator.funcao || collaborator.cargo} />
+              <SraInfo label="Situação" value={collaborator.situacao_sra} />
+              <SraInfo label="Centro / equipe" value={collaborator.centro_resultado} />
+              <SraInfo label="Setor do negócio" value={collaborator.setor_negocio || collaborator.setor} />
+              <SraInfo label="Admissão" value={collaborator.data_admissao ? fmtDate(collaborator.data_admissao) : null} />
+              <SraInfo label="Treinamento NR 23" value={collaborator.data_treinamento ? fmtDate(collaborator.data_treinamento) : null} />
+              <SraInfo label="Escala" value={collaborator.escala} />
+              <SraInfo label="Horário" value={collaborator.horario_trabalho} />
+              <SraInfo label="Intervalo" value={collaborator.intervalo_trabalho} />
+              <SraInfo label="Supervisor" value={collaborator.supervisor} />
+              <SraInfo label="Gerente" value={collaborator.gerente} />
+              <SraInfo label="Local" value={collaborator.local_trabalho || collaborator.unidade} />
+            </div>
+          </div>
+        )}
+
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button
@@ -1810,7 +2086,7 @@ function DeliveryDialog({
                   <SelectContent>
                     {colaboradores.map((colab) => (
                       <SelectItem key={colab.id} value={colab.id}>
-                        {colab.nome}{colab.matricula ? ` · ${colab.matricula}` : ""}
+                        {colab.nome}{colab.matricula ? ` · ${colab.matricula}` : ""}{colab.funcao ? ` · ${colab.funcao}` : ""}{colab.situacao_sra && colab.situacao_sra !== "NORMAL" ? ` · ${colab.situacao_sra}` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1951,6 +2227,25 @@ function DeliveryDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function SraInfo({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | null;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
+        {label}
+      </p>
+      <p className="mt-0.5 truncate text-[10px] font-medium" title={value || "—"}>
+        {value || "—"}
+      </p>
+    </div>
   );
 }
 
