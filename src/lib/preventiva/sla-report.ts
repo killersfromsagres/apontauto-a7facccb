@@ -317,7 +317,7 @@ export async function generateSlaDeadlineReport(
 
       row.getCell(1).font = {
         bold: true,
-        color: isUrgent ? WARNING_TEXT : teamColor,
+        color: { argb: isUrgent ? WARNING_TEXT : teamColor },
       };
       if (isUrgent) {
         row.getCell(1).fill = {
