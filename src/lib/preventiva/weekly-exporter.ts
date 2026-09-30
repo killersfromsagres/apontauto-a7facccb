@@ -225,13 +225,17 @@ function isSlaPriorityPreventive(item: TriagedOS): boolean {
 
 function sortDayItems(items: TriagedOS[]): TriagedOS[] {
   return [...items].sort((a, b) => {
-    const backorderOrder =
-      Number(Boolean(b.raw?.programacaoBackorder)) -
-      Number(Boolean(a.raw?.programacaoBackorder));
-    if (backorderOrder !== 0) return backorderOrder;
-
+    // Regra operacional absoluta: cada dia começa pelas preventivas e termina
+    // pelas corretivas. Backorder/criticidade só ordenam dentro das corretivas.
     const correctiveOrder = Number(isCorrective(a)) - Number(isCorrective(b));
     if (correctiveOrder !== 0) return correctiveOrder;
+
+    if (isCorrective(a) && isCorrective(b)) {
+      const backorderOrder =
+        Number(Boolean(b.raw?.programacaoBackorder)) -
+        Number(Boolean(a.raw?.programacaoBackorder));
+      if (backorderOrder !== 0) return backorderOrder;
+    }
 
     const slaPriorityOrder =
       Number(isSlaPriorityPreventive(b)) -
