@@ -351,9 +351,13 @@ function rebuildProgramSheetByTeam(
       const teamRows = source.rows.filter(
         (row) => normalize(snapshotTeam(row)) === normalize(team),
       );
+      const preventiveRows = teamRows.filter(
+        (row) => !isCorrectiveSnapshot(row),
+      );
       const correctiveRows = teamRows.filter(isCorrectiveSnapshot);
-      // Preserva a ordem produzida pelo gerador: backorders já vêm primeiro.
-      const orderedRows = teamRows;
+      // Defesa adicional para o arquivo final: nenhuma corretiva pode aparecer
+      // antes das preventivas do mesmo dia/equipe.
+      const orderedRows = [...preventiveRows, ...correctiveRows];
       const bandParts = source.bandText.split(" • ");
       const dayAndDate = bandParts.slice(0, 2).join(" • ");
 
@@ -808,8 +812,14 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
     const titleRow = sheet.getRow(1);
     const days = readDaySections(sheet);
     const sections = days.map((day, index) => {
-      const preventiveCount = day.rows.filter((row) => !isCorrectiveRow(row)).length;
-      const correctiveCount = day.rows.filter(isCorrectiveRow).length;
+      const orderedRows = [
+        ...day.rows.filter((row) => !isCorrectiveRow(row)),
+        ...day.rows.filter(isCorrectiveRow),
+      ];
+      const preventiveCount = orderedRows.filter(
+        (row) => !isCorrectiveRow(row),
+      ).length;
+      const correctiveCount = orderedRows.filter(isCorrectiveRow).length;
       const bandParts = day.band.getCell(1).text.split(" • ");
       const dayLabel = bandParts.slice(0, 2).join(" • ");
       const team =
@@ -818,10 +828,10 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
         "EQUIPE";
       const pageTitle = `${team} • ${weekLabel(weekNumber)} •`;
       const bandLabel = `${dayLabel} • ${preventiveCount} PREVENTIVAS • ${correctiveCount} CORRETIVAS`;
-      const rowCount = Math.max(day.rows.length, 1);
-      const bodyFont = rowCount >= 18 ? 7.9 : rowCount >= 15 ? 8.25 : 8.65;
-      const body = day.rows.length
-        ? day.rows
+      const rowCount = Math.max(orderedRows.length, 1);
+      const bodyFont = rowCount >= 18 ? 6.4 : rowCount >= 14 ? 6.8 : 7.3;
+      const body = orderedRows.length
+        ? orderedRows
             .map((row) =>
               renderRow(
                 row,
@@ -842,35 +852,41 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
     });
 
     const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Programação semanal</title><style>
-      @page { size: A4 landscape; margin: 3mm; }
+      @page { size: A4 landscape; margin: 5mm; }
       * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-      html, body { margin: 0; background: #fff; font-family: Aptos, Arial, sans-serif; color: #162231; }
-      .day-sheet { height: 203mm; break-before: page; page-break-before: always; break-after: page; page-break-after: always; }
+      html, body { margin: 0; background: #fff; font-family: Arial, Helvetica, sans-serif; color: #162231; }
+      .day-sheet { break-before: page; page-break-before: always; break-after: page; page-break-after: always; }
       .day-sheet:first-child { break-before: auto; page-break-before: auto; }
       .day-sheet.last-day { break-after: auto; page-break-after: auto; }
-      table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; }
+      table { width: 100%; border-collapse: collapse; table-layout: fixed; }
       thead { display: table-header-group; }
       tbody { display: table-row-group; }
       tr { break-inside: avoid; page-break-inside: avoid; }
-      td { border: 1px solid #DDE5EC; padding: 4px 4.5px; font-size: var(--body-font); line-height: 1.16; vertical-align: middle; overflow-wrap: anywhere; white-space: normal; }
-      .title-row { height: 13mm; }
-      .title-row td { padding: 5px; font-size: 15pt; letter-spacing: .02em; }
-      .day-band { height: 9mm; }
-      .day-band td { padding: 4px 6px; font-size: 10pt; }
-      .column-header { height: 9mm; }
-      .column-header td { padding: 3.5px; font-size: 8.1pt; }
-      tbody tr { height: calc(170mm / var(--row-count)); }
-      .data-row td:nth-child(2), .data-row td:nth-child(5), .data-row td:nth-child(10) { font-size: calc(var(--body-font) + .45pt); line-height: 1.19; }
-      .corrective-row { height: auto; min-height: calc(170mm / var(--row-count)); }
-      .corrective-row td { white-space: normal; overflow-wrap: anywhere; }
-      .empty-row td { text-align: center; font-size: 12pt; font-weight: 700; background: #F7FAFC; }
-      td:nth-child(1){width:6%} td:nth-child(2){width:27%} td:nth-child(3){width:7%} td:nth-child(4){width:6%}
+      td {
+        border: 1px solid #DDE5EC;
+        padding: 2.4px 3px;
+        font-size: var(--body-font);
+        line-height: 1.28;
+        vertical-align: middle;
+        overflow-wrap: break-word;
+        word-break: normal;
+        white-space: normal;
+      }
+      .title-row td { padding: 4px; font-size: 11.5pt; line-height: 1.15; }
+      .day-band td { padding: 3.5px 5px; font-size: 8.5pt; line-height: 1.18; }
+      .column-header td { padding: 3px 2.5px; font-size: 7pt; line-height: 1.15; }
+      .data-row td:nth-child(2), .data-row td:nth-child(5), .data-row td:nth-child(10) {
+        font-size: calc(var(--body-font) + .2pt);
+        line-height: 1.3;
+      }
+      .corrective-row td { white-space: normal; overflow-wrap: break-word; }
+      .empty-row td { text-align: center; font-size: 10pt; font-weight: 700; background: #F7FAFC; padding: 10px; }
+      td:nth-child(1){width:6%} td:nth-child(2){width:28%} td:nth-child(3){width:7%} td:nth-child(4){width:6%}
       td:nth-child(5){width:12%} td:nth-child(6){width:7%} td:nth-child(7){width:7%} td:nth-child(8){width:10%}
-      td:nth-child(9){width:8%} td:nth-child(10){width:10%}
+      td:nth-child(9){width:8%} td:nth-child(10){width:9%}
       @media print {
-        .day-sheet { height: 203mm !important; break-before: page !important; page-break-before: always !important; break-after: page !important; page-break-after: always !important; }
+        .day-sheet { break-before: page !important; page-break-before: always !important; }
         .day-sheet:first-child { break-before: auto !important; page-break-before: auto !important; }
-        .day-sheet.last-day { break-after: auto !important; page-break-after: auto !important; }
       }
     </style></head><body>${sections.join("")}</body></html>`;
 
@@ -879,7 +895,8 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
     printWindow.document.close();
     await printWindow.document.fonts?.ready;
     printWindow.focus();
-    printWindow.setTimeout(() => printWindow.print(), 250);
+    // Pequeno atraso apenas para o navegador concluir layout/paginação.
+    printWindow.setTimeout(() => printWindow.print(), 450);
   } catch (error) {
     printWindow.close();
     throw error;
