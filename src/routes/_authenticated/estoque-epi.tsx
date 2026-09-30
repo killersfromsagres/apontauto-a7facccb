@@ -1295,9 +1295,24 @@ function DeliveryList({ entregas }: { entregas: EstoqueEntrega[] }) {
                   {entrega.colaborador_nome}
                 </p>
                 <p className="mt-1 text-[9px] text-muted-foreground">
-                  {fmtDate(entrega.data_entrega)} ·{" "}
-                  {entrega.colaborador_setor || "Setor não informado"}
+                  {fmtDate(entrega.data_entrega)}
+                  {entrega.colaborador_matricula ? ` · Mat. ${entrega.colaborador_matricula}` : ""}
+                  {entrega.colaborador_funcao ? ` · ${entrega.colaborador_funcao}` : ""}
                 </p>
+                {(entrega.colaborador_centro_resultado || entrega.colaborador_situacao_sra) && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    {entrega.colaborador_situacao_sra && (
+                      <Badge variant="outline" className="rounded-full px-1.5 text-[7px]">
+                        {entrega.colaborador_situacao_sra}
+                      </Badge>
+                    )}
+                    {entrega.colaborador_centro_resultado && (
+                      <span className="max-w-[360px] truncate text-[8px] text-muted-foreground/80">
+                        {entrega.colaborador_centro_resultado}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <Badge variant="outline" className="rounded-full text-[9px]">
                 {qty} item(ns)
@@ -2071,7 +2086,7 @@ function DeliveryDialog({
                   <SelectContent>
                     {colaboradores.map((colab) => (
                       <SelectItem key={colab.id} value={colab.id}>
-                        {colab.nome}{colab.matricula ? ` · ${colab.matricula}` : ""}{colab.funcao ? ` · ${colab.funcao}` : ""}
+                        {colab.nome}{colab.matricula ? ` · ${colab.matricula}` : ""}{colab.funcao ? ` · ${colab.funcao}` : ""}{colab.situacao_sra && colab.situacao_sra !== "NORMAL" ? ` · ${colab.situacao_sra}` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
