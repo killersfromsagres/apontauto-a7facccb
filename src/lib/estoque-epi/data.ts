@@ -280,6 +280,17 @@ export async function registerEstoqueMovement(input: {
   valorUnitario?: number | null;
   dataMovimento?: string | null;
 }) {
+  if (!input.dataMovimento) {
+    throw new Error("Informe a data da movimentação.");
+  }
+  if (
+    input.tipo === "saida" &&
+    !input.colaboradorId &&
+    !input.colaboradorNome?.trim()
+  ) {
+    throw new Error("Informe o colaborador que realizou a retirada.");
+  }
+
   const { data, error } = await db.rpc("registrar_movimento_estoque_epi", {
     _item_id: input.itemId,
     _tipo: input.tipo,
@@ -302,6 +313,16 @@ export async function registerEstoqueDelivery(input: {
   observacao?: string | null;
   dataEntrega?: string | null;
 }) {
+  if (!input.colaboradorId) {
+    throw new Error("Selecione o colaborador que realizou a retirada.");
+  }
+  if (!input.dataEntrega) {
+    throw new Error("Informe a data da retirada.");
+  }
+  if (!input.itens.length) {
+    throw new Error("Adicione pelo menos um item à retirada.");
+  }
+
   const { data, error } = await db.rpc("registrar_entrega_epi", {
     _colaborador_id: input.colaboradorId,
     _itens: input.itens.map((item) => ({

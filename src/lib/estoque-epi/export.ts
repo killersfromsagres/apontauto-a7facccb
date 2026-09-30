@@ -259,13 +259,13 @@ function addMovementSheet(workbook: any, movimentos: EstoqueMovimento[]) {
   addTitle(
     sheet,
     "MOVIMENTAÇÕES DE ESTOQUE",
-    `Entradas, saídas, devoluções, ajustes e descartes • ${movimentos.length} registros`,
+    `Datas reais de entrada/retirada, colaboradores e ajustes • ${movimentos.length} registros`,
     14,
     CYAN,
   );
   sheet.addRow([]);
   const header = sheet.addRow([
-    "Data",
+    "Data da entrada / retirada",
     "Tipo",
     "Código",
     "Item",
@@ -331,7 +331,7 @@ function addDeliverySheet(workbook: any, entregas: EstoqueEntrega[]) {
   );
   sheet.addRow([]);
   const header = sheet.addRow([
-    "Data",
+    "Data da retirada",
     "Colaborador",
     "Matrícula",
     "Setor",
