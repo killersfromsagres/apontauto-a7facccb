@@ -755,7 +755,6 @@ function EstoqueEpiPage() {
       <MovementDialog
         item={movementItem}
         initialType={movementKind}
-        colaboradores={data.colaboradores.filter((c) => c.ativo)}
         onClose={() => setMovementItem(null)}
         onSaved={async () => {
           setMovementItem(null);
@@ -864,17 +863,21 @@ function EmptyState({ text }: { text: string }) {
 function StockRow({
   item,
   compact = false,
-  onMovement,
+  onEntry,
+  onWithdraw,
+  onAdjust,
   onEdit,
 }: {
   item: EstoqueItem;
   compact?: boolean;
-  onMovement: (type: EstoqueMovementType) => void;
+  onEntry: () => void;
+  onWithdraw: () => void;
+  onAdjust: (type: EstoqueMovementType) => void;
   onEdit: () => void;
 }) {
   const status = estoqueStatus(item);
   return (
-    <div className="grid gap-2 rounded-xl border border-border/45 bg-background/30 p-2.5 transition-colors hover:bg-background/50 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+    <div className="grid gap-2 rounded-xl border border-border/45 bg-background/30 p-2.5 transition-colors hover:border-primary/15 hover:bg-background/50 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
       <div className="min-w-0">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <p className="min-w-0 flex-1 truncate text-xs font-semibold">
@@ -897,8 +900,9 @@ function StockRow({
           )}
         </div>
       </div>
-      <div className="flex items-center justify-between gap-2 md:justify-end">
-        <div className="text-right">
+
+      <div className="flex flex-wrap items-center justify-between gap-2 md:justify-end">
+        <div className="mr-1 text-right">
           <p className="text-sm font-bold">
             {item.estoque_atual.toLocaleString("pt-BR")}{" "}
             <span className="text-[9px] font-medium text-muted-foreground">
@@ -909,34 +913,45 @@ function StockRow({
             Ideal {item.estoque_ideal ?? "—"}
           </p>
         </div>
+
         {!compact && (
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 rounded-lg text-emerald-600"
-              title="Registrar entrada"
-              onClick={() => onMovement("entrada")}
+              size="sm"
+              variant="outline"
+              className="h-8 rounded-lg border-emerald-500/20 bg-emerald-500/[0.04] px-2.5 text-[9px] text-emerald-700 hover:bg-emerald-500/[0.09] dark:text-emerald-300"
+              onClick={onEntry}
             >
-              <ArrowDownToLine className="h-4 w-4" />
+              <ArrowDownToLine className="mr-1 h-3.5 w-3.5" />
+              Entrada
             </Button>
             <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 rounded-lg text-amber-600"
-              title="Registrar saída"
-              onClick={() => onMovement("saida")}
+              size="sm"
+              variant="outline"
+              className="h-8 rounded-lg border-sky-500/20 bg-sky-500/[0.04] px-2.5 text-[9px] text-sky-700 hover:bg-sky-500/[0.09] dark:text-sky-300"
+              onClick={onWithdraw}
+              disabled={item.estoque_atual <= 0}
             >
-              <ArrowUpFromLine className="h-4 w-4" />
+              <ArrowUpFromLine className="mr-1 h-3.5 w-3.5" />
+              Saída
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 rounded-lg px-2 text-[9px] text-muted-foreground"
+              title="Ajustar saldo, registrar devolução ou descarte"
+              onClick={() => onAdjust("ajuste_positivo")}
+            >
+              Ajuste
             </Button>
             <Button
               size="icon"
               variant="ghost"
               className="h-8 w-8 rounded-lg"
-              title="Editar item"
+              title="Editar cadastro do item"
               onClick={onEdit}
             >
-              <Edit3 className="h-4 w-4" />
+              <Edit3 className="h-3.5 w-3.5" />
             </Button>
           </div>
         )}
@@ -1209,119 +1224,314 @@ function ItemDialog({
   );
 }
 
+function EntryDialog({
+  open,
+  initialItemId,
+  items,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  initialItemId: string | null;
+  items: EstoqueItem[];
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const [itemId, setItemId] = useState("");
+  const [quantidade, setQuantidade] = useState("1");
+  const [dataEntrada, setDataEntrada] = useState(todayIso());
+  const [valorUnitario, setValorUnitario] = useState("");
+  const [documento, setDocumento] = useState("");
+  const [origem, setOrigem] = useState("");
+  const [observacao, setObservacao] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setItemId(initialItemId ?? "");
+    setQuantidade("1");
+    setDataEntrada(todayIso());
+    setValorUnitario("");
+    setDocumento("");
+    setOrigem("");
+    setObservacao("");
+  }, [initialItemId, open]);
+
+  const selected = items.find((item) => item.id === itemId) ?? null;
+  const amount = Number(quantidade.replace(",", "."));
+  const valid = Boolean(
+    itemId &&
+      dataEntrada &&
+      Number.isFinite(amount) &&
+      amount > 0,
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
+              <PackagePlus className="h-5 w-5" />
+            </span>
+            <div>
+              <DialogTitle>Registrar entrada no estoque</DialogTitle>
+              <DialogDescription className="mt-1">
+                Informe o item, a quantidade e a data real em que o material entrou.
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.035] p-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Item *" className="sm:col-span-2">
+              <Select value={itemId} onValueChange={setItemId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o item que entrou..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {items.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.descricao} · saldo {item.estoque_atual} {item.unidade}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field label="Quantidade recebida *">
+              <Input
+                inputMode="decimal"
+                value={quantidade}
+                onChange={(e) => setQuantidade(e.target.value)}
+              />
+            </Field>
+
+            <Field label="Data da entrada *">
+              <div className="relative">
+                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="date"
+                  className="pl-9"
+                  value={dataEntrada}
+                  onChange={(e) => setDataEntrada(e.target.value)}
+                />
+              </div>
+            </Field>
+
+            <Field label="Valor unitário da entrada">
+              <Input
+                inputMode="decimal"
+                value={valorUnitario}
+                onChange={(e) => setValorUnitario(e.target.value)}
+                placeholder="0,00"
+              />
+            </Field>
+
+            <Field label="Documento / Nota fiscal">
+              <Input
+                value={documento}
+                onChange={(e) => setDocumento(e.target.value)}
+                placeholder="NF, pedido ou protocolo"
+              />
+            </Field>
+
+            <Field label="Fornecedor / origem" className="sm:col-span-2">
+              <Input
+                value={origem}
+                onChange={(e) => setOrigem(e.target.value)}
+                placeholder="Ex.: compra, devolução do almoxarifado, transferência..."
+              />
+            </Field>
+
+            <Field label="Observação" className="sm:col-span-2">
+              <Textarea
+                rows={2}
+                value={observacao}
+                onChange={(e) => setObservacao(e.target.value)}
+                placeholder="Informação opcional sobre esta entrada"
+              />
+            </Field>
+          </div>
+        </div>
+
+        {selected && (
+          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-background/35 px-3 py-2.5">
+            <div>
+              <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Saldo atual</p>
+              <p className="text-sm font-semibold">{selected.estoque_atual} {selected.unidade}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Saldo após entrada</p>
+              <p className="text-sm font-semibold text-emerald-600">
+                {(selected.estoque_atual + (Number.isFinite(amount) ? amount : 0)).toLocaleString("pt-BR")} {selected.unidade}
+              </p>
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button
+            disabled={saving || !valid}
+            className="bg-emerald-600 text-white hover:bg-emerald-700"
+            onClick={async () => {
+              if (!valid) return;
+              setSaving(true);
+              try {
+                await registerEstoqueMovement({
+                  itemId,
+                  tipo: "entrada",
+                  quantidade: amount,
+                  motivo: origem || "Entrada de estoque",
+                  documento,
+                  observacao,
+                  valorUnitario: numberValue(valorUnitario),
+                  dataMovimento: dataEntrada,
+                });
+                toast.success(
+                  `Entrada registrada em ${fmtDate(dataEntrada)}. Saldo atualizado.`,
+                );
+                await onSaved();
+              } catch (error: any) {
+                toast.error(error?.message ?? "Falha ao registrar entrada.");
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            {saving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <PackagePlus className="mr-2 h-4 w-4" />
+            )}
+            Confirmar entrada
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function MovementDialog({
   item,
   initialType,
-  colaboradores,
   onClose,
   onSaved,
 }: {
   item: EstoqueItem | null;
   initialType: EstoqueMovementType;
-  colaboradores: EstoqueColaborador[];
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
   const [tipo, setTipo] = useState<EstoqueMovementType>(initialType);
   const [quantidade, setQuantidade] = useState("1");
-  const [colaboradorId, setColaboradorId] = useState("SEM_COLABORADOR");
   const [motivo, setMotivo] = useState("");
-  const [documento, setDocumento] = useState("");
   const [observacao, setObservacao] = useState("");
-  const [valorUnitario, setValorUnitario] = useState("");
   const [dataMovimento, setDataMovimento] = useState(todayIso());
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setTipo(initialType);
+    const allowed: EstoqueMovementType[] = [
+      "devolucao",
+      "ajuste_positivo",
+      "ajuste_negativo",
+      "descarte",
+    ];
+    setTipo(allowed.includes(initialType) ? initialType : "ajuste_positivo");
     setQuantidade("1");
-    setColaboradorId("SEM_COLABORADOR");
     setMotivo("");
-    setDocumento("");
     setObservacao("");
-    setValorUnitario("");
     setDataMovimento(todayIso());
   }, [initialType, item?.id]);
+
+  const amount = Number(quantidade.replace(",", "."));
+  const negative = ["ajuste_negativo", "descarte"].includes(tipo);
+  const projected = item
+    ? item.estoque_atual + (negative ? -amount : amount)
+    : 0;
 
   return (
     <Dialog open={Boolean(item)} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Movimentar estoque</DialogTitle>
+          <DialogTitle>Ajustar saldo do estoque</DialogTitle>
           <DialogDescription>
-            {item?.descricao} · Saldo atual {item?.estoque_atual ?? 0} {item?.unidade}
+            Use somente para devolução, correção de inventário ou descarte. Entrada e saída possuem fluxos próprios.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="rounded-xl border border-border/50 bg-background/30 p-3">
+          <p className="text-xs font-semibold">{item?.descricao}</p>
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            Saldo atual: {item?.estoque_atual ?? 0} {item?.unidade}
+          </p>
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Tipo">
+          <Field label="Tipo de ajuste *">
             <Select value={tipo} onValueChange={(value) => setTipo(value as EstoqueMovementType)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {(Object.keys(MOVEMENT_LABELS) as EstoqueMovementType[]).map((key) => (
-                  <SelectItem key={key} value={key}>{MOVEMENT_LABELS[key]}</SelectItem>
-                ))}
+                <SelectItem value="devolucao">Devolução ao estoque</SelectItem>
+                <SelectItem value="ajuste_positivo">Ajuste positivo</SelectItem>
+                <SelectItem value="ajuste_negativo">Ajuste negativo</SelectItem>
+                <SelectItem value="descarte">Descarte / perda</SelectItem>
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Quantidade">
+          <Field label="Quantidade *">
             <Input
               inputMode="decimal"
               value={quantidade}
               onChange={(e) => setQuantidade(e.target.value)}
             />
           </Field>
-          <Field label="Data">
+          <Field label="Data do ajuste *">
             <Input
               type="date"
               value={dataMovimento}
               onChange={(e) => setDataMovimento(e.target.value)}
             />
           </Field>
-          <Field label="Colaborador">
-            <Select value={colaboradorId} onValueChange={setColaboradorId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="SEM_COLABORADOR">Não vincular</SelectItem>
-                {colaboradores.map((colab) => (
-                  <SelectItem key={colab.id} value={colab.id}>{colab.nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          {tipo === "entrada" && (
-            <Field label="Valor unitário da compra">
-              <Input
-                inputMode="decimal"
-                value={valorUnitario}
-                onChange={(e) => setValorUnitario(e.target.value)}
-              />
-            </Field>
-          )}
-          <Field label="Documento / NF">
-            <Input
-              value={documento}
-              onChange={(e) => setDocumento(e.target.value)}
-            />
-          </Field>
-          <Field label="Motivo" className="sm:col-span-2">
+          <Field label="Motivo *">
             <Input
               value={motivo}
               onChange={(e) => setMotivo(e.target.value)}
-              placeholder="Ex.: compra, entrega, inventário, avaria..."
+              placeholder="Ex.: inventário, avaria, devolução..."
             />
           </Field>
           <Field label="Observação" className="sm:col-span-2">
             <Textarea
-              rows={3}
+              rows={2}
               value={observacao}
               onChange={(e) => setObservacao(e.target.value)}
             />
           </Field>
         </div>
+
+        {item && Number.isFinite(amount) && amount > 0 && (
+          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-background/35 px-3 py-2">
+            <span className="text-[10px] text-muted-foreground">Saldo após ajuste</span>
+            <span className={cn("text-sm font-semibold", projected < 0 && "text-rose-600")}>
+              {projected.toLocaleString("pt-BR")} {item.unidade}
+            </span>
+          </div>
+        )}
+
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button
-            disabled={saving || !item || Number(quantidade.replace(",", ".")) <= 0}
+            disabled={
+              saving ||
+              !item ||
+              !dataMovimento ||
+              !motivo.trim() ||
+              !Number.isFinite(amount) ||
+              amount <= 0 ||
+              projected < 0
+            }
             onClick={async () => {
               if (!item) return;
               setSaving(true);
@@ -1329,26 +1539,22 @@ function MovementDialog({
                 await registerEstoqueMovement({
                   itemId: item.id,
                   tipo,
-                  quantidade: Number(quantidade.replace(",", ".")),
-                  colaboradorId:
-                    colaboradorId === "SEM_COLABORADOR" ? null : colaboradorId,
+                  quantidade: amount,
                   motivo,
-                  documento,
                   observacao,
-                  valorUnitario: numberValue(valorUnitario),
                   dataMovimento,
                 });
-                toast.success("Movimentação registrada e saldo atualizado.");
+                toast.success("Ajuste registrado no histórico.");
                 await onSaved();
               } catch (error: any) {
-                toast.error(error?.message ?? "Falha ao movimentar estoque.");
+                toast.error(error?.message ?? "Falha ao ajustar estoque.");
               } finally {
                 setSaving(false);
               }
             }}
           >
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Confirmar
+            Confirmar ajuste
           </Button>
         </DialogFooter>
       </DialogContent>
