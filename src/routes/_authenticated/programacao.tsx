@@ -946,88 +946,99 @@ function ProgramacaoPage() {
         )}
 
         {generated.length > 0 && (
-          <GlassCard className="!p-4">
-            <div className="space-y-3">
+          <GlassCard className="!p-3">
+            <div className="space-y-2.5">
               <SectionHeading
                 step="04"
                 icon={FileCheck2}
                 title="Relatório semanal"
-                description="Arquivos gerados desta programação, em um formato compacto para baixar ou imprimir."
+                description="Arquivos da programação em uma lista compacta, com ações sempre à esquerda."
                 aside={
-                  <Badge className="rounded-full px-2.5 py-1 text-[9px]">
+                  <Badge variant="outline" className="rounded-full px-2 py-0.5 text-[8px]">
                     {generated.length} arquivo(s)
                   </Badge>
                 }
               />
 
-              <div className="divide-y divide-border/40 overflow-hidden rounded-xl border border-border/50 bg-background/25">
-                {generated.map((file) => (
+              <div className="overflow-hidden rounded-xl border border-border/50 bg-background/20">
+                {generated.map((file, index) => (
                   <div
                     key={file.id}
-                    className="flex flex-col gap-3 px-3 py-2.5 transition-colors hover:bg-background/50 sm:flex-row sm:items-center"
+                    className={cn(
+                      "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2.5 px-2.5 py-2 transition-colors hover:bg-background/45",
+                      index > 0 && "border-t border-border/35",
+                    )}
                   >
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/[0.07] text-emerald-500">
-                        <FileSpreadsheet className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <p className="truncate text-xs font-semibold" title={file.filename}>
-                            {file.filename}
-                          </p>
-                          <Badge variant="outline" className="hidden shrink-0 rounded-full px-2 text-[8px] sm:inline-flex">
-                            Semana {file.week}
-                          </Badge>
-                        </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                          <ResultChip label="Prev." value={file.preventiveCount} compact />
-                          <ResultChip label="Corr." value={file.correctiveCount} compact emphasis />
-                          <span className="hidden text-[9px] text-muted-foreground lg:inline">
-                            {file.slotLabel}
-                          </span>
-                        </div>
-                      </div>
+                    <div className="flex shrink-0 items-center gap-1 rounded-lg border border-border/45 bg-background/55 p-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 rounded-md text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-600 dark:text-emerald-300"
+                        onClick={() => {
+                          downloadBlob(file.blob, file.filename);
+                          toast.success(`${file.filename} enviado para download.`);
+                        }}
+                        aria-label={`Baixar ${file.filename}`}
+                        title="Baixar planilha"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 rounded-md text-primary hover:bg-primary/10"
+                        onClick={() => void handlePrint(file.blob)}
+                        aria-label={`Imprimir ${file.filename}`}
+                        title="Imprimir programação"
+                      >
+                        <Printer className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-1.5 sm:flex sm:shrink-0">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="h-8 rounded-lg px-3 text-[10px]"
-                        onClick={() => downloadBlob(file.blob, file.filename)}
-                      >
-                        <Download className="mr-1.5 h-3.5 w-3.5" />
-                        Baixar
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="h-8 rounded-lg px-3 text-[10px]"
-                        onClick={() => void handlePrint(file.blob)}
-                      >
-                        <Printer className="mr-1.5 h-3.5 w-3.5" />
-                        Imprimir
-                      </Button>
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <FileSpreadsheet className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                        <p className="min-w-0 flex-1 truncate text-[11px] font-semibold" title={file.filename}>
+                          {file.filename}
+                        </p>
+                        <Badge variant="outline" className="shrink-0 rounded-full px-1.5 py-0 text-[8px]">
+                          S{file.week}
+                        </Badge>
+                      </div>
+
+                      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
+                        <ResultChip label="Prev." value={file.preventiveCount} compact />
+                        <ResultChip label="Corr." value={file.correctiveCount} compact emphasis />
+                        <ResultChip label="Saldo" value={formatMinutes(file.remainingMinutes)} compact />
+                        <span className="hidden max-w-[240px] truncate text-[8px] text-muted-foreground lg:inline">
+                          {file.slotLabel}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
+
+              <p className="px-1 text-[9px] leading-4 text-muted-foreground/70">
+                Os controles ficam à esquerda para não serem encobertos pelo painel de downloads do navegador.
+              </p>
             </div>
           </GlassCard>
         )}
 
-        <GlassCard>
-          <div className="space-y-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <GlassCard className="!p-3">
+          <div className="space-y-2.5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <SectionHeading
                 icon={History}
                 title="Histórico semanal"
-                description="Arquivos persistentes na sua conta. Atualize a página ou apague o download do computador e baixe novamente quando precisar."
+                description="Arquivos persistentes e recuperáveis, em visual compacto."
               />
               {historico.length > 0 && (
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="self-start rounded-xl text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive sm:self-auto"
+                  className="h-8 self-start rounded-lg px-2.5 text-[10px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive sm:self-auto"
                   onClick={async () => {
                     if (!window.confirm("Limpar todo o histórico de programações?")) return;
                     await clearHistorico();
@@ -1048,20 +1059,20 @@ function ProgramacaoPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {historyGroups.map(([group, items]) => (
                   <details
                     key={group}
-                    className="group overflow-hidden rounded-2xl border border-border/60 bg-background/30 transition-all duration-200 open:border-primary/20 open:bg-background/45"
+                    className="group overflow-hidden rounded-xl border border-border/50 bg-background/25 transition-all duration-200 open:border-primary/20 open:bg-background/40"
                     open={historyGroups.length <= 2}
                   >
-                    <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 outline-none transition-colors hover:bg-accent/25 focus-visible:ring-2 focus-visible:ring-primary/40">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/8 text-primary">
-                        <CalendarDays className="h-4 w-4" />
+                    <summary className="flex cursor-pointer list-none items-center gap-2.5 px-3 py-2.5 outline-none transition-colors hover:bg-accent/25 focus-visible:ring-2 focus-visible:ring-primary/40">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
+                        <CalendarDays className="h-3.5 w-3.5" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold">Semana {items[0].week}</span>
-                        <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                        <span className="block text-xs font-semibold">Semana {items[0].week}</span>
+                        <span className="mt-0.5 block text-[9px] text-muted-foreground">
                           {items[0].periodStart ?? "arquivo anterior"} a {items[0].periodEnd ?? "—"}
                         </span>
                       </span>
@@ -1084,18 +1095,49 @@ function ProgramacaoPage() {
                       </Badge>
                       <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-open:rotate-90" />
                     </summary>
-                    <div className="grid gap-2 border-t border-border/50 p-3 xl:grid-cols-2">
+                    <div className="divide-y divide-border/35 border-t border-border/40">
                       {items.map((item) => (
                         <div
                           key={item.id}
-                          className="flex flex-col gap-3 rounded-xl border border-border/40 bg-background/50 p-3 transition-colors duration-200 hover:bg-background/70 sm:flex-row sm:items-center sm:justify-between"
+                          className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 px-2.5 py-2 transition-colors hover:bg-background/55"
                         >
+                          <div className="flex shrink-0 items-center gap-1 rounded-lg border border-border/40 bg-background/55 p-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 rounded-md text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-600 dark:text-emerald-300"
+                              disabled={historyBusyId === item.id}
+                              onClick={() => void handleHistoryDownload(item)}
+                              aria-label="Baixar"
+                              title="Baixar novamente"
+                            >
+                              {historyBusyId === item.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Download className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 rounded-md text-primary hover:bg-primary/10"
+                              disabled={historyBusyId === item.id}
+                              onClick={() => void handleHistoryPrint(item)}
+                              aria-label="Imprimir"
+                              title="Imprimir programação"
+                            >
+                              <Printer className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+
                           <div className="min-w-0">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <p className="truncate text-xs font-semibold">{item.slotLabel}</p>
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <p className="min-w-0 flex-1 truncate text-[10px] font-semibold">
+                                {item.slotLabel}
+                              </p>
                               <span
                                 className={cn(
-                                  "inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide",
+                                  "inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-wide",
                                   item.persistent !== false
                                     ? "border-emerald-500/20 bg-emerald-500/[0.05] text-emerald-600 dark:text-emerald-300"
                                     : "border-amber-500/20 bg-amber-500/[0.05] text-amber-600 dark:text-amber-300",
@@ -1105,52 +1147,26 @@ function ProgramacaoPage() {
                                 {item.persistent !== false ? "Nuvem" : "Local"}
                               </span>
                             </div>
-                            <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            <div className="mt-1 flex flex-wrap gap-1">
                               <ResultChip label="Prev." value={item.preventiveCount ?? item.totalOS} compact />
                               <ResultChip label="Corr." value={item.correctiveCount ?? 0} compact emphasis />
                               <ResultChip label="Saldo" value={formatMinutes(item.remainingMinutes ?? 0)} compact />
                             </div>
                           </div>
-                          <div className="grid shrink-0 grid-cols-3 gap-1.5 sm:flex">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="rounded-lg"
-                              disabled={historyBusyId === item.id}
-                              onClick={() => void handleHistoryDownload(item)}
-                              aria-label="Baixar"
-                              title="Baixar arquivo"
-                            >
-                              {historyBusyId === item.id ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <Download className="h-3.5 w-3.5" />
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              className="rounded-lg"
-                              disabled={historyBusyId === item.id}
-                              onClick={() => void handleHistoryPrint(item)}
-                              aria-label="Imprimir"
-                              title="Imprimir programação"
-                            >
-                              <Printer className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                              onClick={async () => {
-                                await deleteHistorico(item);
-                                await reloadHistorico();
-                              }}
-                              aria-label="Excluir"
-                              title="Excluir do histórico"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
+
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 shrink-0 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            onClick={async () => {
+                              await deleteHistorico(item);
+                              await reloadHistorico();
+                            }}
+                            aria-label="Excluir"
+                            title="Excluir do histórico"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       ))}
                     </div>
