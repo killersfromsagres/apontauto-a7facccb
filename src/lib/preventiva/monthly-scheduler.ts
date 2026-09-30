@@ -414,12 +414,12 @@ function annotatePreventiveSchedule(
     raw: {
       ...item.raw,
       programacaoTemSLA: Boolean(deadline),
-      programacaoSLAPrioritaria: Boolean(deadline),
+      programacaoSLAPrioritaria: false,
       programacaoSLAD1: deadline ? isoDate(deadline) : "",
       programacaoDataAgendada: isoDate(scheduledDate),
       programacaoSLARisco: atRisk,
       programacaoSLAMotivo: deadline
-        ? "Execução programada para não ultrapassar D-1 útil do Término SLA"
+        ? "Término SLA disponível no relatório dedicado"
         : "",
     },
   };
