@@ -381,37 +381,31 @@ function EstoqueEpiPage() {
           </div>
         </GlassCard>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             icon={Boxes}
             label="Itens cadastrados"
             value={String(kpis.totalItems)}
-            detail={`${kpis.totalQty.toLocaleString("pt-BR")} unidades`}
+            detail="Tipos de EPI, uniforme e material"
+          />
+          <MetricCard
+            icon={PackageOpen}
+            label="Saldo físico"
+            value={kpis.totalQty.toLocaleString("pt-BR")}
+            detail="Unidades disponíveis no estoque"
+          />
+          <MetricCard
+            icon={AlertTriangle}
+            label="Precisam de atenção"
+            value={String(kpis.attention)}
+            detail={`${kpis.zeroed} item(ns) zerado(s)`}
+            tone="warning"
           />
           <MetricCard
             icon={WalletCards}
             label="Valor em estoque"
             value={money(kpis.totalValue)}
             detail="Custo estimado disponível"
-          />
-          <MetricCard
-            icon={AlertTriangle}
-            label="Atenção / compra"
-            value={String(kpis.attention)}
-            detail={`${kpis.zeroed} item(ns) zerado(s)`}
-            tone="warning"
-          />
-          <MetricCard
-            icon={Users}
-            label="Colaboradores"
-            value={String(kpis.collaborators)}
-            detail="Ativos no controle"
-          />
-          <MetricCard
-            icon={Activity}
-            label="Movimentações"
-            value={String(data.movimentos.length)}
-            detail="Registros auditáveis carregados"
           />
         </div>
 
@@ -776,6 +770,12 @@ function EstoqueEpiPage() {
         initialItemId={deliveryItemId}
         items={activeItems}
         colaboradores={data.colaboradores.filter((c) => c.ativo)}
+        onNewCollaborator={() => {
+          setDeliveryOpen(false);
+          setDeliveryItemId(null);
+          setCollabDialog("new");
+          setTab("colaboradores");
+        }}
         onClose={() => {
           setDeliveryOpen(false);
           setDeliveryItemId(null);
@@ -973,9 +973,14 @@ function MovementList({ movimentos }: { movimentos: EstoqueMovimento[] }) {
             index > 0 && "border-t border-border/35",
           )}
         >
-          <span className="text-[10px] text-muted-foreground">
-            {fmtDate(mov.data_movimento)}
-          </span>
+          <div>
+            <p className="text-[8px] uppercase tracking-wide text-muted-foreground">
+              {mov.tipo === "entrada" ? "Data da entrada" : mov.tipo === "saida" ? "Data da retirada" : "Data"}
+            </p>
+            <span className="text-[10px] font-medium">
+              {fmtDate(mov.data_movimento)}
+            </span>
+          </div>
           <Badge variant="outline" className="w-fit rounded-full text-[9px]">
             {MOVEMENT_LABELS[mov.tipo]}
           </Badge>
@@ -1681,14 +1686,18 @@ function CollaboratorDialog({
 
 function DeliveryDialog({
   open,
+  initialItemId,
   items,
   colaboradores,
+  onNewCollaborator,
   onClose,
   onSaved,
 }: {
   open: boolean;
+  initialItemId: string | null;
   items: EstoqueItem[];
   colaboradores: EstoqueColaborador[];
+  onNewCollaborator: () => void;
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
@@ -1705,10 +1714,17 @@ function DeliveryDialog({
     setColaboradorId("");
     setSelectedItem("");
     setQty("1");
-    setCart([]);
+    const initialItem = initialItemId
+      ? items.find((item) => item.id === initialItemId)
+      : null;
+    setCart(
+      initialItem && initialItem.estoque_atual > 0
+        ? [{ itemId: initialItem.id, quantidade: 1 }]
+        : [],
+    );
     setDataEntrega(todayIso());
     setObservacao("");
-  }, [open]);
+  }, [initialItemId, items, open]);
 
   const addItem = () => {
     const amount = Number(qty.replace(",", "."));
@@ -1742,43 +1758,75 @@ function DeliveryDialog({
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Registrar retirada de EPI / uniforme</DialogTitle>
-          <DialogDescription>
-            Selecione o colaborador e adicione todos os itens entregues na mesma operação.
-          </DialogDescription>
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600">
+              <PackageMinus className="h-5 w-5" />
+            </span>
+            <div>
+              <DialogTitle>Registrar saída / retirada</DialogTitle>
+              <DialogDescription className="mt-1">
+                O nome do colaborador e a data da retirada são obrigatórios.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Colaborador" className="sm:col-span-2">
-            <Select value={colaboradorId} onValueChange={setColaboradorId}>
-              <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-              <SelectContent>
-                {colaboradores.map((colab) => (
-                  <SelectItem key={colab.id} value={colab.id}>
-                    {colab.nome}{colab.matricula ? ` · ${colab.matricula}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field label="Data da entrega">
-            <Input
-              type="date"
-              value={dataEntrega}
-              onChange={(e) => setDataEntrega(e.target.value)}
-            />
-          </Field>
-          <Field label="Observação">
-            <Input
-              value={observacao}
-              onChange={(e) => setObservacao(e.target.value)}
-              placeholder="Ex.: admissão, troca, reposição..."
-            />
-          </Field>
+        <div className="rounded-xl border border-sky-500/15 bg-sky-500/[0.035] p-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Nome do colaborador *" className="sm:col-span-2">
+              {colaboradores.length > 0 ? (
+                <Select value={colaboradorId} onValueChange={setColaboradorId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione quem está retirando..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {colaboradores.map((colab) => (
+                      <SelectItem key={colab.id} value={colab.id}>
+                        {colab.nome}{colab.matricula ? ` · ${colab.matricula}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start border-amber-500/25 bg-amber-500/[0.05] text-amber-700 dark:text-amber-300"
+                  onClick={onNewCollaborator}
+                >
+                  <UserRoundPlus className="mr-2 h-4 w-4" />
+                  Cadastre um colaborador antes da saída
+                </Button>
+              )}
+            </Field>
+
+            <Field label="Data da retirada *">
+              <div className="relative">
+                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="date"
+                  className="pl-9"
+                  value={dataEntrega}
+                  onChange={(e) => setDataEntrega(e.target.value)}
+                />
+              </div>
+            </Field>
+
+            <Field label="Motivo / observação">
+              <Input
+                value={observacao}
+                onChange={(e) => setObservacao(e.target.value)}
+                placeholder="Ex.: admissão, troca, reposição..."
+              />
+            </Field>
+          </div>
         </div>
 
         <div className="rounded-xl border border-border/50 bg-background/30 p-3">
-          <p className="text-xs font-semibold">Itens da retirada</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold">Itens retirados</p>
+            <span className="text-[9px] text-muted-foreground">O saldo será baixado ao confirmar</span>
+          </div>
           <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_100px_auto]">
             <Select value={selectedItem} onValueChange={setSelectedItem}>
               <SelectTrigger><SelectValue placeholder="Selecionar item..." /></SelectTrigger>
@@ -1847,7 +1895,7 @@ function DeliveryDialog({
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button
-            disabled={saving || !colaboradorId || cart.length === 0}
+            disabled={saving || !colaboradorId || !dataEntrega || cart.length === 0}
             onClick={async () => {
               setSaving(true);
               try {
@@ -1857,7 +1905,10 @@ function DeliveryDialog({
                   observacao,
                   dataEntrega,
                 });
-                toast.success("Retirada registrada e estoque atualizado.");
+                const colaborador = colaboradores.find((item) => item.id === colaboradorId);
+                toast.success(
+                  `Saída registrada para ${colaborador?.nome ?? "colaborador"} em ${fmtDate(dataEntrega)}.`,
+                );
                 await onSaved();
               } catch (error: any) {
                 toast.error(error?.message ?? "Falha ao registrar retirada.");
@@ -1867,7 +1918,7 @@ function DeliveryDialog({
             }}
           >
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Confirmar retirada
+            Confirmar saída
           </Button>
         </DialogFooter>
       </DialogContent>
