@@ -757,12 +757,7 @@ export function scheduleTeamMonth(options: {
   // Corretivas internas respeitam somente a capacidade que restou depois das
   // preventivas. No fluxo normal elas são anexadas externamente e permanecem no
   // fim de cada dia.
-  const corretivas = sortCorrectiveRows(
-    options.corretivas.map((item) => item.raw as CorrectiveSourceRow),
-    options.from,
-  ).length
-    ? options.corretivas
-    : [...options.corretivas];
+  const corretivas = [...options.corretivas];
 
   const internalCorrectiveCapacities = preventiveCountsByDay.map((used) =>
     options.reserveCorrectiveSlots
