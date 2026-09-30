@@ -47,7 +47,6 @@ import { getLatestCorretivas } from "@/lib/preventiva/corretivas.functions";
 import {
   allocateCorrectivesForWeekTeam,
   CORRECTIVES_PER_DAY,
-  CORRECTIVES_PER_WEEK,
   pruneCorrectiveProgramReservations,
   releaseCorrectiveProgramReservation,
 } from "@/lib/preventiva/corrective-program-reservations";
