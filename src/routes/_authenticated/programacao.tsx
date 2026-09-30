@@ -64,7 +64,6 @@ import {
 } from "@/lib/preventiva/history";
 import {
   formatMinutes,
-  isPreventiveSlaPriority,
   mapCorrectives,
   MINUTOS_PADRAO_POR_EQUIPE,
   scheduleTeamMonth,
@@ -370,15 +369,6 @@ function ProgramacaoPage() {
           messages.push(
             `${slot.label}: nenhuma preventiva reconhecida; as semanas serão compostas pelas corretivas prioritárias disponíveis.`,
           );
-        } else {
-          const slaPriorityCount = preventiveItems.filter(
-            isPreventiveSlaPriority,
-          ).length;
-          if (slaPriorityCount > 0) {
-            messages.push(
-              `${slot.label}: ${slaPriorityCount} preventiva(s) com Término SLA fora do dia 28 foram antecipadas. O sistema mantém essas OS em blocos de prédio e ordena os andares antes de continuar o ciclo padrão.`,
-            );
-          }
         }
 
         const schedules = new Map<Equipe, TeamMonthlySchedule>();
@@ -404,8 +394,26 @@ function ProgramacaoPage() {
           );
           messages.push(
             `${equipe}: ${schedule.scheduledPreventivas} preventiva(s) distribuída(s); ` +
-              `saldo mensal preventivo ${formatMinutes(remaining)}. Meta de corretivas: ${CORRECTIVES_PER_DAY} por dia útil, até ${CORRECTIVES_PER_WEEK} por semana.`,
+              `saldo mensal preventivo ${formatMinutes(remaining)}. Meta de corretivas: ${CORRECTIVES_PER_DAY} por dia útil, ajustada automaticamente quando uma preventiva precisa ocupar a reserva para cumprir SLA D-1.`,
           );
+
+          if (schedule.slaManagedPreventivas > 0) {
+            messages.push(
+              `${equipe}: SLA D-1 protegido em ${schedule.slaOnTimePreventivas}/${schedule.slaManagedPreventivas} preventiva(s) com Término SLA dentro do período. Cada OS foi posicionada até o dia útil anterior ao vencimento, respeitando prédio e andar dentro do dia.`,
+            );
+          }
+
+          if (schedule.slaAtRiskPreventivas.length > 0) {
+            const osEmRisco = schedule.slaAtRiskPreventivas
+              .slice(0, 8)
+              .map((item) => item.os)
+              .filter(Boolean)
+              .join(", ");
+            messages.push(
+              `ATENÇÃO • ${equipe}: ${schedule.slaAtRiskPreventivas.length} preventiva(s) não cabem antes do SLA com a capacidade atual de 09:00/dia${osEmRisco ? ` (OS: ${osEmRisco})` : ""}. O sistema as colocou na primeira vaga possível; revise capacidade/equipe antes de publicar.`,
+            );
+          }
+
           if (schedule.overflowPreventivas.length) {
             messages.push(
               `${equipe}: excedente de ${schedule.overflowPreventivas.length} preventiva(s) após preencher a capacidade do mês.`,
@@ -425,6 +433,12 @@ function ProgramacaoPage() {
             const schedule = schedules.get(equipe);
             if (!schedule) continue;
 
+            const weeklyLoads = schedule.loadsByWeek[weekIndex] ?? [];
+            const correctiveCapacities = Array.from({ length: 5 }, (_, dayIndex) => {
+              const load = weeklyLoads.find((item) => item.dayIndex === dayIndex);
+              return load?.correctiveCapacity ?? 0;
+            });
+
             const allocation = allocateCorrectivesForWeekTeam({
               rows: correctiveRows,
               equipe,
@@ -433,6 +447,7 @@ function ProgramacaoPage() {
               referenceDate: week.monday,
               perDay: CORRECTIVES_PER_DAY,
               businessDays: 5,
+              perDayCapacities: correctiveCapacities,
             });
 
             allocation.byDay.forEach((dayRows, dayIndex) => {
@@ -467,7 +482,7 @@ function ProgramacaoPage() {
             bucketsPorEquipe.set(equipe, augmented.bucket);
             cargasPorEquipe.set(equipe, augmented.loads);
             messages.push(
-              `Semana ${week.isoWeek} • ${equipe}: ${mappedCorrectiveCount}/${CORRECTIVES_PER_WEEK} corretiva(s) prioritária(s), máximo de ${CORRECTIVES_PER_DAY} por dia útil.`,
+              `Semana ${week.isoWeek} • ${equipe}: ${mappedCorrectiveCount} corretiva(s) prioritária(s). A quantidade diária foi ajustada à capacidade restante depois da proteção dos SLA D-1.`,
             );
           }
 
@@ -593,7 +608,7 @@ function ProgramacaoPage() {
       setGenerated((current) => [...output, ...current]);
       await reloadHistorico();
       toast.success(
-        `${output.length} planilha(s) semanal(is) gerada(s). Preventivas com SLA fora do dia 28 foram antecipadas por rota de prédio/andar; corretivas foram distribuídas em até ${CORRECTIVES_PER_DAY} por dia útil e registradas como EM PROGRAMAÇÃO.`,
+        `${output.length} planilha(s) semanal(is) gerada(s). Preventivas com Término SLA foram posicionadas até D-1 útil sempre que a capacidade permitiu; prédio/andar foram preservados dentro de cada dia e as corretivas foram ajustadas à capacidade restante.`,
       );
     } catch (error) {
       console.error(error);
