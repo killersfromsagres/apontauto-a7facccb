@@ -45,8 +45,6 @@ const HIDRAULICA_KEYWORDS = [
   "tubulacao",
   "tubulações",
   "tubulacoes",
-  "limpeza de calha",
-  "limpeza de calhas",
   "grelha",
   "grelhas",
   "ralo",
@@ -108,6 +106,11 @@ const norm = (v: unknown) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
+function isCalhaPreventiva(row: RawRow): boolean {
+  const bag = norm(`${row.nomeOS} ${row.descricao}`);
+  return /\bCALHAS?\b/.test(bag);
+}
+
 function isHidraulica(row: RawRow): boolean {
   const bag = norm(`${row.nomeOS} ${row.descricao}`);
   return HIDRAULICA_KEYWORDS.some((k) => bag.includes(norm(k)));
@@ -149,9 +152,11 @@ export function triage(rows: RawRow[]): TriagedOS[] {
     } else if (cat === "ELÉTRICA") {
       out.push({ ...r, equipe: "ELÉTRICA" });
     } else if (cat === "CIVIL") {
-      // Regra: Se for HIDRÁULICA (pelas keywords ou se já foi pré-classificado como tal),
-      // aloca para HIDRÁULICA e remove de CIVIL/CHAVEIRO.
-      if (isHidraulica(r)) {
+      // Regra operacional: preventivas de calhas pertencem sempre à equipe Civil.
+      // Somente depois disso avaliamos sinais hidráulicos.
+      if (isCalhaPreventiva(r)) {
+        out.push({ ...r, equipe: "CIVIL" });
+      } else if (isHidraulica(r)) {
         out.push({ ...r, equipe: "HIDRÁULICA" });
       } else {
         civilPool.push(r);
@@ -181,7 +186,9 @@ export function triage(rows: RawRow[]): TriagedOS[] {
     const bag = norm(`${r.nomeOS} ${r.descricao}`);
 
     // Verificação extra de segurança para garantir que nada de hidráulica escape para chaveiro/civil
-    if (isHidraulica(r) || bag.includes("HIDR")) {
+    if (isCalhaPreventiva(r)) {
+      out.push({ ...r, equipe: "CIVIL" });
+    } else if (isHidraulica(r) || bag.includes("HIDR")) {
       out.push({ ...r, equipe: "HIDRÁULICA" });
     } else if (
       bag.includes("CHAVE") ||
