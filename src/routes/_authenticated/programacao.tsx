@@ -7,11 +7,14 @@ import {
   AlertTriangle,
   ArrowRight,
   Building2,
+  CalendarClock,
   CalendarDays,
   CalendarIcon,
   CheckCircle2,
   Clock3,
+  Cloud,
   Download,
+  FileDown,
   FileCheck2,
   FileSpreadsheet,
   Gauge,
@@ -57,6 +60,7 @@ import {
 import {
   clearHistorico,
   deleteHistorico,
+  getHistoricoBlob,
   listHistorico,
   saveHistorico,
   type HistoricoItem,
@@ -81,6 +85,7 @@ import {
   type TriagedOS,
 } from "@/lib/preventiva/triage";
 import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
+import { generateSlaDeadlineReport } from "@/lib/preventiva/sla-report";
 import {
   polishWeeklyProgramacao,
   printWeeklyProgramacaoColor,
@@ -268,6 +273,8 @@ function ProgramacaoPage() {
     { ...MINUTOS_PADRAO_POR_EQUIPE },
   );
   const [processing, setProcessing] = useState(false);
+  const [slaProcessing, setSlaProcessing] = useState(false);
+  const [historyBusyId, setHistoryBusyId] = useState<string | null>(null);
   const [generated, setGenerated] = useState<GeneratedFile[]>([]);
   const [alerts, setAlerts] = useState<FileAlert[]>([]);
   const [statusMessages, setStatusMessages] = useState<string[]>([]);
@@ -330,6 +337,96 @@ function ProgramacaoPage() {
       );
     }
   }, []);
+
+  const collectCurrentPreventives = useCallback(async (): Promise<TriagedOS[]> => {
+    const items: TriagedOS[] = [];
+    for (const slot of SLOTS) {
+      const file = slotFiles[slot.id];
+      if (!file) continue;
+      const read = await readPreventivaFiles([file]);
+      items.push(...filterForSlot(triage(read.rows), slot.id));
+    }
+    return items;
+  }, [slotFiles]);
+
+  const handleDownloadSla = useCallback(async () => {
+    if (!hasAnyFile || slaProcessing) {
+      if (!hasAnyFile) toast.warning("Anexe as planilhas mensais primeiro.");
+      return;
+    }
+
+    setSlaProcessing(true);
+    try {
+      const preventiveItems = await collectCurrentPreventives();
+      const report = await generateSlaDeadlineReport(
+        preventiveItems,
+        startDate,
+      );
+      downloadBlob(report.blob, report.filename);
+      toast.success(
+        report.total > 0
+          ? `Relatório atualizado: ${report.total} preventiva(s) com Término SLA antes do dia 28.`
+          : "Relatório atualizado. Nenhuma preventiva com Término SLA antes do dia 28 foi encontrada.",
+      );
+    } catch (error) {
+      console.error("[Programacao] Falha ao gerar relatório de SLA:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível gerar o relatório de Término SLA.",
+      );
+    } finally {
+      setSlaProcessing(false);
+    }
+  }, [
+    collectCurrentPreventives,
+    hasAnyFile,
+    slaProcessing,
+    startDate,
+  ]);
+
+  const historyBlob = useCallback(async (item: HistoricoItem) => {
+    setHistoryBusyId(item.id);
+    try {
+      return await getHistoricoBlob(item);
+    } finally {
+      setHistoryBusyId(null);
+    }
+  }, []);
+
+  const handleHistoryDownload = useCallback(
+    async (item: HistoricoItem) => {
+      try {
+        const blob = await historyBlob(item);
+        downloadBlob(blob, item.filename);
+      } catch (error) {
+        console.error(error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível recuperar a planilha do histórico.",
+        );
+      }
+    },
+    [historyBlob],
+  );
+
+  const handleHistoryPrint = useCallback(
+    async (item: HistoricoItem) => {
+      try {
+        const blob = await historyBlob(item);
+        await handlePrint(blob);
+      } catch (error) {
+        console.error(error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível recuperar a planilha para impressão.",
+        );
+      }
+    },
+    [handlePrint, historyBlob],
+  );
 
   const generate = async () => {
     if (!hasAnyFile) {
@@ -397,26 +494,8 @@ function ProgramacaoPage() {
             0,
           );
           messages.push(
-            `${equipe}: ${schedule.scheduledPreventivas} preventiva(s) distribuída(s); ` +
-              `saldo mensal preventivo ${formatMinutes(remaining)}. Meta de corretivas: ${CORRECTIVES_PER_DAY} por dia útil, ajustada automaticamente quando uma preventiva precisa ocupar a reserva para cumprir SLA D-1.`,
+            `${equipe}: ${schedule.scheduledPreventivas} preventiva(s) em sequência contínua de Prédio → Andar → Local; saldo mensal ${formatMinutes(remaining)}. As corretivas ficam no final de cada dia.`,
           );
-
-          if (schedule.slaManagedPreventivas > 0) {
-            messages.push(
-              `${equipe}: SLA D-1 protegido em ${schedule.slaOnTimePreventivas}/${schedule.slaManagedPreventivas} preventiva(s) com Término SLA dentro do período. Cada OS foi posicionada até o dia útil anterior ao vencimento, respeitando prédio e andar dentro do dia.`,
-            );
-          }
-
-          if (schedule.slaAtRiskPreventivas.length > 0) {
-            const osEmRisco = schedule.slaAtRiskPreventivas
-              .slice(0, 8)
-              .map((item) => item.os)
-              .filter(Boolean)
-              .join(", ");
-            messages.push(
-              `ATENÇÃO • ${equipe}: ${schedule.slaAtRiskPreventivas.length} preventiva(s) não cabem antes do SLA com a capacidade atual de 09:00/dia${osEmRisco ? ` (OS: ${osEmRisco})` : ""}. O sistema as colocou na primeira vaga possível; revise capacidade/equipe antes de publicar.`,
-            );
-          }
 
           if (schedule.preventiveDaysWithoutWork.length === 0) {
             messages.push(
@@ -424,7 +503,7 @@ function ProgramacaoPage() {
             );
           } else {
             messages.push(
-              `ATENÇÃO • ${equipe}: ${schedule.preventiveDaysWithoutWork.length} dia(s) útil(eis) ficaram sem preventiva por falta de OS compatível com capacidade/SLA: ${schedule.preventiveDaysWithoutWork.join(", ")}.`,
+              `ATENÇÃO • ${equipe}: ${schedule.preventiveDaysWithoutWork.length} dia(s) útil(eis) ficaram sem preventiva porque o volume mensal não foi suficiente para preencher toda a capacidade: ${schedule.preventiveDaysWithoutWork.join(", ")}.`,
             );
           }
 
@@ -496,7 +575,7 @@ function ProgramacaoPage() {
             bucketsPorEquipe.set(equipe, augmented.bucket);
             cargasPorEquipe.set(equipe, augmented.loads);
             messages.push(
-              `Semana ${week.isoWeek} • ${equipe}: ${mappedCorrectiveCount} corretiva(s) prioritária(s). A quantidade diária foi ajustada à capacidade restante depois da proteção dos SLA D-1.`,
+              `Semana ${week.isoWeek} • ${equipe}: ${mappedCorrectiveCount} corretiva(s) adicionada(s) ao final dos dias, com backorders e urgências operacionais na frente da fila corretiva.`,
             );
           }
 
@@ -609,7 +688,7 @@ function ProgramacaoPage() {
           });
         } catch (historyError) {
           console.warn(
-            `[Programacao] Não foi possível salvar ${item.filename} no histórico local:`,
+            `[Programacao] Não foi possível persistir ${item.filename} no histórico:`,
             historyError,
           );
         }
@@ -620,7 +699,7 @@ function ProgramacaoPage() {
       setGenerated((current) => [...output, ...current]);
       await reloadHistorico();
       toast.success(
-        `${output.length} planilha(s) semanal(is) gerada(s). A montagem prioriza preventivas em todos os dias úteis, mantém SLA D-1 e rota por prédio/andar, e coloca as corretivas somente no final de cada dia.`,
+        `${output.length} planilha(s) semanal(is) gerada(s). Preventivas seguem Prédio → Andar → Local sem aleatoriedade; corretivas entram somente no final dos dias, priorizando backorders e urgências.`,
       );
     } catch (error) {
       console.error(error);
@@ -649,16 +728,31 @@ function ProgramacaoPage() {
   return (
     <PageShell
       title="Programação"
-      description="Planejamento semanal de manutenção com capacidade por equipe, preventivas organizadas e corretivas priorizadas por backorder, SLA e urgência."
+      description="Planejamento semanal sequencial por prédio e andar, com preventivas primeiro e corretivas priorizadas no final de cada dia."
       actions={
-        <Button
-          variant="glass"
-          onClick={downloadTemplate}
-          className="group h-10 rounded-xl border-emerald-500/20 bg-emerald-500/[0.04] px-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:shadow-md"
-        >
-          <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500 transition-transform duration-200 group-hover:scale-110" />
-          Baixar modelo
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="glass"
+            onClick={() => void handleDownloadSla()}
+            disabled={!hasAnyFile || slaProcessing}
+            className="group h-10 rounded-xl border-amber-500/20 bg-amber-500/[0.04] px-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-500/40 hover:bg-amber-500/10 hover:shadow-md"
+          >
+            {slaProcessing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FileDown className="mr-2 h-4 w-4 text-amber-500 transition-transform duration-200 group-hover:scale-110" />
+            )}
+            Baixar Término SLA
+          </Button>
+          <Button
+            variant="glass"
+            onClick={downloadTemplate}
+            className="group h-10 rounded-xl border-emerald-500/20 bg-emerald-500/[0.04] px-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:shadow-md"
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500 transition-transform duration-200 group-hover:scale-110" />
+            Baixar modelo
+          </Button>
+        </div>
       }
     >
       <div className="space-y-6 pb-4">
