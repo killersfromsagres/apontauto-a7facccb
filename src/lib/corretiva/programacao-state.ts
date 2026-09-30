@@ -58,11 +58,11 @@ export async function registerCorrectiveProgrammingBatch(
 
 export async function markCorrectiveNotPerformed(options: {
   osId: string;
-  reason: CorrectiveNotPerformedReason;
+  reason?: CorrectiveNotPerformedReason | "reprogramacao_solicitada";
   observation?: string | null;
   reservation?: CorrectiveProgramReservation | null;
 }) {
-  const { osId, reason, observation, reservation } = options;
+  const { osId, reason = "reprogramacao_solicitada", observation, reservation } = options;
   const { data, error } = await db.rpc("mark_corretiva_programacao_nao_realizada", {
     _os_id: osId,
     _motivo: reason,
