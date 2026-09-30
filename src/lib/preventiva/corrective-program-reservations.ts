@@ -201,8 +201,8 @@ function hydraulicUrgencyScore(row: CorrectiveSourceRow): number {
 
 /**
  * Ordem operacional da fila:
- * 1. Reprogramações pendentes ("não realizado");
- * 2. Backorders;
+ * 1. Backorders;
+ * 2. Reprogramações pendentes ("não realizado");
  * 3. urgências hidráulicas operacionais (entupimento, banheiro, cozinha/C70 etc.);
  * 4. SLA/data programada mais urgente (vencido → vence logo → semana);
  * 5. criticidade e score;
@@ -230,15 +230,16 @@ function sortCandidates(
     const aPriority = priorityOf(a);
     const bPriority = priorityOf(b);
 
-    // OS devolvidas como "não realizado" voltam ao topo da próxima programação.
-    // Isso impede que uma tentativa frustrada fique esquecida atrás de chamados novos.
-    const reprogramOrder =
-      Number(isPendingReprogramming(b)) - Number(isPendingReprogramming(a));
-    if (reprogramOrder !== 0) return reprogramOrder;
-
+    // Backorder é a primeira faixa da fila corretiva.
     const backorderOrder =
       Number(bPriority.isBackorder) - Number(aPriority.isBackorder);
     if (backorderOrder !== 0) return backorderOrder;
+
+    // Depois dos backorders, OS devolvidas continuam com prioridade para não
+    // ficarem esquecidas entre chamados novos.
+    const reprogramOrder =
+      Number(isPendingReprogramming(b)) - Number(isPendingReprogramming(a));
+    if (reprogramOrder !== 0) return reprogramOrder;
 
     // Dentro da Hidráulica, falhas que impactam sanitários e operação
     // (entupimentos, banheiros, cozinha/C70, vazamentos) sobem antes das
