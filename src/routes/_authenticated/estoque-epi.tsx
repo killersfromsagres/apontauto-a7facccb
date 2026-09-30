@@ -19,6 +19,11 @@ import {
   ClipboardCheck,
   Edit3,
   FileSpreadsheet,
+  Footprints,
+  Glasses,
+  Hand,
+  HardHat,
+  Headphones,
   History,
   Loader2,
   PackageCheck,
@@ -1313,7 +1318,7 @@ function StockRow({
       <div className="flex min-w-0 items-start gap-2.5">
         <MaterialIcon item={item} />
         <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <p className="min-w-0 flex-1 truncate text-xs font-semibold">
             {item.descricao}
           </p>
@@ -1323,8 +1328,8 @@ function StockRow({
           >
             {status}
           </Badge>
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[9px] text-muted-foreground">
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[9px] text-muted-foreground">
           {item.codigo && <span>Cód. {item.codigo}</span>}
           <span>{item.categoria}</span>
           {item.tamanho && <span>Tam. {item.tamanho}</span>}
@@ -1333,8 +1338,8 @@ function StockRow({
             <span>{money(item.valor_unitario)}</span>
           )}
         </div>
-        {!compact && (lastEntryDate || lastExitDate) && (
-          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[8px] text-muted-foreground/80">
+          {!compact && (lastEntryDate || lastExitDate) && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[8px] text-muted-foreground/80">
             {lastEntryDate && (
               <span className="inline-flex items-center gap-1">
                 <ArrowDownToLine className="h-2.5 w-2.5 text-emerald-500" />
@@ -1347,8 +1352,8 @@ function StockRow({
                 Últ. saída {fmtDate(lastExitDate)}
               </span>
             )}
-          </div>
-        )}
+            </div>
+          )}
         </div>
       </div>
 
