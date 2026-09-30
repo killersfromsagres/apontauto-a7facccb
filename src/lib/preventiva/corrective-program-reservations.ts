@@ -475,6 +475,8 @@ export function allocateCorrectivesForWeekTeam(options: {
   referenceDate: Date;
   perDay?: number;
   businessDays?: number;
+  /** Limite real por dia após a proteção de SLA das preventivas. */
+  perDayCapacities?: number[];
 }): WeekTeamAllocation {
   const {
     rows,
@@ -484,9 +486,19 @@ export function allocateCorrectivesForWeekTeam(options: {
     referenceDate,
     perDay = CORRECTIVES_PER_DAY,
     businessDays = BUSINESS_DAYS_PER_WEEK,
+    perDayCapacities,
   } = options;
 
-  const limit = Math.max(0, perDay * businessDays);
+  const capacities = Array.from({ length: businessDays }, (_, dayIndex) =>
+    Math.max(
+      0,
+      Math.min(
+        perDay,
+        Math.floor(perDayCapacities?.[dayIndex] ?? perDay),
+      ),
+    ),
+  );
+  const limit = capacities.reduce((sum, value) => sum + value, 0);
 
   // Fonte de verdade: chamados que continuam abertos em Corretiva-Novo.
   // Programações atuais passam a ser persistidas no banco. O histórico local é
@@ -529,18 +541,22 @@ export function allocateCorrectivesForWeekTeam(options: {
     () => [] as CorrectiveSourceRow[],
   );
 
-  // Distribuição balanceada em rodadas:
-  // - 5+ corretivas: todos os dias recebem pelo menos 1;
-  // - 10+ corretivas: todos os dias recebem exatamente 2;
-  // - menos de 10: distribui todas as OS únicas disponíveis sem inventar ou
-  //   repetir um chamado dentro da mesma semana.
+  // Distribuição balanceada em rodadas respeitando a capacidade real de
+  // cada dia. Quando uma preventiva precisa ocupar a reserva para cumprir SLA
+  // D-1, a corretiva daquele dia é automaticamente reduzida, sem estourar 09:00.
   let cursor = 0;
-  for (let round = 0; round < perDay && cursor < selected.length; round += 1) {
+  const maxRounds = Math.max(0, ...capacities);
+  for (
+    let round = 0;
+    round < maxRounds && cursor < selected.length;
+    round += 1
+  ) {
     for (
       let dayIndex = 0;
       dayIndex < businessDays && cursor < selected.length;
       dayIndex += 1
     ) {
+      if (byDay[dayIndex].length >= capacities[dayIndex]) continue;
       byDay[dayIndex].push(selected[cursor++]);
     }
   }
