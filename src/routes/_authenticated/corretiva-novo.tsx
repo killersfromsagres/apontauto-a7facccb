@@ -42,7 +42,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { PreventivaImportDialog } from "@/components/corretiva/preventiva-import-dialog";
 import { OsDetailsDialog } from "@/components/corretiva/os-details-dialog";
-import { CorrectiveReprogramDialog } from "@/components/corretiva/corrective-reprogram-dialog";
 import {
   equipeStyles,
   matchEquipe,
@@ -54,8 +53,8 @@ import { generateProgramacaoPDF } from "@/lib/corretiva/programacao-pdf";
 import { cn } from "@/lib/utils";
 import { designateAllCorrectiveOrders } from "@/lib/corretiva/ai-reclassifier.functions";
 import {
-  correctiveNotPerformedReasonLabel,
   isPendingReprogramming,
+  markCorrectiveNotPerformed,
 } from "@/lib/corretiva/programacao-state";
 import {
   listCorrectiveProgramReservations,
@@ -175,10 +174,7 @@ function CorretivaNovoPage() {
   const [onlyProgrammed, setOnlyProgrammed] = useState(false);
   const [onlyBackorder, setOnlyBackorder] = useState(false);
   const [onlyReprogramming, setOnlyReprogramming] = useState(false);
-  const [reprogramTarget, setReprogramTarget] = useState<{
-    os: any;
-    reservation: CorrectiveProgramReservation;
-  } | null>(null);
+  const [reprogrammingId, setReprogrammingId] = useState<string | null>(null);
 
   const applyLoadedList = async (list: any[], cache = false) => {
     setOsList(list);
@@ -365,32 +361,50 @@ function CorretivaNovoPage() {
     setSelectedOs(filtered[nextIndex]);
   };
 
-  const handleReprogrammed = (updated: Record<string, unknown>) => {
-    const original = reprogramTarget?.os;
-    if (!original) return;
+  const handleReturnToProgrammingQueue = async (
+    os: any,
+    reservation: CorrectiveProgramReservation,
+  ) => {
+    const osId = String(os?.id ?? "");
+    if (!osId || reprogrammingId) return;
 
-    const next = { ...original, ...updated };
-    releaseCorrectiveProgramReservation(original.id, original.numero_os);
-    setProgramReservations(listCorrectiveProgramReservations());
-    setOsList((current) =>
-      current.map((item) => (item.id === original.id ? next : item)),
-    );
-    setSelectedOs((current: any) =>
-      current?.id === original.id ? { ...current, ...next } : current,
-    );
+    setReprogrammingId(osId);
+    try {
+      const updated = await markCorrectiveNotPerformed({
+        osId,
+        reservation,
+      });
+      const next = { ...os, ...updated };
 
-    void import("@/lib/corretiva/db")
-      .then(async ({ getCachedOsList, cacheOsList }) => {
-        const cached = await getCachedOsList();
-        await cacheOsList(
-          cached.map((item) => (item.id === original.id ? { ...item, ...next } : item)),
-        );
-      })
-      .catch((error) =>
-        console.warn("[CorretivaReprogram] Não foi possível atualizar o cache:", error),
+      releaseCorrectiveProgramReservation(os.id, os.numero_os);
+      setProgramReservations(listCorrectiveProgramReservations());
+      setOsList((current) =>
+        current.map((item) => (item.id === os.id ? next : item)),
+      );
+      setSelectedOs((current: any) =>
+        current?.id === os.id ? { ...current, ...next } : current,
       );
 
-    setReprogramTarget(null);
+      void import("@/lib/corretiva/db")
+        .then(async ({ getCachedOsList, cacheOsList }) => {
+          const cached = await getCachedOsList();
+          await cacheOsList(
+            cached.map((item) => (item.id === os.id ? { ...item, ...next } : item)),
+          );
+        })
+        .catch((error) =>
+          console.warn("[CorretivaReprogram] Não foi possível atualizar o cache:", error),
+        );
+
+      toast.success(
+        `OS ${os.numero_os || ""} voltou para a lista de corretivas e já está disponível para uma nova programação.`,
+      );
+    } catch (error: any) {
+      console.error("[CorretivaReprogram] Erro ao devolver OS à fila:", error);
+      toast.error(error?.message || "Não foi possível devolver o chamado à fila.");
+    } finally {
+      setReprogrammingId(null);
+    }
   };
 
   const handleReopen = async (os: any) => {
@@ -1044,18 +1058,11 @@ function CorretivaNovoPage() {
                               REPROGRAMAÇÃO PRIORITÁRIA
                             </Badge>
                             <span className="text-[9px] text-amber-100/75">
-                              Tentativa {Math.max(1, Number(os.programacao_tentativas) || 1)} ·{" "}
-                              {correctiveNotPerformedReasonLabel(
-                                os.programacao_nao_realizada_motivo,
-                              )}
+                              Tentativa {Math.max(1, Number(os.programacao_tentativas) || 1)}
                             </span>
                           </div>
                           <p className="mt-1.5 text-[9px] leading-4 text-muted-foreground/80">
-                            Voltou para a fila e será priorizada automaticamente na próxima
-                            programação.
-                            {os.programacao_nao_realizada_observacao
-                              ? ` · ${os.programacao_nao_realizada_observacao}`
-                              : ""}
+                            Voltou para a lista de corretivas e já pode entrar em uma nova programação.
                           </p>
                         </div>
                       )}
@@ -1147,20 +1154,27 @@ function CorretivaNovoPage() {
                             type="button"
                             variant="outline"
                             size="sm"
+                            disabled={reprogrammingId === String(os.id)}
                             className="w-full gap-2 border-amber-400/30 bg-amber-400/[0.06] text-amber-100 hover:border-amber-300/45 hover:bg-amber-400/12"
                             onPointerDown={(event) => event.stopPropagation()}
                             onClick={(event) => {
                               event.stopPropagation();
-                              setReprogramTarget({ os, reservation: programReservation });
+                              void handleReturnToProgrammingQueue(
+                                os,
+                                programReservation,
+                              );
                             }}
-                            title="Registrar que a atividade não foi realizada e devolver o chamado para a próxima programação"
+                            title="Devolver imediatamente este chamado para a lista de corretivas"
                           >
-                            <RotateCcw className="h-4 w-4" />
-                            Não realizado · Reprogramar
+                            {reprogrammingId === String(os.id) ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RotateCcw className="h-4 w-4" />
+                            )}
+                            {reprogrammingId === String(os.id)
+                              ? "Devolvendo..."
+                              : "Voltar para corretivas"}
                           </Button>
-                          <p className="mt-2 text-center text-[9px] leading-4 text-muted-foreground/65">
-                            Registra o motivo, preserva a tentativa e devolve a OS para a fila.
-                          </p>
                         </div>
                       )}
 
@@ -1229,16 +1243,6 @@ function CorretivaNovoPage() {
           </div>
         </div>
       )}
-
-      <CorrectiveReprogramDialog
-        os={reprogramTarget?.os ?? null}
-        reservation={reprogramTarget?.reservation ?? null}
-        open={Boolean(reprogramTarget)}
-        onOpenChange={(open) => {
-          if (!open) setReprogramTarget(null);
-        }}
-        onReprogrammed={handleReprogrammed}
-      />
 
       {selectedOs && (
         <OsDetailsDialog
