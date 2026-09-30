@@ -418,6 +418,16 @@ function ProgramacaoPage() {
             );
           }
 
+          if (schedule.preventiveDaysWithoutWork.length === 0) {
+            messages.push(
+              `${equipe}: cobertura preventiva distribuída em todos os dias úteis do período; corretivas ficam sempre no final de cada dia.`,
+            );
+          } else {
+            messages.push(
+              `ATENÇÃO • ${equipe}: ${schedule.preventiveDaysWithoutWork.length} dia(s) útil(eis) ficaram sem preventiva por falta de OS compatível com capacidade/SLA: ${schedule.preventiveDaysWithoutWork.join(", ")}.`,
+            );
+          }
+
           if (schedule.overflowPreventivas.length) {
             messages.push(
               `${equipe}: excedente de ${schedule.overflowPreventivas.length} preventiva(s) após preencher a capacidade do mês.`,
@@ -610,7 +620,7 @@ function ProgramacaoPage() {
       setGenerated((current) => [...output, ...current]);
       await reloadHistorico();
       toast.success(
-        `${output.length} planilha(s) semanal(is) gerada(s). Preventivas com Término SLA foram posicionadas até D-1 útil sempre que a capacidade permitiu; prédio/andar foram preservados dentro de cada dia e as corretivas foram ajustadas à capacidade restante.`,
+        `${output.length} planilha(s) semanal(is) gerada(s). A montagem prioriza preventivas em todos os dias úteis, mantém SLA D-1 e rota por prédio/andar, e coloca as corretivas somente no final de cada dia.`,
       );
     } catch (error) {
       console.error(error);
