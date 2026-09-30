@@ -28,11 +28,14 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Shirt,
   ShieldCheck,
   UserRound,
   UserRoundPlus,
   Users,
   WalletCards,
+  Wind,
+  Wrench,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -113,6 +116,182 @@ const STATUS_STYLES: Record<string, string> = {
   ACIMA: "border-sky-500/25 bg-sky-500/[0.08] text-sky-700 dark:text-sky-300",
   "SEM META": "border-border/70 bg-muted/30 text-muted-foreground",
 };
+
+type MaterialVisualInput = Pick<EstoqueItem, "descricao" | "categoria">;
+
+function normalizeMaterialText(value?: string | null) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR");
+}
+
+function materialVisual(item: MaterialVisualInput) {
+  const category = normalizeMaterialText(item.categoria);
+  const description = normalizeMaterialText(item.descricao);
+  const text = `${category} ${description}`;
+
+  if (/capacete/.test(text)) {
+    return {
+      icon: HardHat,
+      label: "Proteção para cabeça",
+      className:
+        "border-amber-500/20 bg-amber-500/[0.08] text-amber-600 dark:text-amber-300",
+    };
+  }
+
+  if (/oculos|protetor facial|viseira/.test(text)) {
+    return {
+      icon: Glasses,
+      label: "Proteção visual e facial",
+      className:
+        "border-indigo-500/20 bg-indigo-500/[0.08] text-indigo-600 dark:text-indigo-300",
+    };
+  }
+
+  if (/protetor auricular|tampao|mufflet|auditiv/.test(text)) {
+    return {
+      icon: Headphones,
+      label: "Proteção auditiva",
+      className:
+        "border-fuchsia-500/20 bg-fuchsia-500/[0.08] text-fuchsia-600 dark:text-fuchsia-300",
+    };
+  }
+
+  if (/respirador|mascara|pff|respirator/.test(text)) {
+    return {
+      icon: Wind,
+      label: "Proteção respiratória",
+      className:
+        "border-cyan-500/20 bg-cyan-500/[0.08] text-cyan-600 dark:text-cyan-300",
+    };
+  }
+
+  if (/luva|carneira/.test(text) || category.includes("luvas")) {
+    return {
+      icon: Hand,
+      label: "Luvas e proteção das mãos",
+      className:
+        "border-orange-500/20 bg-orange-500/[0.08] text-orange-600 dark:text-orange-300",
+    };
+  }
+
+  if (
+    /botina|sapato|palmilha|solado|calcado/.test(text) ||
+    category.includes("calcados")
+  ) {
+    return {
+      icon: Footprints,
+      label: "Calçados",
+      className:
+        "border-amber-600/20 bg-amber-600/[0.07] text-amber-700 dark:text-amber-300",
+    };
+  }
+
+  if (
+    /camisa|camiseta|calca|blusa|jaqueta|uniforme/.test(text) ||
+    category.includes("uniformes")
+  ) {
+    return {
+      icon: Shirt,
+      label: "Uniforme",
+      className:
+        "border-violet-500/20 bg-violet-500/[0.08] text-violet-600 dark:text-violet-300",
+    };
+  }
+
+  if (/cinto|talabarte|altura/.test(text) || category.includes("trabalho em altura")) {
+    return {
+      icon: ShieldCheck,
+      label: "Trabalho em altura",
+      className:
+        "border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-600 dark:text-emerald-300",
+    };
+  }
+
+  if (/ferrament|chave|alicate|martelo|furadeira|eletricista/.test(text)) {
+    return {
+      icon: Wrench,
+      label: "Ferramenta ou acessório",
+      className:
+        "border-sky-500/20 bg-sky-500/[0.08] text-sky-600 dark:text-sky-300",
+    };
+  }
+
+  if (
+    category.includes("protecao visual") ||
+    category.includes("protecao facial")
+  ) {
+    return {
+      icon: Glasses,
+      label: "Proteção visual e facial",
+      className:
+        "border-indigo-500/20 bg-indigo-500/[0.08] text-indigo-600 dark:text-indigo-300",
+    };
+  }
+
+  if (category.includes("protecao respiratoria")) {
+    return {
+      icon: Wind,
+      label: "Proteção respiratória",
+      className:
+        "border-cyan-500/20 bg-cyan-500/[0.08] text-cyan-600 dark:text-cyan-300",
+    };
+  }
+
+  if (
+    category.includes("protecao cabeca") ||
+    category.includes("protecao auditiva")
+  ) {
+    return {
+      icon: HardHat,
+      label: "Proteção para cabeça e audição",
+      className:
+        "border-amber-500/20 bg-amber-500/[0.08] text-amber-600 dark:text-amber-300",
+    };
+  }
+
+  if (category.includes("outros epis")) {
+    return {
+      icon: ShieldCheck,
+      label: "EPI",
+      className:
+        "border-teal-500/20 bg-teal-500/[0.08] text-teal-600 dark:text-teal-300",
+    };
+  }
+
+  return {
+    icon: PackageOpen,
+    label: "Material de estoque",
+    className:
+      "border-border/60 bg-muted/35 text-muted-foreground",
+  };
+}
+
+function MaterialIcon({
+  item,
+  size = "md",
+}: {
+  item: MaterialVisualInput;
+  size?: "sm" | "md";
+}) {
+  const visual = materialVisual(item);
+  const Icon = visual.icon;
+
+  return (
+    <span
+      title={visual.label}
+      aria-label={visual.label}
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center border shadow-sm",
+        size === "sm" ? "h-7 w-7 rounded-lg" : "h-9 w-9 rounded-xl",
+        visual.className,
+      )}
+    >
+      <Icon className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} />
+    </span>
+  );
+}
 
 function numberValue(value: string): number | null {
   if (!value.trim()) return null;
@@ -1131,7 +1310,9 @@ function StockRow({
   const status = estoqueStatus(item);
   return (
     <div className="grid gap-2 rounded-xl border border-border/45 bg-background/30 p-2.5 transition-colors hover:border-primary/15 hover:bg-background/50 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-      <div className="min-w-0">
+      <div className="flex min-w-0 items-start gap-2.5">
+        <MaterialIcon item={item} />
+        <div className="min-w-0 flex-1">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <p className="min-w-0 flex-1 truncate text-xs font-semibold">
             {item.descricao}
@@ -1168,6 +1349,7 @@ function StockRow({
             )}
           </div>
         )}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 md:justify-end">
@@ -2288,9 +2470,13 @@ function DeliveryDialog({
                       key={entry.itemId}
                       className="flex items-center gap-2 rounded-xl border border-border/45 bg-background/50 px-3 py-2.5"
                     >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/[0.07] text-sky-600">
-                        <PackageCheck className="h-4 w-4" />
-                      </span>
+                      {item ? (
+                        <MaterialIcon item={item} size="sm" />
+                      ) : (
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted/35 text-muted-foreground">
+                          <PackageCheck className="h-3.5 w-3.5" />
+                        </span>
+                      )}
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[10px] font-semibold">
                           {item?.descricao}
@@ -2652,9 +2838,7 @@ function ItemAutocomplete({
                     setFocused(false);
                   }}
                 >
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/[0.07] text-primary">
-                    <PackageOpen className="h-3.5 w-3.5" />
-                  </span>
+                  <MaterialIcon item={item} size="sm" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[10px] font-semibold">{item.descricao}</span>
                     <span className="mt-0.5 flex flex-wrap gap-x-2 text-[8px] text-muted-foreground">
