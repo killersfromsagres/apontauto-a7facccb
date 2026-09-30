@@ -9,6 +9,7 @@ import {
   isBackorderCorrective,
 } from "@/lib/corretiva/priority-classifier";
 import type { WeekBucket, WeekInfo } from "./capacity";
+import { designateCorrectiveTeam } from "@/lib/corretiva/designation-engine";
 import {
   REFRIG_1,
   REFRIG_2,
@@ -129,62 +130,35 @@ function refrigeracaoTeam(predio: string): Equipe {
 }
 
 export function resolveCorrectiveTeam(row: CorrectiveSourceRow): Equipe | null {
-  const explicit = norm(row.equipe);
-  const context = norm(
-    `${row.equipe ?? ""} ${row.nome_os ?? ""} ${row.tipo ?? ""} ${row.ativo ?? ""} ${row.equipamento ?? ""}`,
-  );
+  // A programação relê tecnicamente cada corretiva em vez de confiar apenas na
+  // equipe gravada. Assim, uma classificação antiga incorreta não continua
+  // contaminando a programação semanal.
+  const decision = designateCorrectiveTeam({
+    nome_os: row.nome_os,
+    equipamento: row.equipamento,
+    ativo: row.ativo,
+    local: row.local,
+    predio: row.predio,
+    andar: row.andar,
+    solicitante: row.solicitante,
+    equipe: row.equipe,
+  });
 
-  if (explicit.includes("CHAVE")) return "CHAVEIRO";
-  if (explicit.includes("HIDR")) return "HIDRÁULICA";
-  if (explicit.includes("ELETR")) return "ELÉTRICA";
-  if (explicit.includes("REFRIG") || explicit.includes("CLIMAT")) {
-    if (/\b1\b/.test(explicit)) return "CLIMATIZAÇÃO E REFRIGERAÇÃO 1";
-    if (/\b2\b/.test(explicit)) return "CLIMATIZAÇÃO E REFRIGERAÇÃO 2";
-    if (/\b3\b/.test(explicit)) return "CLIMATIZAÇÃO E REFRIGERAÇÃO 3";
-    return refrigeracaoTeam(row.predio ?? "");
+  switch (decision.equipe) {
+    case "Chaveiro":
+      return "CHAVEIRO";
+    case "Hidráulica":
+      return "HIDRÁULICA";
+    case "Elétrica":
+      return "ELÉTRICA";
+    case "Refrigeração":
+      return refrigeracaoTeam(row.predio ?? "");
+    case "Civil":
+    case "Pintura":
+      return "CIVIL";
+    default:
+      return null;
   }
-  if (explicit.includes("CIVIL") || explicit.includes("PINTURA")) return "CIVIL";
-
-  if (context.includes("CHAVE") || context.includes("FECHADURA")) return "CHAVEIRO";
-  if (
-    context.includes("HIDR") ||
-    context.includes("TUBUL") ||
-    context.includes("VAZAMENTO") ||
-    context.includes("ENTUP") ||
-    context.includes("BANHEIRO") ||
-    context.includes("SANITARIO") ||
-    context.includes("VASO") ||
-    context.includes("MICTORIO") ||
-    context.includes("ESGOTO") ||
-    context.includes("RALO") ||
-    (context.includes("COZINHA") && context.includes("C70"))
-  ) {
-    return "HIDRÁULICA";
-  }
-  if (
-    context.includes("ELETR") ||
-    context.includes("LUMINARIA") ||
-    context.includes("PAINEL")
-  ) {
-    return "ELÉTRICA";
-  }
-  if (
-    context.includes("REFRIG") ||
-    context.includes("CLIMAT") ||
-    context.includes("AR CONDIC") ||
-    context.includes("FANCOIL") ||
-    context.includes("CHILLER")
-  ) {
-    return refrigeracaoTeam(row.predio ?? "");
-  }
-  if (
-    context.includes("CIVIL") ||
-    context.includes("PINTURA") ||
-    context.includes("ALVENARIA")
-  ) {
-    return "CIVIL";
-  }
-  return null;
 }
 
 function validDate(value: string | null | undefined): Date | null {
