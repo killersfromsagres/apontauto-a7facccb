@@ -1050,23 +1050,6 @@ function CorretivaNovoPage() {
                         </div>
                       )}
 
-                      {pendingReprogramming && !programReservation && (
-                        <div className="mb-4 rounded-xl border border-amber-400/25 bg-amber-400/[0.07] p-2.5">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge className="gap-1.5 border border-amber-300/30 bg-amber-500/15 text-[9px] font-extrabold uppercase text-amber-100">
-                              <RotateCcw className="h-3 w-3" />
-                              REPROGRAMAÇÃO PRIORITÁRIA
-                            </Badge>
-                            <span className="text-[9px] text-amber-100/75">
-                              Tentativa {Math.max(1, Number(os.programacao_tentativas) || 1)}
-                            </span>
-                          </div>
-                          <p className="mt-1.5 text-[9px] leading-4 text-muted-foreground/80">
-                            Voltou para a lista de corretivas e já pode entrar em uma nova programação.
-                          </p>
-                        </div>
-                      )}
-
                       <div className="min-w-0">
                         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
                           Descrição do chamado
