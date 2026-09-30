@@ -214,6 +214,24 @@ function problemSeverity(row: CorrectiveSourceRow): 0 | 1 | 2 {
   return 2;
 }
 
+function hydraulicOperationalUrgency(
+  row: CorrectiveSourceRow,
+  equipe: Equipe,
+): number {
+  if (equipe !== "HIDRÁULICA") return 0;
+  const text = norm(
+    `${row.nome_os ?? ""} ${row.tipo ?? ""} ${row.ativo ?? ""} ${row.equipamento ?? ""} ${row.predio ?? ""} ${row.andar ?? ""} ${row.local ?? ""}`,
+  );
+  let score = 0;
+  if (/ENTUP|DESENTUP|ESGOTO/.test(text)) score += 100;
+  if (/BANHEIRO|SANITARIO|VASO|MICTORIO/.test(text)) score += 70;
+  if (/COZINHA/.test(text)) score += 55;
+  if (/\bC70\b/.test(text)) score += 45;
+  if (/VAZAMENTO|ROMPIMENTO|ALAGAMENTO/.test(text)) score += 35;
+  if (/PIA|TORNEIRA|RALO/.test(text)) score += 20;
+  return score;
+}
+
 function dueDate(row: CorrectiveSourceRow): Date | null {
   return validDate(row.data_sla) ?? validDate(row.data_programada);
 }
@@ -492,6 +510,10 @@ export function mapCorrectives(
         programacaoGravidade: severity,
         programacaoPrioridade: priority.level,
         programacaoScore: priority.score,
+        programacaoUrgenciaHidraulica: hydraulicOperationalUrgency(
+          row,
+          equipe,
+        ),
       },
       equipe,
     });
