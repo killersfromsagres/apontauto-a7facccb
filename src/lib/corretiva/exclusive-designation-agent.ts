@@ -67,14 +67,23 @@ function chooseFinalTeam(
   const technical = analyzeCorrectiveOrder(row);
   const current = canonicalCorrectiveTeam(row.equipe);
 
-  // A leitura por IA é aplicada a todos os chamados. Confiança alta vence,
-  // inclusive sobre uma equipe previamente preenchida que pode estar incorreta.
+  // Evidência técnica inequívoca vence qualquer leitura probabilística.
+  // Isso impede erros como "mola hidráulica da porta" -> Hidráulica ou
+  // "tomada no banheiro" -> Civil/Hidráulica. O objeto do serviço define a equipe.
+  if (
+    technical.hasSignal &&
+    !technical.ambiguo &&
+    technical.confianca === "alta"
+  ) {
+    return { equipe: technical.equipe, source: "technical", needsReview: false };
+  }
+
+  // A IA continua lendo todos os chamados, mas só decide quando o domínio
+  // técnico local não encontrou uma evidência inequívoca.
   if (aiDecision?.equipe && aiDecision.confianca === "alta") {
     return { equipe: aiDecision.equipe, source: "ai", needsReview: false };
   }
 
-  // Evidência técnica clara é a segunda camada de decisão. Ela impede que uma
-  // resposta mediana da IA mova, por exemplo, elétrica/hidráulica para Civil.
   if (technical.hasSignal && !technical.ambiguo && technical.confianca !== "baixa") {
     return { equipe: technical.equipe, source: "technical", needsReview: false };
   }
