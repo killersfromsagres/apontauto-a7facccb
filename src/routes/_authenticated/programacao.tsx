@@ -1065,9 +1065,19 @@ function ProgramacaoPage() {
                           {items[0].periodStart ?? "arquivo anterior"} a {items[0].periodEnd ?? "—"}
                         </span>
                       </span>
-                      <Badge variant="outline" className="hidden gap-1 rounded-full border-emerald-500/20 text-[9px] text-emerald-600 sm:inline-flex dark:text-emerald-300">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "hidden gap-1 rounded-full text-[9px] sm:inline-flex",
+                          items.every((item) => item.persistent !== false)
+                            ? "border-emerald-500/20 text-emerald-600 dark:text-emerald-300"
+                            : "border-amber-500/20 text-amber-600 dark:text-amber-300",
+                        )}
+                      >
                         <Cloud className="h-3 w-3" />
-                        Salvo
+                        {items.every((item) => item.persistent !== false)
+                          ? "Nuvem"
+                          : "Contingência local"}
                       </Badge>
                       <Badge variant="outline" className="rounded-full text-[9px]">
                         {items.length} arquivo(s)
