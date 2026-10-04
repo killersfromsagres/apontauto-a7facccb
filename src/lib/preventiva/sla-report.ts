@@ -4,12 +4,17 @@ import {
   type Equipe,
   type TriagedOS,
 } from "./triage";
-import { preventiveExecutionDeadline } from "./monthly-scheduler";
+import {
+  buildSlaConsolidatedPlan,
+  type SlaConsolidatedRow,
+} from "./sla-consolidation";
 
 export interface SlaDeadlineReportResult {
   blob: Blob;
   filename: string;
   total: number;
+  prioritized: number;
+  duplicatesRemoved: number;
   byTeam: Array<{ equipe: Equipe; total: number }>;
 }
 
@@ -18,9 +23,13 @@ const TEXT_COLOR = "FF162231";
 const MUTED_COLOR = "FF64748B";
 const BORDER_COLOR = "FFDCE4EC";
 const LIGHT_BG = "FFF7FAFC";
-const WARNING_BG = "FFFFF3CD";
-const WARNING_TEXT = "FF8A5A00";
+const SLA_BG = "FFFFF3CD";
+const SLA_TEXT = "FF8A5A00";
 const WHITE = "FFFFFFFF";
+
+const ACTIVE_TEAMS = EQUIPES_ORDEM.filter(
+  (team): team is Exclude<Equipe, "CORRETIVA"> => team !== "CORRETIVA",
+);
 
 function argb(hex: string): string {
   return `FF${hex.replace("#", "").toUpperCase()}`;
@@ -46,13 +55,6 @@ function formatDate(value: Date | null): string {
   return value.toLocaleDateString("pt-BR");
 }
 
-function naturalCompare(a: unknown, b: unknown): number {
-  return String(a ?? "").localeCompare(String(b ?? ""), "pt-BR", {
-    numeric: true,
-    sensitivity: "base",
-  });
-}
-
 function safeSheetName(value: string): string {
   return value
     .replace(/[\\/*?:\[\]]/g, " ")
@@ -73,140 +75,199 @@ function isBeforeDay28(item: TriagedOS): boolean {
   return Boolean(sla && sla.getDate() < 28);
 }
 
-function sortTeamRows(rows: TriagedOS[]): TriagedOS[] {
-  return [...rows].sort((a, b) => {
-    const slaA = toDate(a.terminoSLA)?.getTime() ?? Number.MAX_SAFE_INTEGER;
-    const slaB = toDate(b.terminoSLA)?.getTime() ?? Number.MAX_SAFE_INTEGER;
-    if (slaA !== slaB) return slaA - slaB;
+/** Mantido para compatibilidade com consumidores antigos do relatório. */
+export function slaDeadlineRows(items: TriagedOS[]): TriagedOS[] {
+  return items.filter(isBeforeDay28);
+}
 
-    return (
-      naturalCompare(a.predio, b.predio) ||
-      naturalCompare(a.andar, b.andar) ||
-      naturalCompare(a.local, b.local) ||
-      naturalCompare(a.os, b.os)
-    );
+function styleHeaderRow(row: import("exceljs").Row): void {
+  row.height = 28;
+  row.eachCell((cell) => {
+    cell.font = {
+      name: "Aptos",
+      size: 9,
+      bold: true,
+      color: { argb: WHITE },
+    };
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: HEADER_COLOR },
+    };
+    cell.alignment = {
+      horizontal: "center",
+      vertical: "middle",
+      wrapText: true,
+    };
+    cell.border = {
+      bottom: { style: "thin", color: { argb: BORDER_COLOR } },
+    };
   });
 }
 
-export function slaDeadlineRows(items: TriagedOS[]): TriagedOS[] {
-  return items.filter(isBeforeDay28);
+function styleDataRow(
+  row: import("exceljs").Row,
+  index: number,
+  slaMoved: boolean,
+): void {
+  row.height = 31;
+  row.eachCell((cell) => {
+    cell.font = { name: "Aptos", size: 9, color: { argb: TEXT_COLOR } };
+    cell.alignment = { vertical: "middle", wrapText: true };
+    cell.border = {
+      bottom: { style: "hair", color: { argb: BORDER_COLOR } },
+    };
+    if ((index + 1) % 2 === 0) {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: LIGHT_BG },
+      };
+    }
+  });
+
+  if (slaMoved) {
+    row.getCell(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: SLA_BG },
+    };
+    row.getCell(1).font = { bold: true, color: { argb: SLA_TEXT } };
+    row.getCell(2).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: SLA_BG },
+    };
+    row.getCell(2).font = { bold: true, color: { argb: SLA_TEXT } };
+  }
+}
+
+function teamRows(
+  rows: SlaConsolidatedRow[],
+  team: Equipe,
+): SlaConsolidatedRow[] {
+  return rows.filter((row) => row.equipe === team);
 }
 
 export async function generateSlaDeadlineReport(
   items: TriagedOS[],
   referenceDate: Date,
+  minutesPerTeam: Partial<Record<Equipe, 30 | 60>> = {},
 ): Promise<SlaDeadlineReportResult> {
   const { default: ExcelJS } = await import("exceljs");
+  const plan = buildSlaConsolidatedPlan(items, referenceDate, minutesPerTeam);
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Apont Auto";
   workbook.company = "GRUPO GPS";
-  workbook.subject = "Preventivas com Término SLA antes do dia 28";
-  workbook.title = "Término SLA";
+  workbook.subject = "Apontamento consolidado por semana e equipe";
+  workbook.title = "Baixar Término SLA • Consolidado";
   workbook.created = new Date();
 
-  const filtered = slaDeadlineRows(items);
-  const byTeamMap = new Map<Equipe, TriagedOS[]>();
-
-  filtered.forEach((item) => {
-    const team = item.equipe;
-    if (!team || team === "CORRETIVA") return;
-    const current = byTeamMap.get(team) ?? [];
-    current.push(item);
-    byTeamMap.set(team, current);
-  });
-
-  const teams = EQUIPES_ORDEM.filter(
-    (team) => team !== "CORRETIVA" && (byTeamMap.get(team)?.length ?? 0) > 0,
-  );
-
   const summary = workbook.addWorksheet("RESUMO", {
-    views: [{ showGridLines: false }],
+    views: [{ state: "frozen", ySplit: 7, showGridLines: false }],
   });
   summary.properties.defaultRowHeight = 20;
   summary.columns = [
     { width: 34 },
+    ...plan.weeks.map(() => ({ width: 14 })),
     { width: 16 },
-    { width: 20 },
-    { width: 20 },
   ];
 
-  summary.mergeCells("A1:D2");
-  const title = summary.getCell("A1");
-  title.value = "CONTROLE PREMIUM • TÉRMINO SLA";
-  title.font = { name: "Aptos Display", size: 20, bold: true, color: { argb: WHITE } };
-  title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_COLOR } };
+  const lastSummaryColumn = Math.max(3, plan.weeks.length + 2);
+  summary.mergeCells(1, 1, 2, lastSummaryColumn);
+  const title = summary.getCell(1, 1);
+  title.value = "APONTAMENTO CONSOLIDADO • PROGRAMAÇÃO + TÉRMINO SLA";
+  title.font = {
+    name: "Aptos Display",
+    size: 19,
+    bold: true,
+    color: { argb: WHITE },
+  };
+  title.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: HEADER_COLOR },
+  };
   title.alignment = { vertical: "middle", horizontal: "left" };
 
-  summary.mergeCells("A3:D3");
-  const subtitle = summary.getCell("A3");
+  summary.mergeCells(3, 1, 3, lastSummaryColumn);
+  const subtitle = summary.getCell(3, 1);
   subtitle.value =
-    "Preventivas com Término SLA antes do dia 28 • Separadas por equipe";
+    "Uma OS aparece uma única vez. SLA antes do dia 28 é direcionado para a semana anterior ao vencimento; as demais OS preservam a distribuição normal da programação.";
   subtitle.font = { name: "Aptos", size: 10, color: { argb: MUTED_COLOR } };
-  subtitle.alignment = { vertical: "middle" };
+  subtitle.alignment = { vertical: "middle", wrapText: true };
+  summary.getRow(3).height = 34;
 
-  summary.getCell("A5").value = "Mês de referência";
-  summary.getCell("B5").value = referenceDate.toLocaleDateString("pt-BR", {
+  summary.getCell(5, 1).value = "Mês de referência";
+  summary.getCell(5, 2).value = referenceDate.toLocaleDateString("pt-BR", {
     month: "long",
     year: "numeric",
   });
-  summary.getCell("C5").value = "Atualizado em";
-  summary.getCell("D5").value = new Date().toLocaleString("pt-BR");
+  summary.getCell(5, 3).value = "OS únicas";
+  summary.getCell(5, 4).value = plan.rows.length;
+  summary.getCell(5, 5).value = "Antecipadas por SLA";
+  summary.getCell(5, 6).value = plan.prioritizedCount;
+  summary.getCell(5, 7).value = "Duplicidades removidas";
+  summary.getCell(5, 8).value = plan.duplicatesRemoved;
 
-  ["A5", "C5"].forEach((cellRef) => {
-    const cell = summary.getCell(cellRef);
+  for (const col of [1, 3, 5, 7]) {
+    const cell = summary.getCell(5, col);
     cell.font = { bold: true, color: { argb: TEXT_COLOR } };
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: LIGHT_BG } };
-  });
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: LIGHT_BG },
+    };
+  }
 
-  summary.getCell("A7").value = "Equipe";
-  summary.getCell("B7").value = "Preventivas";
-  summary.getCell("C7").value = "SLA mais próximo";
-  summary.getCell("D7").value = "Executar até";
-  summary.getRow(7).eachCell((cell) => {
+  const summaryHeaders = [
+    "Equipe",
+    ...plan.weeks.map((week) => `Semana ${week.isoWeek}`),
+    "Total",
+  ];
+  const summaryHeader = summary.addRow([]);
+  summaryHeader.values = summaryHeaders;
+  styleHeaderRow(summaryHeader);
+
+  for (const team of ACTIVE_TEAMS) {
+    const rows = teamRows(plan.rows, team);
+    const values = [
+      shortTeamName(team),
+      ...plan.weeks.map(
+        (_, weekIndex) => rows.filter((row) => row.weekIndex === weekIndex).length,
+      ),
+      rows.length,
+    ];
+    const row = summary.addRow(values);
+    row.getCell(1).font = {
+      bold: true,
+      color: { argb: argb(EQUIPE_COLOR[team]) },
+    };
+    for (let col = 2; col <= values.length; col += 1) {
+      row.getCell(col).alignment = { horizontal: "center" };
+    }
+  }
+
+  const totalValues = [
+    "TOTAL",
+    ...plan.weeks.map(
+      (_, weekIndex) => plan.rows.filter((row) => row.weekIndex === weekIndex).length,
+    ),
+    plan.rows.length,
+  ];
+  const totalRow = summary.addRow(totalValues);
+  totalRow.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: WHITE } };
     cell.fill = {
       type: "pattern",
       pattern: "solid",
       fgColor: { argb: HEADER_COLOR },
     };
-    cell.alignment = { horizontal: "center", vertical: "middle" };
+    cell.alignment = { horizontal: "center" };
   });
 
-  let summaryRow = 8;
-  for (const team of teams) {
-    const rows = sortTeamRows(byTeamMap.get(team) ?? []);
-    const earliest = toDate(rows[0]?.terminoSLA);
-    const deadline = rows[0] ? preventiveExecutionDeadline(rows[0]) : null;
-    const teamColor = argb(EQUIPE_COLOR[team]);
-
-    summary.getCell(summaryRow, 1).value = shortTeamName(team);
-    summary.getCell(summaryRow, 2).value = rows.length;
-    summary.getCell(summaryRow, 3).value = formatDate(earliest);
-    summary.getCell(summaryRow, 4).value = formatDate(deadline);
-    summary.getCell(summaryRow, 1).font = { bold: true, color: { argb: teamColor } };
-    summary.getCell(summaryRow, 2).alignment = { horizontal: "center" };
-    summary.getCell(summaryRow, 3).alignment = { horizontal: "center" };
-    summary.getCell(summaryRow, 4).alignment = { horizontal: "center" };
-    summaryRow += 1;
-  }
-
-  summary.getCell(summaryRow + 1, 1).value = "TOTAL";
-  summary.getCell(summaryRow + 1, 2).value = filtered.length;
-  summary.getCell(summaryRow + 1, 1).font = { bold: true, color: { argb: WHITE } };
-  summary.getCell(summaryRow + 1, 2).font = { bold: true, color: { argb: WHITE } };
-  summary.getCell(summaryRow + 1, 1).fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: HEADER_COLOR },
-  };
-  summary.getCell(summaryRow + 1, 2).fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: HEADER_COLOR },
-  };
-
-  for (const team of teams) {
-    const rows = sortTeamRows(byTeamMap.get(team) ?? []);
+  for (const team of ACTIVE_TEAMS) {
+    const rows = teamRows(plan.rows, team);
     const sheet = workbook.addWorksheet(safeSheetName(shortTeamName(team)), {
       views: [{ state: "frozen", ySplit: 5, showGridLines: false }],
     });
@@ -214,7 +275,7 @@ export async function generateSlaDeadlineReport(
 
     sheet.mergeCells("A1:L2");
     const teamTitle = sheet.getCell("A1");
-    teamTitle.value = `${shortTeamName(team)} • TÉRMINO SLA`;
+    teamTitle.value = `${shortTeamName(team)} • APONTAMENTO SEM DUPLICIDADE`;
     teamTitle.font = {
       name: "Aptos Display",
       size: 17,
@@ -230,15 +291,17 @@ export async function generateSlaDeadlineReport(
 
     sheet.mergeCells("A3:L3");
     const teamSubtitle = sheet.getCell("A3");
-    teamSubtitle.value =
-      `${rows.length} preventiva(s) com vencimento antes do dia 28 • Atualizado ${new Date().toLocaleString("pt-BR")}`;
+    teamSubtitle.value = `${rows.length} OS única(s) • Semanas ${plan.weeks
+      .map((week) => week.isoWeek)
+      .join(", ")} • Filtre pela coluna Semana para copiar somente os chamados que serão apontados.`;
     teamSubtitle.font = { size: 9, color: { argb: MUTED_COLOR } };
+    teamSubtitle.alignment = { vertical: "middle", wrapText: true };
 
     const headers = [
-      "Prioridade",
+      "Semana",
+      "Origem da semana",
       "OS",
       "Término SLA",
-      "Executar até (D-1 útil)",
       "Prédio",
       "Andar",
       "Local",
@@ -250,45 +313,15 @@ export async function generateSlaDeadlineReport(
     ];
     sheet.addRow([]);
     const headerRow = sheet.addRow(headers);
-    headerRow.height = 28;
-    headerRow.eachCell((cell) => {
-      cell.font = { name: "Aptos", size: 9, bold: true, color: { argb: WHITE } };
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: HEADER_COLOR },
-      };
-      cell.alignment = {
-        horizontal: "center",
-        vertical: "middle",
-        wrapText: true,
-      };
-      cell.border = {
-        bottom: { style: "thin", color: { argb: BORDER_COLOR } },
-      };
-    });
+    styleHeaderRow(headerRow);
 
-    rows.forEach((item, index) => {
-      const sla = toDate(item.terminoSLA);
-      const deadline = preventiveExecutionDeadline(item);
-      const isUrgent =
-        deadline !== null &&
-        deadline.getTime() <=
-          new Date(
-            referenceDate.getFullYear(),
-            referenceDate.getMonth(),
-            referenceDate.getDate() + 3,
-            23,
-            59,
-            59,
-            999,
-          ).getTime();
-
+    rows.forEach((entry, index) => {
+      const item = entry.item;
       const row = sheet.addRow([
-        isUrgent ? "ATENÇÃO" : "PROGRAMAR",
-        item.os,
-        formatDate(sla),
-        formatDate(deadline),
+        `Semana ${entry.week.isoWeek}`,
+        entry.movedBySla ? "ANTECIPADA POR SLA" : "PROGRAMAÇÃO NORMAL",
+        item.os || item.chamado || "—",
+        formatDate(toDate(item.terminoSLA)),
         item.predio || "—",
         item.andar || "—",
         item.local || "—",
@@ -299,40 +332,8 @@ export async function generateSlaDeadlineReport(
         item.arquivo || "—",
       ]);
 
-      row.height = 34;
-      row.eachCell((cell) => {
-        cell.font = { name: "Aptos", size: 9, color: { argb: TEXT_COLOR } };
-        cell.alignment = { vertical: "middle", wrapText: true };
-        cell.border = {
-          bottom: { style: "hair", color: { argb: BORDER_COLOR } },
-        };
-        if ((index + 1) % 2 === 0) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: LIGHT_BG },
-          };
-        }
-      });
-
-      row.getCell(1).font = {
-        bold: true,
-        color: { argb: isUrgent ? WARNING_TEXT : teamColor },
-      };
-      if (isUrgent) {
-        row.getCell(1).fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: WARNING_BG },
-        };
-        row.getCell(4).fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: WARNING_BG },
-        };
-        row.getCell(4).font = { bold: true, color: { argb: WARNING_TEXT } };
-      }
-      [2, 3, 4, 5, 6, 10, 11].forEach((col) => {
+      styleDataRow(row, index, entry.movedBySla);
+      [1, 2, 3, 4, 5, 6, 10, 11].forEach((col) => {
         row.getCell(col).alignment = {
           horizontal: "center",
           vertical: "middle",
@@ -341,12 +342,26 @@ export async function generateSlaDeadlineReport(
       });
     });
 
+    if (rows.length === 0) {
+      sheet.mergeCells("A6:L8");
+      const empty = sheet.getCell("A6");
+      empty.value = "Nenhuma OS desta equipe nos arquivos anexados.";
+      empty.font = { italic: true, color: { argb: MUTED_COLOR } };
+      empty.alignment = {
+        horizontal: "center",
+        vertical: "middle",
+        wrapText: true,
+      };
+    }
+
     sheet.autoFilter = {
       from: { row: 5, column: 1 },
       to: { row: Math.max(5, 5 + rows.length), column: headers.length },
     };
 
-    const widths = [13, 15, 14, 19, 14, 12, 24, 18, 38, 16, 15, 25];
+    const widths = [
+      13, 22, 16, 15, 15, 13, 26, 22, 42, 18, 16, 27,
+    ];
     widths.forEach((width, index) => {
       sheet.getColumn(index + 1).width = width;
     });
@@ -367,16 +382,7 @@ export async function generateSlaDeadlineReport(
       },
     };
     sheet.headerFooter.oddFooter =
-      "&LApont Auto • Controle de Término SLA&C&P / &N&RAtualizado automaticamente";
-  }
-
-  if (teams.length === 0) {
-    summary.mergeCells("A8:D10");
-    const empty = summary.getCell("A8");
-    empty.value =
-      "Nenhuma preventiva com Término SLA antes do dia 28 foi encontrada nos arquivos anexados.";
-    empty.font = { italic: true, color: { argb: MUTED_COLOR } };
-    empty.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+      "&LApont Auto • Apontamento consolidado&C&P / &N&RUma OS = uma ocorrência";
   }
 
   summary.pageSetup = {
@@ -391,18 +397,19 @@ export async function generateSlaDeadlineReport(
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
-
-  const monthLabel = referenceDate
-    .toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
-    .toUpperCase();
+  const monthKey = `${referenceDate.getFullYear()}-${String(
+    referenceDate.getMonth() + 1,
+  ).padStart(2, "0")}`;
 
   return {
     blob,
-    filename: `TERMINO SLA - ${monthLabel}.xlsx`,
-    total: filtered.length,
-    byTeam: teams.map((equipe) => ({
+    filename: `APONTAMENTO_TERMINO_SLA_CONSOLIDADO_${monthKey}.xlsx`,
+    total: plan.rows.length,
+    prioritized: plan.prioritizedCount,
+    duplicatesRemoved: plan.duplicatesRemoved,
+    byTeam: ACTIVE_TEAMS.map((equipe) => ({
       equipe,
-      total: byTeamMap.get(equipe)?.length ?? 0,
+      total: teamRows(plan.rows, equipe).length,
     })),
   };
 }
