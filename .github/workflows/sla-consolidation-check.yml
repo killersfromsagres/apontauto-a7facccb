@@ -1,0 +1,33 @@
+name: SLA consolidation check
+
+on:
+  push:
+    branches:
+      - fix/baixar-termino-sla-sem-duplicidade
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sla-consolidation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-sla-consolidation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Run SLA consolidation tests
+        run: npx vitest run src/lib/preventiva/__tests__/sla-consolidation.test.ts
