@@ -15,6 +15,7 @@ export interface SlaConsolidatedRow {
   week: WeekInfo;
   weekIndex: number;
   normalWeekIndex: number;
+  slaPrioritized: boolean;
   movedBySla: boolean;
 }
 
@@ -94,13 +95,6 @@ function uniqueItems(items: TriagedOS[]): {
   };
 }
 
-function weekYearForIso(date: Date): number {
-  const copy = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const day = copy.getUTCDay() || 7;
-  copy.setUTCDate(copy.getUTCDate() + 4 - day);
-  return copy.getUTCFullYear();
-}
-
 /**
  * Regra operacional do apontamento SLA:
  * - somente vencimentos antes do dia 28 entram na antecipação;
@@ -126,10 +120,10 @@ export function slaPriorityWeekIndex(
   }
 
   const isoWeek = isoWeekNumber(sla);
-  const isoYear = weekYearForIso(sla);
-  const slaWeekIndex = weeks.findIndex(
-    (week) => week.isoWeek === isoWeek && week.year === isoYear,
-  );
+  // O recorte possui semanas consecutivas e, dentro de um único mês, não há
+  // repetição do mesmo número ISO. Comparar somente o número evita erro em
+  // meses que atravessam a virada do ano (ex.: semana 1 iniciando em dezembro).
+  const slaWeekIndex = weeks.findIndex((week) => week.isoWeek === isoWeek);
 
   if (slaWeekIndex < 0) return 0;
   return Math.max(0, slaWeekIndex - 1);
@@ -223,6 +217,7 @@ export function buildSlaConsolidatedPlan(
       Math.max(0, weeks.length - 1),
     );
     const priorityWeekIndex = slaPriorityWeekIndex(item, weeks, monthStart);
+    const slaPrioritized = priorityWeekIndex !== null;
     const weekIndex = priorityWeekIndex ?? normalWeekIndex;
 
     return {
@@ -231,8 +226,9 @@ export function buildSlaConsolidatedPlan(
       week: weeks[weekIndex],
       weekIndex,
       normalWeekIndex,
+      slaPrioritized,
       movedBySla:
-        priorityWeekIndex !== null && priorityWeekIndex !== normalWeekIndex,
+        slaPrioritized && priorityWeekIndex !== normalWeekIndex,
     };
   });
 
@@ -241,6 +237,6 @@ export function buildSlaConsolidatedPlan(
     weeks,
     rows: sortedRows,
     duplicatesRemoved,
-    prioritizedCount: sortedRows.filter((row) => row.movedBySla).length,
+    prioritizedCount: sortedRows.filter((row) => row.slaPrioritized).length,
   };
 }
