@@ -12,7 +12,10 @@ import {
 export interface SlaDeadlineReportResult {
   blob: Blob;
   filename: string;
+  /** Mantém a semântica histórica usada pela tela: total de OS em prioridade SLA. */
   total: number;
+  /** Total de OS únicas disponíveis no arquivo consolidado para apontamento. */
+  pointingTotal: number;
   prioritized: number;
   duplicatesRemoved: number;
   byTeam: Array<{ equipe: Equipe; total: number }>;
@@ -108,7 +111,7 @@ function styleHeaderRow(row: import("exceljs").Row): void {
 function styleDataRow(
   row: import("exceljs").Row,
   index: number,
-  slaMoved: boolean,
+  slaPrioritized: boolean,
 ): void {
   row.height = 31;
   row.eachCell((cell) => {
@@ -126,7 +129,7 @@ function styleDataRow(
     }
   });
 
-  if (slaMoved) {
+  if (slaPrioritized) {
     row.getCell(1).fill = {
       type: "pattern",
       pattern: "solid",
@@ -164,16 +167,17 @@ export async function generateSlaDeadlineReport(
   workbook.created = new Date();
 
   const summary = workbook.addWorksheet("RESUMO", {
-    views: [{ state: "frozen", ySplit: 7, showGridLines: false }],
+    views: [{ state: "frozen", ySplit: 6, showGridLines: false }],
   });
   summary.properties.defaultRowHeight = 20;
   summary.columns = [
     { width: 34 },
     ...plan.weeks.map(() => ({ width: 14 })),
     { width: 16 },
+    { width: 20 },
   ];
 
-  const lastSummaryColumn = Math.max(3, plan.weeks.length + 2);
+  const lastSummaryColumn = Math.max(8, plan.weeks.length + 2);
   summary.mergeCells(1, 1, 2, lastSummaryColumn);
   const title = summary.getCell(1, 1);
   title.value = "APONTAMENTO CONSOLIDADO • PROGRAMAÇÃO + TÉRMINO SLA";
@@ -205,7 +209,7 @@ export async function generateSlaDeadlineReport(
   });
   summary.getCell(5, 3).value = "OS únicas";
   summary.getCell(5, 4).value = plan.rows.length;
-  summary.getCell(5, 5).value = "Antecipadas por SLA";
+  summary.getCell(5, 5).value = "Prioridade SLA";
   summary.getCell(5, 6).value = plan.prioritizedCount;
   summary.getCell(5, 7).value = "Duplicidades removidas";
   summary.getCell(5, 8).value = plan.duplicatesRemoved;
@@ -319,7 +323,11 @@ export async function generateSlaDeadlineReport(
       const item = entry.item;
       const row = sheet.addRow([
         `Semana ${entry.week.isoWeek}`,
-        entry.movedBySla ? "ANTECIPADA POR SLA" : "PROGRAMAÇÃO NORMAL",
+        entry.movedBySla
+          ? "ANTECIPADA POR SLA"
+          : entry.slaPrioritized
+            ? "PRIORIDADE SLA"
+            : "PROGRAMAÇÃO NORMAL",
         item.os || item.chamado || "—",
         formatDate(toDate(item.terminoSLA)),
         item.predio || "—",
@@ -332,7 +340,7 @@ export async function generateSlaDeadlineReport(
         item.arquivo || "—",
       ]);
 
-      styleDataRow(row, index, entry.movedBySla);
+      styleDataRow(row, index, entry.slaPrioritized);
       [1, 2, 3, 4, 5, 6, 10, 11].forEach((col) => {
         row.getCell(col).alignment = {
           horizontal: "center",
@@ -404,7 +412,8 @@ export async function generateSlaDeadlineReport(
   return {
     blob,
     filename: `APONTAMENTO_TERMINO_SLA_CONSOLIDADO_${monthKey}.xlsx`,
-    total: plan.rows.length,
+    total: plan.prioritizedCount,
+    pointingTotal: plan.rows.length,
     prioritized: plan.prioritizedCount,
     duplicatesRemoved: plan.duplicatesRemoved,
     byTeam: ACTIVE_TEAMS.map((equipe) => ({
