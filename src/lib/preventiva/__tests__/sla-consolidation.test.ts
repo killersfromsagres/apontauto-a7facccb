@@ -52,7 +52,7 @@ describe("consolidação do apontamento por Término SLA", () => {
     expect(normalizeOsKey(" 12345.0 ")).toBe("12345");
   });
 
-  it("mantém cada OS uma única vez no arquivo consolidado", () => {
+  it("mantém cada OS uma única vez e preserva a marca de prioridade SLA", () => {
     const plan = buildSlaConsolidatedPlan(
       [
         os("12345", "2026-10-09"),
@@ -67,7 +67,24 @@ describe("consolidação do apontamento por Término SLA", () => {
       "67890",
     ]);
     expect(plan.duplicatesRemoved).toBe(1);
+    expect(plan.prioritizedCount).toBe(2);
+    expect(plan.rows.every((row) => row.slaPrioritized)).toBe(true);
     expect(plan.rows[0].week.isoWeek).toBe(40);
     expect(plan.rows[1].week.isoWeek).toBe(42);
+  });
+
+  it("resolve corretamente a Semana 1 quando o mês atravessa a virada do ano", () => {
+    const december = new Date(2025, 11, 1, 12);
+    const decemberWeeks = weeksBetween(december, new Date(2025, 11, 31, 12));
+    const index = slaPriorityWeekIndex(
+      os("900", "2025-12-30"),
+      decemberWeeks,
+      december,
+    );
+
+    // Dia 30 não entra na prioridade (< 28), portanto este caso apenas garante
+    // que o recorte de semanas de dezembro pode conter a Semana 1 sem conflito.
+    expect(index).toBeNull();
+    expect(decemberWeeks.some((week) => week.isoWeek === 1)).toBe(true);
   });
 });
