@@ -233,10 +233,6 @@ function firstName(name: string): string {
   return cleanCell(name).split(" ").filter(Boolean)[0] || "Olá";
 }
 
-function plural(count: number, singular: string, pluralValue: string): string {
-  return count === 1 ? singular : pluralValue;
-}
-
 export function buildEvaluationEmailDraft(
   group: RequesterGroup,
   selectedItems: EvaluationRow[],
@@ -248,7 +244,7 @@ export function buildEvaluationEmailDraft(
   if (selectedItems.length === 0) {
     return {
       destinatario,
-      assunto: "Avaliação pendente de chamados | Prisma",
+      assunto: "Ação necessária | Avaliação de chamados no Prisma",
       corpo: "",
     };
   }
@@ -256,34 +252,32 @@ export function buildEvaluationEmailDraft(
   const items = selectedItems;
   const count = items.length;
   const chamadas = items
-    .map((item, index) => `${index + 1}. OS ${item.os} — ${item.descricao}`)
+    .map((item) => `• OS ${item.os} — ${item.descricao}`)
     .join("\n");
 
   const assunto =
     count === 1
-      ? `Avaliação pendente do chamado OS ${items[0]?.os ?? ""} | Prisma`
-      : `Avaliação pendente de ${count} chamados | Prisma`;
+      ? `Ação necessária | Avaliação da OS ${items[0]?.os ?? ""} no Prisma`
+      : `Ação necessária | Avaliação de ${count} chamados no Prisma`;
 
   const corpo = [
     `Olá, ${firstName(group.nome)}.`,
     "",
-    "Tudo bem?",
-    "",
-    `Identificamos que ${plural(count, "o chamado abaixo, aberto em seu nome, já foi concluído e permanece pendente de avaliação", "os chamados abaixo, abertos em seu nome, já foram concluídos e permanecem pendentes de avaliação")} no sistema Prisma:`,
+    "Solicitamos sua avaliação dos serviços abaixo, já concluídos e ainda pendentes de avaliação no Prisma:",
     "",
     chamadas,
     "",
-    "Pedimos, por gentileza, que realize a avaliação dos serviços assim que possível. Seu retorno é importante para acompanharmos a qualidade dos atendimentos e direcionarmos melhorias contínuas.",
-    "",
-    "Orientação rápida para avaliação no Prisma:",
-    "• Acesse a opção “Aprovação de Serviço” no campo superior esquerdo;",
-    "• Entre em “Seleção de Registro” e selecione as OS relacionadas acima;",
+    "Para concluir a avaliação:",
+    "• Acesse “Aprovação de Serviço”;",
+    "• Entre em “Seleção de Registro” e selecione as OS acima;",
     "• Para serviços aprovados, atribua uma nota de 1 a 5;",
     "• Para nota igual ou inferior a 4, inclua um comentário;",
     "• Em caso de recusa do serviço, o comentário também é obrigatório;",
-    "• Finalize clicando em “Submeter aprovações”.",
+    "• Finalize em “Submeter aprovações”.",
     "",
-    "Encaminho também o Manual de Avaliação do Prisma para apoio no procedimento.",
+    "Seu retorno é importante para o acompanhamento da qualidade dos atendimentos e para a melhoria contínua dos serviços.",
+    "",
+    "O Manual de Avaliação do Prisma segue como material de apoio.",
     "",
     "Agradecemos pela colaboração.",
     "",
