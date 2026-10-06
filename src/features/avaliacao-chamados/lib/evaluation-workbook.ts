@@ -51,7 +51,6 @@ const HEADER_ALIASES = {
 } as const;
 
 type ColumnKey = keyof typeof HEADER_ALIASES;
-
 type RawSheetRow = Record<string, unknown>;
 
 function normalizeText(value: unknown): string {
@@ -147,7 +146,7 @@ export function groupEvaluationRows(rows: EvaluationRow[]): RequesterGroup[] {
 
 export async function parseEvaluationWorkbook(file: File): Promise<EvaluationImportResult> {
   const XLSX = await import("xlsx");
-  const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", raw: false });
+  const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
   const sheetName = workbook.SheetNames[0];
   if (!sheetName) throw new Error("A planilha não possui nenhuma aba disponível.");
 
@@ -181,7 +180,7 @@ export async function parseEvaluationWorkbook(file: File): Promise<EvaluationImp
 
   const unique = new Map<string, EvaluationRow>();
   let skippedRows = 0;
-  let pendingRows = 0;
+  let pendingBeforeDedup = 0;
 
   rawRows.forEach((row, index) => {
     const os = normalizeOs(valueFor(row, columns.os));
@@ -197,7 +196,7 @@ export async function parseEvaluationWorkbook(file: File): Promise<EvaluationImp
     }
 
     if (!isPendingRow(statusAvaliacao, estado, Boolean(columns.statusAvaliacao))) return;
-    pendingRows += 1;
+    pendingBeforeDedup += 1;
 
     const item: EvaluationRow = {
       os,
@@ -223,7 +222,7 @@ export async function parseEvaluationWorkbook(file: File): Promise<EvaluationImp
     sheetName,
     totalRows: rawRows.length,
     pendingRows: items.length,
-    duplicatesRemoved: Math.max(0, pendingRows - items.length),
+    duplicatesRemoved: Math.max(0, pendingBeforeDedup - items.length),
     skippedRows,
     groups,
     emailColumnDetected: Boolean(columns.email),
@@ -244,7 +243,17 @@ export function buildEvaluationEmailDraft(
   signature: string,
   recipientOverride = "",
 ): EvaluationEmailDraft {
-  const items = selectedItems.length > 0 ? selectedItems : group.items;
+  const destinatario = cleanCell(recipientOverride) || group.email;
+
+  if (selectedItems.length === 0) {
+    return {
+      destinatario,
+      assunto: "Avaliação pendente de chamados | Prisma",
+      corpo: "",
+    };
+  }
+
+  const items = selectedItems;
   const count = items.length;
   const chamadas = items
     .map((item, index) => `${index + 1}. OS ${item.os} — ${item.descricao}`)
@@ -283,7 +292,7 @@ export function buildEvaluationEmailDraft(
   ].join("\n");
 
   return {
-    destinatario: cleanCell(recipientOverride) || group.email,
+    destinatario,
     assunto,
     corpo,
   };
