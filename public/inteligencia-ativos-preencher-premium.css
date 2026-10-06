@@ -1,252 +1,233 @@
 /*
  * Inteligência de Ativos / Preencher Planilha
- * Redesign premium editorial e funcional.
- * Escopo restrito a esta rota: sem ícones decorativos, sem linguagem de IA e sem efeitos neon excessivos.
+ * Redesign minimalista e profissional.
+ * Escopo exclusivo desta rota; nenhuma regra de negócio é alterada aqui.
  */
 
 [data-page-title="Preencher Planilha"] {
-  --asset-accent: #72d6c8;
-  --asset-accent-strong: #3eb7a8;
-  --asset-accent-deep: #217f76;
-  --asset-accent-soft: rgb(114 214 200 / 0.10);
-  --asset-accent-line: rgb(114 214 200 / 0.24);
+  --asset-accent: #67cfc1;
+  --asset-accent-strong: #43b8aa;
+  --asset-accent-soft: rgb(103 207 193 / 0.10);
+  --asset-accent-line: rgb(103 207 193 / 0.26);
   --asset-surface: color-mix(in oklch, var(--card) 96%, var(--background) 4%);
-  --asset-surface-2: color-mix(in oklch, var(--card) 90%, var(--background) 10%);
-  --asset-surface-3: color-mix(in oklch, var(--card) 84%, var(--background) 16%);
-  --asset-border: color-mix(in oklch, var(--border) 86%, white 4%);
-  --asset-border-strong: color-mix(in srgb, var(--asset-accent) 30%, var(--border));
-  --asset-text-soft: color-mix(in oklch, var(--muted-foreground) 88%, var(--foreground) 12%);
-  --asset-shadow: 0 28px 70px -54px rgb(0 0 0 / 0.72), 0 1px 0 rgb(255 255 255 / 0.035) inset;
-  --asset-shadow-raised: 0 34px 82px -58px rgb(0 0 0 / 0.82), 0 18px 34px -30px rgb(62 183 168 / 0.22), 0 1px 0 rgb(255 255 255 / 0.055) inset;
-  max-width: 1460px;
-  gap: 1.15rem;
-}
-
-[data-page-title="Preencher Planilha"]::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 82% 3%, rgb(114 214 200 / 0.055), transparent 28rem),
-    radial-gradient(circle at 12% 46%, rgb(255 255 255 / 0.018), transparent 24rem);
+  --asset-surface-muted: color-mix(in oklch, var(--card) 88%, var(--background) 12%);
+  --asset-border: color-mix(in oklch, var(--border) 88%, white 3%);
+  --asset-border-strong: color-mix(in srgb, var(--asset-accent) 34%, var(--border));
+  --asset-text-muted: color-mix(in oklch, var(--muted-foreground) 91%, var(--foreground) 9%);
+  max-width: 1320px;
+  gap: 1.25rem;
+  padding-inline: clamp(0.9rem, 2vw, 1.75rem);
 }
 
 /* --------------------------------------------------------------------------
    Cabeçalho
    -------------------------------------------------------------------------- */
 [data-page-title="Preencher Planilha"] > .premium-page-heading {
-  position: relative;
-  padding: 0.35rem 0 1.3rem !important;
-  border-bottom: 1px solid var(--asset-border) !important;
-}
-
-[data-page-title="Preencher Planilha"] > .premium-page-heading::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -1px;
-  width: min(12rem, 28vw);
-  height: 1px;
-  background: linear-gradient(90deg, var(--asset-accent-strong), transparent);
-  opacity: 0.72;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end !important;
+  gap: 1rem 1.5rem !important;
+  padding: 0.25rem 0 1.25rem !important;
+  border-bottom: 1px solid var(--asset-border);
 }
 
 [data-page-title="Preencher Planilha"] > .premium-page-heading h2 {
-  font-size: clamp(1.7rem, 2.7vw, 2.35rem) !important;
-  font-weight: 720 !important;
+  font-size: clamp(1.7rem, 3vw, 2.35rem) !important;
+  font-weight: 700 !important;
   letter-spacing: -0.045em !important;
   line-height: 1.02 !important;
 }
 
 [data-page-title="Preencher Planilha"] > .premium-page-heading p {
-  max-width: 48rem !important;
+  max-width: 46rem !important;
   margin-top: 0.55rem !important;
-  color: var(--asset-text-soft) !important;
+  color: var(--asset-text-muted) !important;
+  font-size: 0.84rem !important;
   line-height: 1.55 !important;
 }
 
-/* Remove ícones decorativos desta experiência. Controles funcionais continuam legíveis por estado. */
-[data-page-title="Preencher Planilha"] svg {
-  display: none !important;
+[data-page-title="Preencher Planilha"] > .premium-page-heading .text-muted-foreground:first-child {
+  letter-spacing: 0.12em !important;
 }
 
-[data-page-title="Preencher Planilha"] > .premium-page-heading [data-slot="button"] {
-  min-height: 2.75rem !important;
-  padding-inline: 1rem !important;
+[data-page-title="Preencher Planilha"] .premium-icon-button {
+  width: 2.45rem !important;
+  height: 2.45rem !important;
   border: 1px solid var(--asset-border) !important;
-  border-radius: 0.72rem !important;
-  background: color-mix(in oklch, var(--asset-surface) 88%, transparent) !important;
-  color: var(--asset-text-soft) !important;
-  font-size: 0.78rem !important;
-  font-weight: 650 !important;
-  letter-spacing: -0.01em;
+  border-radius: 0.75rem !important;
+  background: transparent !important;
   box-shadow: none !important;
 }
 
-[data-page-title="Preencher Planilha"] > .premium-page-heading [data-slot="button"]:hover {
+[data-page-title="Preencher Planilha"] .premium-icon-button:hover {
   border-color: var(--asset-border-strong) !important;
-  background: var(--asset-surface-2) !important;
+  background: var(--asset-accent-soft) !important;
+}
+
+[data-page-title="Preencher Planilha"] > .premium-page-heading > div:last-child {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 0.35rem !important;
+  padding: 0.3rem !important;
+  border: 1px solid var(--asset-border) !important;
+  border-radius: 0.9rem !important;
+  background: var(--asset-surface-muted) !important;
+}
+
+[data-page-title="Preencher Planilha"] > .premium-page-heading > div:last-child > * {
+  min-height: 2.45rem !important;
+  padding-inline: 0.95rem !important;
+  border: 0 !important;
+  border-radius: 0.65rem !important;
+  background: transparent !important;
+  color: var(--asset-text-muted) !important;
+  box-shadow: none !important;
+  font-size: 0.78rem !important;
+  font-weight: 650 !important;
+}
+
+[data-page-title="Preencher Planilha"] > .premium-page-heading > div:last-child > *:hover {
+  background: color-mix(in oklch, var(--foreground) 5%, transparent) !important;
   color: var(--foreground) !important;
-  transform: translateY(-1px);
+}
+
+[data-page-title="Preencher Planilha"] > .premium-page-heading > div:last-child svg {
+  display: none !important;
 }
 
 /* --------------------------------------------------------------------------
-   Fluxo de etapas
+   Fluxo de etapas — sem pseudo-elementos, sem números duplicados
    -------------------------------------------------------------------------- */
-[data-page-title="Preencher Planilha"] .space-y-5 > .flex.min-w-0.flex-wrap.items-center.gap-2 {
-  counter-reset: asset-step;
-  position: relative;
+[data-page-title="Preencher Planilha"] div:has(> div > .asset-fill-step) {
   display: grid !important;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  align-items: start !important;
-  gap: 0 !important;
-  padding: 1.1rem 0.95rem 1rem !important;
-  overflow: visible;
+  gap: 0.35rem !important;
+  width: 100%;
+  padding: 0.4rem !important;
+  overflow: visible !important;
   border: 1px solid var(--asset-border) !important;
-  border-radius: 1.05rem !important;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.025), transparent 52%),
-    var(--asset-surface) !important;
-  box-shadow: var(--asset-shadow) !important;
+  border-radius: 1rem !important;
+  background: var(--asset-surface-muted) !important;
+  box-shadow: none !important;
 }
 
-[data-page-title="Preencher Planilha"] .space-y-5 > .flex.min-w-0.flex-wrap.items-center.gap-2::before {
-  content: "";
-  position: absolute;
-  top: 2.06rem;
-  left: 7.3%;
-  right: 7.3%;
-  height: 1px;
-  background: color-mix(in oklch, var(--border) 90%, white 4%);
+[data-page-title="Preencher Planilha"] div:has(> .asset-fill-step) {
+  display: block !important;
+  min-width: 0 !important;
 }
 
-[data-page-title="Preencher Planilha"] .space-y-5 > .flex.min-w-0.flex-wrap.items-center.gap-2 > div {
-  counter-increment: asset-step;
-  position: relative;
-  z-index: 1;
-  display: flex !important;
-  justify-content: center !important;
-  min-width: 0;
-  gap: 0 !important;
+[data-page-title="Preencher Planilha"] div:has(> .asset-fill-step) > span:not(.asset-fill-step) {
+  display: none !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-step {
   display: flex !important;
   width: 100% !important;
-  height: auto !important;
-  min-height: 4.05rem !important;
-  flex-direction: column !important;
+  height: 3.4rem !important;
+  min-height: 3.4rem !important;
   align-items: center !important;
-  justify-content: flex-start !important;
-  gap: 0.48rem !important;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
+  justify-content: center !important;
+  gap: 0.45rem !important;
+  padding: 0.6rem 0.45rem !important;
+  overflow: hidden !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.72rem !important;
   background: transparent !important;
-  color: color-mix(in oklch, var(--muted-foreground) 86%, transparent) !important;
-  font-size: 0.69rem !important;
-  font-weight: 620 !important;
-  line-height: 1.15 !important;
-  text-align: center !important;
+  color: color-mix(in oklch, var(--muted-foreground) 92%, transparent) !important;
   box-shadow: none !important;
-  backdrop-filter: none !important;
+  font-size: 0.72rem !important;
+  font-weight: 620 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-step::before {
-  content: counter(asset-step);
-  display: grid;
-  width: 2rem;
-  height: 2rem;
-  place-items: center;
-  border: 1px solid var(--asset-border);
-  border-radius: 999px;
-  background: var(--asset-surface-2);
-  color: var(--muted-foreground);
-  font-size: 0.69rem;
-  font-weight: 760;
-  font-variant-numeric: tabular-nums;
-  box-shadow: 0 0 0 5px color-mix(in oklch, var(--card) 94%, transparent);
-  transition: border-color 180ms ease, background 180ms ease, color 180ms ease, transform 180ms ease;
-}
-
-[data-page-title="Preencher Planilha"] .asset-fill-step > span {
+[data-page-title="Preencher Planilha"] .asset-fill-step::before,
+[data-page-title="Preencher Planilha"] .asset-fill-step::after {
+  content: none !important;
   display: none !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-step[class*="emerald-500"] {
-  color: color-mix(in srgb, var(--asset-accent) 72%, var(--foreground)) !important;
+[data-page-title="Preencher Planilha"] .asset-fill-step > span:first-child {
+  display: inline-flex !important;
+  width: 1.45rem !important;
+  height: 1.45rem !important;
+  flex: 0 0 1.45rem !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid var(--asset-border) !important;
+  border-radius: 999px !important;
+  background: color-mix(in oklch, var(--background) 70%, var(--card)) !important;
+  color: var(--muted-foreground) !important;
+  font-size: 0.66rem !important;
+  font-weight: 750 !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-step[class*="emerald-500"]::before {
-  border-color: color-mix(in srgb, var(--asset-accent-strong) 70%, var(--asset-border)) !important;
-  background: color-mix(in srgb, var(--asset-accent-deep) 70%, var(--asset-surface)) !important;
-  color: #eafffb !important;
+[data-page-title="Preencher Planilha"] .asset-fill-step:has(svg) {
+  color: color-mix(in srgb, var(--asset-accent) 74%, var(--foreground)) !important;
+}
+
+[data-page-title="Preencher Planilha"] .asset-fill-step:has(svg) svg {
+  width: 0.95rem !important;
+  height: 0.95rem !important;
+  color: var(--asset-accent) !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-step[aria-current="step"] {
-  color: var(--foreground) !important;
-  font-weight: 720 !important;
-}
-
-[data-page-title="Preencher Planilha"] .asset-fill-step[aria-current="step"]::before {
-  border-color: var(--asset-accent) !important;
-  background: color-mix(in srgb, var(--asset-accent) 16%, var(--asset-surface)) !important;
-  color: color-mix(in srgb, var(--asset-accent) 80%, white) !important;
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--asset-accent) 7%, var(--card)), 0 8px 24px -14px rgb(62 183 168 / 0.56) !important;
-  transform: translateY(-1px);
-}
-
-[data-page-title="Preencher Planilha"] .space-y-5 > .flex.min-w-0.flex-wrap.items-center.gap-2 > div > span:not(.asset-fill-step) {
-  display: none !important;
-}
-
-/* Catálogo ativo */
-[data-page-title="Preencher Planilha"] .space-y-5 > .flex.flex-wrap.items-center.gap-2.text-xs {
-  min-height: 2.4rem;
-  gap: 0.7rem !important;
-  padding: 0.15rem 0.1rem !important;
-  color: var(--asset-text-soft) !important;
-}
-
-[data-page-title="Preencher Planilha"] .space-y-5 > .flex.flex-wrap.items-center.gap-2.text-xs [data-slot="badge"] {
-  min-height: 1.8rem;
-  padding: 0.28rem 0.7rem !important;
-  border: 1px solid var(--asset-border-strong) !important;
-  border-radius: 999px !important;
+  border-color: var(--asset-accent-line) !important;
   background: var(--asset-accent-soft) !important;
-  color: color-mix(in srgb, var(--asset-accent) 84%, white) !important;
-  font-size: 0.68rem !important;
-  font-weight: 680 !important;
+  color: var(--foreground) !important;
+  font-weight: 700 !important;
+}
+
+[data-page-title="Preencher Planilha"] .asset-fill-step[aria-current="step"] > span:first-child {
+  border-color: var(--asset-accent-strong) !important;
+  background: var(--asset-accent) !important;
+  color: #09211e !important;
 }
 
 /* --------------------------------------------------------------------------
-   Superfícies e cards
+   Metadados e badges
+   -------------------------------------------------------------------------- */
+[data-page-title="Preencher Planilha"] [data-slot="badge"] {
+  min-height: 1.85rem !important;
+  padding-inline: 0.65rem !important;
+  border: 1px solid var(--asset-border) !important;
+  border-radius: 0.55rem !important;
+  background: transparent !important;
+  color: var(--asset-text-muted) !important;
+  box-shadow: none !important;
+  font-size: 0.68rem !important;
+  font-weight: 600 !important;
+}
+
+/* --------------------------------------------------------------------------
+   Superfícies / cartões
    -------------------------------------------------------------------------- */
 [data-page-title="Preencher Planilha"] .asset-fill-panel,
 [data-page-title="Preencher Planilha"] [data-asset-fill-panel],
-[data-page-title="Preencher Planilha"] .glass-surface {
+[data-page-title="Preencher Planilha"] .glass-surface,
+[data-page-title="Preencher Planilha"] .glass-block {
   border: 1px solid var(--asset-border) !important;
-  border-radius: 1.05rem !important;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.02), transparent 42%),
-    var(--asset-surface) !important;
-  box-shadow: var(--asset-shadow) !important;
-  backdrop-filter: blur(14px) saturate(1.03) !important;
+  border-radius: 1rem !important;
+  background: var(--asset-surface) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  animation: none !important;
 }
 
-[data-page-title="Preencher Planilha"] .glass-surface:hover {
-  border-color: color-mix(in srgb, var(--asset-accent) 18%, var(--asset-border)) !important;
-  box-shadow: var(--asset-shadow) !important;
+[data-page-title="Preencher Planilha"] .glass-surface:hover,
+[data-page-title="Preencher Planilha"] .glass-block:hover {
+  border-color: var(--asset-border) !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 
-[data-page-title="Preencher Planilha"] .glass-surface > .pointer-events-none.absolute.inset-0 {
+[data-page-title="Preencher Planilha"] .glass-surface > .pointer-events-none,
+[data-page-title="Preencher Planilha"] .glass-block > .pointer-events-none,
+[data-page-title="Preencher Planilha"] [data-asset-fill-panel] > .pointer-events-none.absolute {
   display: none !important;
-}
-
-[data-page-title="Preencher Planilha"] [data-asset-fill-panel="accent"] {
-  border-color: var(--asset-border-strong) !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -254,585 +235,445 @@
    -------------------------------------------------------------------------- */
 [data-page-title="Preencher Planilha"] .asset-fill-dropzone {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto !important;
   align-items: center !important;
-  gap: 1.1rem 2rem !important;
-  min-height: 13.5rem;
-  padding: clamp(1.6rem, 3vw, 2.5rem) !important;
-  border: 1px dashed color-mix(in srgb, var(--asset-accent) 34%, var(--asset-border)) !important;
-  border-radius: 0.95rem !important;
-  background:
-    linear-gradient(120deg, rgb(114 214 200 / 0.045), transparent 38%),
-    color-mix(in oklch, var(--asset-surface-2) 92%, transparent) !important;
+  gap: 1rem 1.5rem !important;
+  min-height: 12rem !important;
+  padding: clamp(1.4rem, 3vw, 2.25rem) !important;
+  border: 1px solid var(--asset-border) !important;
+  border-radius: 0.9rem !important;
+  background: color-mix(in oklch, var(--background) 52%, var(--card)) !important;
   text-align: left !important;
-  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease !important;
+  transition: border-color 160ms ease, background-color 160ms ease !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-dropzone:hover {
-  border-color: color-mix(in srgb, var(--asset-accent) 58%, var(--asset-border)) !important;
-  background:
-    linear-gradient(120deg, rgb(114 214 200 / 0.065), transparent 42%),
-    var(--asset-surface-2) !important;
-  box-shadow: inset 0 0 0 1px rgb(114 214 200 / 0.035) !important;
-}
-
-[data-page-title="Preencher Planilha"] .asset-fill-dropzone.scale-\[1\.005\] {
+[data-page-title="Preencher Planilha"] .asset-fill-dropzone:hover,
+[data-page-title="Preencher Planilha"] .asset-fill-dropzone:focus-within {
+  border-color: var(--asset-border-strong) !important;
+  background: color-mix(in oklch, var(--asset-accent) 3%, var(--card)) !important;
   transform: none !important;
-  border-style: solid !important;
-  border-color: var(--asset-accent) !important;
-  background: color-mix(in srgb, var(--asset-accent) 8%, var(--asset-surface-2)) !important;
+  box-shadow: none !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-upload-icon,
+[data-page-title="Preencher Planilha"] .asset-fill-dropzone > .relative,
 [data-page-title="Preencher Planilha"] .asset-fill-upload-aura,
-[data-page-title="Preencher Planilha"] .asset-fill-dropzone > .relative:has(.asset-fill-upload-icon) {
+[data-page-title="Preencher Planilha"] .asset-fill-upload-icon {
   display: none !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-dropzone > div.space-y-1\.5 {
-  grid-column: 1;
-  margin: 0 !important;
+[data-page-title="Preencher Planilha"] .asset-fill-dropzone > .space-y-1\.5 {
+  grid-column: 1 !important;
+  max-width: 42rem !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-dropzone h3 {
   margin: 0 !important;
-  color: var(--foreground) !important;
-  font-size: clamp(1.35rem, 2.25vw, 1.85rem) !important;
-  font-weight: 720 !important;
-  letter-spacing: -0.04em !important;
-  line-height: 1.08 !important;
+  font-size: clamp(1.25rem, 2vw, 1.6rem) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.2 !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-dropzone h3 + p {
-  max-width: 43rem !important;
-  margin: 0.7rem 0 0 !important;
-  color: var(--asset-text-soft) !important;
-  font-size: 0.82rem !important;
-  line-height: 1.6 !important;
+[data-page-title="Preencher Planilha"] .asset-fill-dropzone h3::before,
+[data-page-title="Preencher Planilha"] .asset-fill-dropzone h3::after {
+  content: none !important;
+  display: none !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-dropzone > .asset-fill-primary-action {
-  grid-column: 2;
-  min-width: 12.5rem;
+[data-page-title="Preencher Planilha"] .asset-fill-dropzone p {
+  max-width: 42rem !important;
+  margin-inline: 0 !important;
+  color: var(--asset-text-muted) !important;
+  line-height: 1.55 !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-dropzone > p.text-\[11px\] {
-  grid-column: 1 / -1;
+[data-page-title="Preencher Planilha"] .asset-fill-dropzone > p:last-child {
+  grid-column: 1 / -1 !important;
   margin: 0 !important;
-  padding-top: 1rem;
-  border-top: 1px solid var(--asset-border);
-  color: var(--muted-foreground) !important;
-  font-size: 0.7rem !important;
-  line-height: 1.5 !important;
+  padding-top: 0.9rem !important;
+  border-top: 1px solid var(--asset-border) !important;
+  font-size: 0.69rem !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-secondary-actions {
-  margin-top: 0.9rem !important;
-  padding: 1rem 1.1rem !important;
+  margin-top: 0.8rem !important;
+  padding: 0.95rem 1rem !important;
   border: 1px solid var(--asset-border) !important;
-  border-radius: 0.9rem !important;
-  background: color-mix(in oklch, var(--asset-surface-3) 80%, transparent) !important;
-}
-
-[data-page-title="Preencher Planilha"] .asset-fill-secondary-actions p:first-child {
-  font-weight: 680 !important;
+  border-radius: 0.85rem !important;
+  background: transparent !important;
 }
 
 /* --------------------------------------------------------------------------
-   Botões
+   Botões — sólidos, sem brilho, sem aparência de IA
    -------------------------------------------------------------------------- */
-[data-page-title="Preencher Planilha"] button,
-[data-page-title="Preencher Planilha"] [data-slot="button"] {
-  transition: transform 150ms ease, border-color 150ms ease, background-color 150ms ease, color 150ms ease, box-shadow 150ms ease, opacity 150ms ease !important;
+[data-page-title="Preencher Planilha"] [data-slot="button"],
+[data-page-title="Preencher Planilha"] button {
+  box-shadow: none !important;
 }
 
 [data-page-title="Preencher Planilha"] button:not([role="checkbox"]):not([role="switch"]),
 [data-page-title="Preencher Planilha"] [data-slot="button"] {
-  border-radius: 0.72rem !important;
+  border-radius: 0.7rem !important;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-primary-action {
-  position: relative;
-  min-height: 2.9rem !important;
-  padding-inline: 1.25rem !important;
-  border: 1px solid color-mix(in srgb, var(--asset-accent) 60%, transparent) !important;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--asset-accent) 86%, white 5%), color-mix(in srgb, var(--asset-accent-strong) 88%, #1f655e 12%)) !important;
-  color: #062724 !important;
-  font-size: 0.82rem !important;
-  font-weight: 780 !important;
-  letter-spacing: -0.012em !important;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.24), 0 14px 28px -22px rgb(62 183 168 / 0.72) !important;
+  min-height: 2.75rem !important;
+  padding-inline: 1.2rem !important;
+  border: 1px solid var(--asset-accent-strong) !important;
+  background: var(--asset-accent) !important;
+  color: #09211e !important;
+  font-weight: 750 !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-primary-action:hover:not(:disabled) {
-  transform: translateY(-1px);
-  filter: brightness(1.035);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 18px 34px -22px rgb(62 183 168 / 0.74) !important;
+  border-color: var(--asset-accent) !important;
+  background: color-mix(in srgb, var(--asset-accent) 90%, white 10%) !important;
+  transform: translateY(-1px) !important;
+  filter: none !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-primary-action:active:not(:disabled) {
-  transform: translateY(0);
+  transform: translateY(0) !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-primary-action:disabled {
-  cursor: wait;
-  opacity: 0.72 !important;
+[data-page-title="Preencher Planilha"] button:not([role="checkbox"]):not([role="switch"]) > svg,
+[data-page-title="Preencher Planilha"] > .premium-page-heading > div:last-child svg {
+  display: none !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-primary-action:disabled::before {
-  content: "";
-  width: 0.72rem;
-  height: 0.72rem;
-  margin-right: 0.55rem;
-  border: 1.5px solid rgb(6 39 36 / 0.28);
-  border-top-color: #062724;
-  border-radius: 999px;
-  animation: asset-clean-spin 0.8s linear infinite;
-}
-
-[data-page-title="Preencher Planilha"] [data-slot="button"][class*="outline"],
-[data-page-title="Preencher Planilha"] button[class*="border-primary"] {
-  border-color: var(--asset-border) !important;
-  background: var(--asset-surface-2) !important;
-  color: var(--foreground) !important;
-  box-shadow: none !important;
-}
-
-[data-page-title="Preencher Planilha"] [data-slot="button"][class*="outline"]:hover,
-[data-page-title="Preencher Planilha"] button[class*="border-primary"]:hover {
-  border-color: var(--asset-border-strong) !important;
-  background: color-mix(in srgb, var(--asset-accent) 6%, var(--asset-surface-2)) !important;
+[data-page-title="Preencher Planilha"] button:disabled {
+  opacity: 0.48 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
 }
 
 [data-page-title="Preencher Planilha"] button:focus-visible,
 [data-page-title="Preencher Planilha"] input:focus-visible,
 [data-page-title="Preencher Planilha"] [role="combobox"]:focus-visible {
   outline: none !important;
-  box-shadow: 0 0 0 3px rgb(114 214 200 / 0.14) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--asset-accent) 18%, transparent) !important;
 }
 
 /* --------------------------------------------------------------------------
-   Campos, selects e checkboxes
+   Campos e selects
    -------------------------------------------------------------------------- */
-[data-page-title="Preencher Planilha"] input:not([type="file"]):not([type="checkbox"]),
+[data-page-title="Preencher Planilha"] input:not([type="checkbox"]):not([type="file"]),
 [data-page-title="Preencher Planilha"] [role="combobox"] {
-  min-height: 2.75rem !important;
+  min-height: 2.65rem !important;
   border: 1px solid var(--asset-border) !important;
   border-radius: 0.7rem !important;
-  background: color-mix(in oklch, var(--background) 76%, var(--card)) !important;
+  background: color-mix(in oklch, var(--background) 64%, var(--card)) !important;
   color: var(--foreground) !important;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.02) !important;
-}
-
-[data-page-title="Preencher Planilha"] [role="combobox"]:hover,
-[data-page-title="Preencher Planilha"] input:not([type="file"]):not([type="checkbox"]):hover {
-  border-color: color-mix(in srgb, var(--asset-accent) 26%, var(--asset-border)) !important;
-}
-
-[data-page-title="Preencher Planilha"] label {
-  color: color-mix(in oklch, var(--foreground) 88%, var(--muted-foreground) 12%) !important;
-  font-weight: 660 !important;
-}
-
-[data-page-title="Preencher Planilha"] button[role="checkbox"] {
-  position: relative;
-  width: 1.08rem !important;
-  height: 1.08rem !important;
-  min-width: 1.08rem !important;
-  min-height: 1.08rem !important;
-  padding: 0 !important;
-  border: 1px solid color-mix(in srgb, var(--asset-accent) 24%, var(--asset-border)) !important;
-  border-radius: 0.32rem !important;
-  background: var(--asset-surface-3) !important;
   box-shadow: none !important;
 }
 
-[data-page-title="Preencher Planilha"] button[role="checkbox"][data-state="checked"] {
-  border-color: var(--asset-accent-strong) !important;
-  background: var(--asset-accent-strong) !important;
-  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--asset-accent-strong) 58%, #103d38) !important;
+[data-page-title="Preencher Planilha"] input:not([type="checkbox"]):not([type="file"]):focus,
+[data-page-title="Preencher Planilha"] [role="combobox"]:focus {
+  border-color: var(--asset-border-strong) !important;
 }
 
-/* Linhas internas da etapa de análise */
-[data-page-title="Preencher Planilha"] .glass-surface .rounded-2xl.border {
-  border: 1px solid var(--asset-border) !important;
-  border-radius: 0.82rem !important;
-  background: color-mix(in oklch, var(--asset-surface-2) 86%, transparent) !important;
-}
-
-[data-page-title="Preencher Planilha"] [data-slot="badge"] {
-  border-radius: 999px !important;
+[data-page-title="Preencher Planilha"] label {
+  color: var(--asset-text-muted) !important;
+  font-size: 0.73rem !important;
   font-weight: 650 !important;
 }
 
 /* --------------------------------------------------------------------------
-   Opções
+   Linhas de análise
+   -------------------------------------------------------------------------- */
+[data-page-title="Preencher Planilha"] .glass-surface .rounded-2xl.border,
+[data-page-title="Preencher Planilha"] .glass-block .rounded-2xl.border {
+  border: 1px solid var(--asset-border) !important;
+  border-radius: 0.75rem !important;
+  background: transparent !important;
+  transition: border-color 150ms ease, background-color 150ms ease !important;
+}
+
+[data-page-title="Preencher Planilha"] .glass-surface .rounded-2xl.border:hover,
+[data-page-title="Preencher Planilha"] .glass-block .rounded-2xl.border:hover {
+  border-color: var(--asset-border-strong) !important;
+  background: var(--asset-accent-soft) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Opções / switches
    -------------------------------------------------------------------------- */
 [data-page-title="Preencher Planilha"] .asset-fill-option-card {
-  display: flex !important;
-  width: 100%;
-  min-height: 4.35rem;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.2rem;
-  padding: 0.9rem 1rem !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  min-height: 4.4rem !important;
+  padding: 0.95rem 1rem !important;
   border: 1px solid var(--asset-border) !important;
-  border-radius: 0.82rem !important;
-  background: color-mix(in oklch, var(--asset-surface-2) 90%, transparent) !important;
-  text-align: left;
-  box-shadow: none !important;
+  border-radius: 0.8rem !important;
+  background: transparent !important;
+  color: var(--foreground) !important;
+  text-align: left !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-option-card:hover {
   border-color: var(--asset-border-strong) !important;
-  background: color-mix(in srgb, var(--asset-accent) 4%, var(--asset-surface-2)) !important;
+  background: var(--asset-accent-soft) !important;
+  transform: none !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-option-title,
-[data-page-title="Preencher Planilha"] .asset-fill-option-hint {
-  display: block;
+[data-page-title="Preencher Planilha"] .asset-fill-option-copy {
+  display: grid !important;
+  gap: 0.25rem !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-option-title {
-  color: var(--foreground);
-  font-size: 0.84rem;
-  font-weight: 690;
+  font-size: 0.82rem !important;
+  font-weight: 680 !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-option-hint {
-  margin-top: 0.24rem;
-  color: var(--muted-foreground);
-  font-size: 0.72rem;
-  line-height: 1.4;
+  color: var(--asset-text-muted) !important;
+  font-size: 0.72rem !important;
+  line-height: 1.45 !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-option-control {
-  display: flex !important;
-  align-items: center;
-  gap: 0.62rem;
-  flex: 0 0 auto;
-}
-
-[data-page-title="Preencher Planilha"] .asset-fill-option-state {
-  color: var(--muted-foreground);
-  font-size: 0.68rem;
-  font-weight: 650;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.55rem !important;
+  color: var(--asset-text-muted) !important;
+  font-size: 0.68rem !important;
+  font-weight: 650 !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-option-indicator {
-  position: relative;
-  display: block !important;
-  width: 2.35rem;
-  height: 1.3rem;
-  border: 1px solid var(--asset-border);
-  border-radius: 999px;
-  background: var(--asset-surface-3);
+  display: inline-flex !important;
+  width: 2.35rem !important;
+  height: 1.35rem !important;
+  align-items: center !important;
+  padding: 0.12rem !important;
+  border: 1px solid var(--asset-border) !important;
+  border-radius: 999px !important;
+  background: color-mix(in oklch, var(--muted) 56%, transparent) !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-option-indicator::after {
-  content: "";
-  position: absolute;
-  top: 0.18rem;
-  left: 0.18rem;
-  width: 0.82rem;
-  height: 0.82rem;
-  border-radius: 999px;
-  background: color-mix(in oklch, var(--muted-foreground) 68%, white 10%);
-  transition: transform 180ms ease, background 180ms ease;
+[data-page-title="Preencher Planilha"] .asset-fill-option-indicator svg {
+  display: block !important;
+  width: 0.95rem !important;
+  height: 0.95rem !important;
+  padding: 0.15rem !important;
+  border-radius: 999px !important;
+  background: var(--muted-foreground) !important;
+  color: var(--background) !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-option-control[data-state="checked"] .asset-fill-option-indicator {
-  border-color: color-mix(in srgb, var(--asset-accent) 56%, var(--asset-border));
-  background: rgb(114 214 200 / 0.16);
+  justify-content: flex-end !important;
+  border-color: var(--asset-accent-line) !important;
+  background: var(--asset-accent-soft) !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-option-control[data-state="checked"] .asset-fill-option-indicator::after {
-  transform: translateX(1rem);
-  background: var(--asset-accent);
+[data-page-title="Preencher Planilha"] .asset-fill-option-control[data-state="checked"] .asset-fill-option-indicator svg {
+  background: var(--asset-accent) !important;
+  color: #09211e !important;
 }
 
 /* --------------------------------------------------------------------------
-   Prévia e tabela
+   Tabela / prévia
    -------------------------------------------------------------------------- */
-[data-page-title="Preencher Planilha"] .glass-surface .flex.flex-wrap.gap-1\.5 [data-slot="button"] {
-  min-height: 2rem !important;
-  height: 2rem !important;
-  padding-inline: 0.75rem !important;
-  border: 1px solid var(--asset-border) !important;
-  border-radius: 999px !important;
-  background: transparent !important;
-  color: var(--muted-foreground) !important;
-  box-shadow: none !important;
-}
-
-[data-page-title="Preencher Planilha"] .glass-surface .flex.flex-wrap.gap-1\.5 [data-slot="button"][class*="bg-primary"] {
-  border-color: color-mix(in srgb, var(--asset-accent) 48%, var(--asset-border)) !important;
-  background: var(--asset-accent-soft) !important;
-  color: color-mix(in srgb, var(--asset-accent) 78%, white) !important;
-}
-
 [data-page-title="Preencher Planilha"] div:has(> table) {
+  overflow: auto !important;
   border: 1px solid var(--asset-border) !important;
-  border-radius: 0.82rem !important;
-  background: color-mix(in oklch, var(--background) 74%, var(--card)) !important;
+  border-radius: 0.8rem !important;
+  background: transparent !important;
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--asset-accent) 34%, var(--border)) transparent;
+  scrollbar-color: var(--asset-border-strong) transparent;
 }
 
 [data-page-title="Preencher Planilha"] table {
-  border-collapse: separate !important;
-  border-spacing: 0 !important;
+  border-collapse: collapse !important;
 }
 
 [data-page-title="Preencher Planilha"] table thead th {
-  background: color-mix(in oklch, var(--asset-surface) 98%, black 2%) !important;
+  background: color-mix(in oklch, var(--card) 98%, var(--background) 2%) !important;
   border-bottom: 1px solid var(--asset-border) !important;
-  color: var(--muted-foreground) !important;
-  font-size: 0.65rem !important;
-  font-weight: 740 !important;
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
+  color: var(--asset-text-muted) !important;
+  font-size: 0.66rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.045em !important;
+  text-transform: uppercase !important;
 }
 
 [data-page-title="Preencher Planilha"] table tbody tr {
-  transition: background-color 120ms ease;
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 62%, transparent) !important;
+  transition: background-color 120ms ease !important;
 }
 
 [data-page-title="Preencher Planilha"] table tbody tr:hover {
-  background: rgb(114 214 200 / 0.035) !important;
-}
-
-[data-page-title="Preencher Planilha"] table td {
-  border-color: color-mix(in oklch, var(--border) 62%, transparent) !important;
-}
-
-[data-page-title="Preencher Planilha"] table input {
-  min-height: 1.9rem !important;
-  border-radius: 0.45rem !important;
-}
-
-/* --------------------------------------------------------------------------
-   Navegação entre etapas
-   -------------------------------------------------------------------------- */
-[data-page-title="Preencher Planilha"] .space-y-4 > .flex.flex-wrap.justify-between.gap-2 {
-  padding-top: 0.25rem;
-}
-
-[data-page-title="Preencher Planilha"] .space-y-4 > .flex.flex-wrap.justify-between.gap-2 > [data-slot="button"]:first-child {
-  min-width: 7.5rem;
-  border: 1px solid var(--asset-border) !important;
-  background: transparent !important;
-  color: var(--asset-text-soft) !important;
+  background: var(--asset-accent-soft) !important;
 }
 
 /* --------------------------------------------------------------------------
    Processamento / carregamento
    -------------------------------------------------------------------------- */
 [data-page-title="Preencher Planilha"] .asset-fill-processing {
-  position: relative;
-  min-height: 18rem;
   display: flex !important;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1.1rem !important;
-  padding: clamp(2.5rem, 6vw, 4.5rem) !important;
-  text-align: center;
+  min-height: 19rem !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 1rem !important;
+  text-align: center !important;
+}
+
+[data-page-title="Preencher Planilha"] .asset-fill-processing > svg.animate-spin {
+  display: none !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-processing::before {
   content: "";
-  width: 2.8rem;
-  height: 2.8rem;
-  border: 2px solid rgb(114 214 200 / 0.13);
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 2px solid var(--asset-border);
   border-top-color: var(--asset-accent);
-  border-right-color: color-mix(in srgb, var(--asset-accent) 52%, transparent);
   border-radius: 999px;
-  animation: asset-clean-spin 0.9s linear infinite;
-  box-shadow: 0 0 0 7px rgb(114 214 200 / 0.035);
-}
-
-[data-page-title="Preencher Planilha"] .asset-fill-processing .font-display {
-  font-size: 1.18rem !important;
-  font-weight: 720 !important;
-  letter-spacing: -0.025em !important;
+  animation: asset-minimal-spin 0.85s linear infinite;
 }
 
 [data-page-title="Preencher Planilha"] [role="progressbar"] {
-  width: min(36rem, 100%);
+  width: min(38rem, 100%) !important;
   height: 0.42rem !important;
-  overflow: hidden;
+  overflow: hidden !important;
   border-radius: 999px !important;
-  background: color-mix(in oklch, var(--muted) 60%, transparent) !important;
-  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.26) !important;
+  background: color-mix(in oklch, var(--muted) 58%, transparent) !important;
+  box-shadow: none !important;
 }
 
 [data-page-title="Preencher Planilha"] [role="progressbar"] > div {
-  position: relative;
-  overflow: hidden;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--asset-accent-deep), var(--asset-accent)) !important;
+  position: relative !important;
+  border-radius: inherit !important;
+  background: var(--asset-accent) !important;
+  overflow: hidden !important;
 }
 
 [data-page-title="Preencher Planilha"] [role="progressbar"] > div::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.28), transparent);
-  transform: translateX(-120%);
-  animation: asset-clean-shimmer 1.55s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.34), transparent);
+  transform: translateX(-110%);
+  animation: asset-minimal-shimmer 1.5s ease-in-out infinite;
 }
 
 /* --------------------------------------------------------------------------
-   Resultado
+   Resultado / download
    -------------------------------------------------------------------------- */
 [data-page-title="Preencher Planilha"] .asset-fill-download-card {
-  position: relative !important;
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto !important;
   align-items: center !important;
-  gap: 1.25rem !important;
-  min-height: 7.4rem !important;
-  padding: 1.35rem 1.45rem !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  min-height: 6.3rem !important;
+  padding: 1.2rem 1.25rem !important;
   border: 1px solid var(--asset-border-strong) !important;
-  border-radius: 0.95rem !important;
-  background:
-    linear-gradient(105deg, rgb(114 214 200 / 0.065), transparent 38%),
-    var(--asset-surface-2) !important;
-  box-shadow: var(--asset-shadow) !important;
+  border-radius: 0.9rem !important;
+  background: var(--asset-accent-soft) !important;
   color: var(--foreground) !important;
+  box-shadow: none !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-download-card > div:first-child {
+[data-page-title="Preencher Planilha"] .asset-fill-download-card > div:first-child,
+[data-page-title="Preencher Planilha"] .asset-fill-download-card > svg {
   display: none !important;
 }
 
+[data-page-title="Preencher Planilha"] .asset-fill-download-card::before,
 [data-page-title="Preencher Planilha"] .asset-fill-download-card::after {
-  content: "Baixar arquivo";
-  display: inline-flex;
-  min-height: 2.7rem;
-  align-items: center;
-  justify-content: center;
-  padding: 0.68rem 1rem;
-  border: 1px solid color-mix(in srgb, var(--asset-accent) 58%, transparent);
-  border-radius: 0.7rem;
-  background: var(--asset-accent);
-  color: #062724;
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.24), 0 14px 28px -22px rgb(62 183 168 / 0.72);
+  content: none !important;
+  display: none !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-download-card:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--asset-accent) 56%, var(--asset-border)) !important;
-  transform: translateY(-1px);
-  box-shadow: var(--asset-shadow-raised) !important;
+  border-color: var(--asset-accent-strong) !important;
+  background: color-mix(in srgb, var(--asset-accent) 15%, transparent) !important;
+  transform: translateY(-1px) !important;
 }
 
 [data-page-title="Preencher Planilha"] .asset-fill-download-card p.font-display {
   color: var(--foreground) !important;
-  font-size: 1.08rem !important;
+  font-size: 1rem !important;
   font-weight: 720 !important;
-  letter-spacing: -0.028em !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-download-card + .flex.flex-wrap.gap-2 {
-  display: grid !important;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.65rem !important;
+[data-page-title="Preencher Planilha"] .asset-fill-download-card p.text-xs,
+[data-page-title="Preencher Planilha"] .asset-fill-download-card p.text-\[11px\] {
+  color: var(--asset-text-muted) !important;
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-download-card + .flex.flex-wrap.gap-2 > * {
-  width: 100% !important;
-  min-height: 2.8rem !important;
-  justify-content: center !important;
-  padding-inline: 0.75rem !important;
-  border: 1px solid var(--asset-border) !important;
-  border-radius: 0.72rem !important;
-  background: var(--asset-surface-2) !important;
-  color: var(--asset-text-soft) !important;
-  font-size: 0.72rem !important;
-  font-weight: 650 !important;
-  white-space: normal !important;
-  text-align: center !important;
-  box-shadow: none !important;
+/* --------------------------------------------------------------------------
+   Animações discretas
+   -------------------------------------------------------------------------- */
+@keyframes asset-minimal-spin {
+  to { transform: rotate(360deg); }
 }
 
-[data-page-title="Preencher Planilha"] .asset-fill-download-card + .flex.flex-wrap.gap-2 > *:hover {
-  border-color: var(--asset-border-strong) !important;
-  color: var(--foreground) !important;
-  transform: translateY(-1px);
-}
-
-/* Alertas técnicos sem pictogramas */
-[data-page-title="Preencher Planilha"] .border-destructive\/30 {
-  border-color: color-mix(in srgb, var(--destructive) 36%, var(--asset-border)) !important;
-}
-
-[data-page-title="Preencher Planilha"] pre {
-  border: 1px solid var(--asset-border);
-  border-radius: 0.72rem !important;
-  background: color-mix(in oklch, var(--background) 78%, var(--card)) !important;
+@keyframes asset-minimal-shimmer {
+  60%, 100% { transform: translateX(120%); }
 }
 
 /* --------------------------------------------------------------------------
    Responsividade
    -------------------------------------------------------------------------- */
-@media (max-width: 1100px) {
-  [data-page-title="Preencher Planilha"] .asset-fill-download-card + .flex.flex-wrap.gap-2 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+@media (max-width: 1024px) {
+  [data-page-title="Preencher Planilha"] > .premium-page-heading {
+    grid-template-columns: 1fr !important;
+    align-items: start !important;
+  }
+
+  [data-page-title="Preencher Planilha"] > .premium-page-heading > div:last-child {
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  [data-page-title="Preencher Planilha"] div:has(> div > .asset-fill-step) {
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  [data-page-title="Preencher Planilha"] div:has(> div > .asset-fill-step)::-webkit-scrollbar {
+    display: none;
+  }
+
+  [data-page-title="Preencher Planilha"] div:has(> .asset-fill-step) {
+    flex: 0 0 8.8rem !important;
+    scroll-snap-align: start;
   }
 }
 
-@media (max-width: 860px) {
-  [data-page-title="Preencher Planilha"] .space-y-5 > .flex.min-w-0.flex-wrap.items-center.gap-2 {
-    grid-template-columns: repeat(7, 7.25rem);
-    justify-content: flex-start;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: thin;
-    padding-inline: 0.7rem !important;
-  }
-
-  [data-page-title="Preencher Planilha"] .space-y-5 > .flex.min-w-0.flex-wrap.items-center.gap-2::before {
-    left: 3.9rem;
-    right: auto;
-    width: 39rem;
-  }
-
-  [data-page-title="Preencher Planilha"] .asset-fill-dropzone {
-    grid-template-columns: 1fr;
-  }
-
-  [data-page-title="Preencher Planilha"] .asset-fill-dropzone > .asset-fill-primary-action {
-    grid-column: 1;
-    width: 100%;
-    min-width: 0;
-  }
-}
-
-@media (max-width: 640px) {
+@media (max-width: 700px) {
   [data-page-title="Preencher Planilha"] {
     padding-inline: 0.7rem !important;
-    gap: 0.85rem;
   }
 
   [data-page-title="Preencher Planilha"] > .premium-page-heading {
     padding-bottom: 1rem !important;
   }
 
-  [data-page-title="Preencher Planilha"] .asset-fill-panel,
-  [data-page-title="Preencher Planilha"] [data-asset-fill-panel],
-  [data-page-title="Preencher Planilha"] .glass-surface {
-    padding: 1rem !important;
-    border-radius: 0.92rem !important;
+  [data-page-title="Preencher Planilha"] > .premium-page-heading > div:last-child > * {
+    flex: 0 0 auto !important;
+    min-width: max-content !important;
   }
 
   [data-page-title="Preencher Planilha"] .asset-fill-dropzone {
-    min-height: 0;
-    padding: 1.35rem !important;
+    grid-template-columns: 1fr !important;
+    min-height: 0 !important;
+    padding: 1.15rem !important;
+  }
+
+  [data-page-title="Preencher Planilha"] .asset-fill-dropzone .asset-fill-primary-action {
+    width: 100% !important;
   }
 
   [data-page-title="Preencher Planilha"] .asset-fill-secondary-actions {
@@ -840,51 +681,20 @@
   }
 
   [data-page-title="Preencher Planilha"] .asset-fill-secondary-actions [data-slot="button"] {
-    width: 100%;
+    width: 100% !important;
   }
 
   [data-page-title="Preencher Planilha"] .asset-fill-option-card {
-    align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: 1fr !important;
   }
 
   [data-page-title="Preencher Planilha"] .asset-fill-option-control {
-    width: 100%;
-    justify-content: space-between;
+    justify-content: space-between !important;
   }
 
   [data-page-title="Preencher Planilha"] .asset-fill-download-card {
     grid-template-columns: 1fr !important;
-    align-items: start !important;
   }
-
-  [data-page-title="Preencher Planilha"] .asset-fill-download-card::after {
-    width: 100%;
-  }
-
-  [data-page-title="Preencher Planilha"] .asset-fill-download-card + .flex.flex-wrap.gap-2 {
-    grid-template-columns: 1fr !important;
-  }
-
-  [data-page-title="Preencher Planilha"] .space-y-4 > .flex.flex-wrap.justify-between.gap-2 {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  [data-page-title="Preencher Planilha"] .space-y-4 > .flex.flex-wrap.justify-between.gap-2 > [data-slot="button"] {
-    width: 100%;
-  }
-}
-
-/* --------------------------------------------------------------------------
-   Movimento
-   -------------------------------------------------------------------------- */
-@keyframes asset-clean-spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes asset-clean-shimmer {
-  100% { transform: translateX(120%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -893,7 +703,6 @@
   [data-page-title="Preencher Planilha"] *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
     transition-duration: 0.001ms !important;
   }
 }
