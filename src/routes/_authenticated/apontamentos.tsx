@@ -1,33 +1,40 @@
-import { useEffect } from "react";
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ApontamentosConsolidated } from "@/components/apontamentos-consolidated";
 
 const APONTAMENTOS_STORAGE_KEY = "apontauto:apontamentos-manual:v1";
 
-function clearApontamentosDraft() {
-  if (typeof window === "undefined") return;
+let reloadCleanupHandled = false;
+
+function clearApontamentosDraftOnlyOnReload() {
+  if (typeof window === "undefined" || reloadCleanupHandled) return;
+
+  reloadCleanupHandled = true;
 
   try {
-    window.localStorage.removeItem(APONTAMENTOS_STORAGE_KEY);
+    const navigation = window.performance
+      .getEntriesByType("navigation")
+      .at(0) as PerformanceNavigationTiming | undefined;
+
+    if (navigation?.type === "reload") {
+      window.localStorage.removeItem(APONTAMENTOS_STORAGE_KEY);
+    }
   } catch {
-    // Storage indisponível: a tela continua funcionando apenas com o estado em memória.
+    // Storage/Performance indisponível: mantém o comportamento normal da tela.
   }
 }
 
 function ApontamentosRoute() {
-  useEffect(() => {
-    return () => {
-      clearApontamentosDraft();
-    };
-  }, []);
+  useState(() => {
+    // Limpa apenas quando houve atualização/reload da página.
+    // Navegar entre abas/rotas no mesmo carregamento preserva os dados.
+    clearApontamentosDraftOnlyOnReload();
+    return true;
+  });
 
   return <ApontamentosConsolidated />;
 }
 
 export const Route = createFileRoute("/_authenticated/apontamentos")({
-  beforeLoad: () => {
-    // Impede que um rascunho antigo reapareça ao entrar novamente na seção.
-    clearApontamentosDraft();
-  },
   component: ApontamentosRoute,
 });
