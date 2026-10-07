@@ -19,10 +19,24 @@ export type ScheduledMaintenance = {
   sourceFile: string;
 };
 
+export type ScheduleDaySummary = {
+  date: string;
+  total: number;
+  preventive: number;
+  corrective: number;
+  teams: string[];
+};
+
 export type ImportResult = {
   rows: ScheduledMaintenance[];
   ignoredSheets: string[];
   scheduleSheet: string;
+  fileName: string;
+  days: ScheduleDaySummary[];
+  teams: string[];
+  preventive: number;
+  corrective: number;
+  warnings: string[];
 };
 
 const normalize = (value: unknown) =>
@@ -54,6 +68,37 @@ const findIndex = (headers: string[], aliases: string[]) => {
   return index >= 0 ? index : undefined;
 };
 
+const isDayTitle = (value: unknown) => {
+  const normalized = normalize(value);
+  return (
+    normalized.includes("SEGUNDA-FEIRA") ||
+    normalized.includes("TERCA-FEIRA") ||
+    normalized.includes("QUARTA-FEIRA") ||
+    normalized.includes("QUINTA-FEIRA") ||
+    normalized.includes("SEXTA-FEIRA")
+  );
+};
+
+export function summarizeScheduleRows(rows: ScheduledMaintenance[]): ScheduleDaySummary[] {
+  const grouped = new Map<string, ScheduledMaintenance[]>();
+
+  rows.forEach((row) => {
+    const current = grouped.get(row.date) ?? [];
+    current.push(row);
+    grouped.set(row.date, current);
+  });
+
+  return Array.from(grouped.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, dayRows]) => ({
+      date,
+      total: dayRows.length,
+      preventive: dayRows.filter((row) => row.activity === "Preventiva").length,
+      corrective: dayRows.filter((row) => row.activity === "Corretiva").length,
+      teams: Array.from(new Set(dayRows.map((row) => row.team).filter(Boolean))).sort(),
+    }));
+}
+
 export function parseScheduleMatrix(matrix: unknown[][], sourceFile: string): ScheduledMaintenance[] {
   const rows: ScheduledMaintenance[] = [];
   let currentDate = "";
@@ -61,13 +106,12 @@ export function parseScheduleMatrix(matrix: unknown[][], sourceFile: string): Sc
 
   for (const rawRow of matrix) {
     const row = Array.isArray(rawRow) ? rawRow : [];
-    const first = normalize(row[0]);
     const detectedDate = toIsoDate(String(row[0] ?? ""));
 
-    // A data válida de programação vem exclusivamente da faixa de título do dia
-    // (ex.: "SEGUNDA-FEIRA • 05/10/2026..."). Datas de SLA dentro das OS não
-    // podem alterar o dia ao qual a ordem foi programada.
-    if (detectedDate && first.includes("FEIRA")) {
+    // O dia programado vem somente da faixa de título do bloco
+    // (ex.: "SEGUNDA-FEIRA • 05/10/2026 • CIVIL...").
+    // Datas internas da OS, principalmente Término SLA, nunca alteram o dia programado.
+    if (detectedDate && isDayTitle(row[0])) {
       currentDate = detectedDate;
       headers = [];
       continue;
@@ -123,8 +167,9 @@ export function parseScheduleMatrix(matrix: unknown[][], sourceFile: string): Sc
 export async function parseScheduleFile(file: File): Promise<ImportResult> {
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
+  const exactScheduleSheet = workbook.SheetNames.find((name) => normalize(name) === "PROGRAMACAO");
   const scheduleSheet =
-    workbook.SheetNames.find((name) => normalize(name) === "PROGRAMACAO") ??
+    exactScheduleSheet ??
     workbook.SheetNames.find((name) => normalize(name).includes("PROGRAMACAO")) ??
     workbook.SheetNames[0];
 
@@ -136,11 +181,41 @@ export async function parseScheduleFile(file: File): Promise<ImportResult> {
     defval: "",
     raw: false,
   });
+  const rows = parseScheduleMatrix(matrix, file.name);
+
+  if (!rows.length) {
+    throw new Error(
+      `A planilha ${file.name} não possui OS válidas na aba ${scheduleSheet}. Verifique se os blocos de segunda a sexta contêm as colunas OS e Atividade.`,
+    );
+  }
+
+  const days = summarizeScheduleRows(rows);
+  const teams = Array.from(new Set(rows.map((row) => row.team).filter(Boolean))).sort();
+  const warnings: string[] = [];
+
+  if (!exactScheduleSheet) {
+    warnings.push(`A aba exata "PROGRAMAÇÃO" não foi encontrada; foi utilizada "${scheduleSheet}".`);
+  }
+
+  if (days.length < 5) {
+    warnings.push(`Foram identificados ${days.length} dia(s) programado(s) no arquivo.`);
+  }
+
+  const ignoredSheets = workbook.SheetNames.filter((name) => name !== scheduleSheet);
+  if (ignoredSheets.length) {
+    warnings.push(`${ignoredSheets.length} aba(s) auxiliar(es) foram ignoradas para evitar duplicidade.`);
+  }
 
   return {
-    rows: parseScheduleMatrix(matrix, file.name),
-    ignoredSheets: workbook.SheetNames.filter((name) => name !== scheduleSheet),
+    rows,
+    ignoredSheets,
     scheduleSheet,
+    fileName: file.name,
+    days,
+    teams,
+    preventive: rows.filter((row) => row.activity === "Preventiva").length,
+    corrective: rows.filter((row) => row.activity === "Corretiva").length,
+    warnings,
   };
 }
 
@@ -156,4 +231,12 @@ export function formatDateBr(date: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
   const [year, month, day] = date.split("-");
   return `${day}/${month}/${year}`;
+}
+
+export function formatWeekdayBr(date: string, short = false) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+  const formatted = new Date(`${date}T12:00:00`).toLocaleDateString("pt-BR", {
+    weekday: short ? "short" : "long",
+  });
+  return formatted.replace(/\.$/, "");
 }
