@@ -6,29 +6,37 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  Building2,
+  Check,
   CheckCircle2,
   ChevronDown,
+  Cog,
+  Columns3,
   Database,
+  DoorOpen,
   Download,
   FileSpreadsheet,
+  GitBranch,
   History,
+  Layers,
   Loader2,
+  PackageCheck,
+  Play,
   RefreshCw,
   Save,
+  ScanBarcode,
+  ScanSearch,
   Search,
-  Sparkles,
+  ShieldCheck,
+  SlidersHorizontal,
   Table2,
   Upload,
   X,
+  type LucideIcon,
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
-import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -100,14 +108,14 @@ export const Route = createFileRoute("/_authenticated/inteligencia-ativos/preenc
 
 type Step = "upload" | "analise" | "mapeamento" | "opcoes" | "previa" | "processando" | "resultado";
 
-const STEPS: { key: Step; label: string }[] = [
-  { key: "upload", label: "Upload" },
-  { key: "analise", label: "Análise" },
-  { key: "mapeamento", label: "Mapeamento" },
-  { key: "opcoes", label: "Opções" },
-  { key: "previa", label: "Prévia" },
-  { key: "processando", label: "Processamento" },
-  { key: "resultado", label: "Resultado" },
+const STEPS: { key: Step; label: string; hint: string }[] = [
+  { key: "upload", label: "Upload", hint: "Importar planilha" },
+  { key: "analise", label: "Análise", hint: "Abas e colunas" },
+  { key: "mapeamento", label: "Mapeamento", hint: "Colunas de destino" },
+  { key: "opcoes", label: "Opções", hint: "Regras de gravação" },
+  { key: "previa", label: "Prévia", hint: "Conferir e ajustar" },
+  { key: "processando", label: "Processamento", hint: "Resolvendo hierarquia" },
+  { key: "resultado", label: "Resultado", hint: "Baixar arquivo" },
 ];
 
 interface SheetConfig {
@@ -120,38 +128,14 @@ interface SheetConfig {
 
 const MAPPING_TEMPLATE_KEY = "pcm.fill.mapping-templates";
 
-function LiquidPanel({
-  children,
-  className,
-  tone = "default",
-}: {
-  children: React.ReactNode;
-  className?: string;
-  tone?: "default" | "accent";
-}) {
-  return (
-    <div
-      data-asset-fill-panel={tone}
-      className={cn(
-        "asset-fill-panel relative overflow-hidden rounded-2xl border bg-card/70 p-5 sm:p-6",
-        tone === "accent" ? "border-primary/30" : "border-border/60",
-        className,
-      )}
-    >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-      {children}
-    </div>
-  );
-}
-
-const STATUS_TONE: Record<MatchStatus, string> = {
-  exact: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
-  tree: "bg-sky-500/15 text-sky-500 border-sky-500/30",
-  legacy: "bg-amber-500/15 text-amber-500 border-amber-500/30",
-  preserved: "bg-muted text-muted-foreground border-border",
-  conflict: "bg-orange-500/15 text-orange-500 border-orange-500/30",
-  unmatched: "bg-destructive/15 text-destructive border-destructive/30",
-  empty: "bg-muted text-muted-foreground border-border",
+const STATUS_TONE: Record<MatchStatus, "ok" | "info" | "warn" | "risk" | "bad" | "plain"> = {
+  exact: "ok",
+  tree: "info",
+  legacy: "warn",
+  preserved: "plain",
+  conflict: "risk",
+  unmatched: "bad",
+  empty: "plain",
 };
 
 type PreviewFilter = "all" | "exact" | "tree" | "legacy" | "conflict" | "unmatched";
@@ -486,6 +470,33 @@ function PreencherPlanilha() {
 
   const stepIndex = STEPS.findIndex((s) => s.key === step);
 
+  const counts = useMemo(() => {
+    const c = { all: previewRows.length, exact: 0, tree: 0, legacy: 0, conflict: 0, unmatched: 0 };
+    for (const r of previewRows) {
+      if (r.status === "exact") c.exact++;
+      else if (r.status === "tree") c.tree++;
+      else if (r.status === "legacy") c.legacy++;
+      else if (r.status === "conflict") c.conflict++;
+      else if (r.status === "unmatched") c.unmatched++;
+    }
+    return c;
+  }, [previewRows]);
+
+  const pct = Math.max(0, Math.min(100, Math.round(progress.overall * 100)));
+  const split = [
+    { key: "tree", label: "Pela árvore", value: totals.tree, color: "var(--fx-accent)" },
+    { key: "legacy", label: "Fallback legado", value: totals.legacy, color: "var(--fx-warn)" },
+    {
+      key: "preserved",
+      label: "Preservados",
+      value: totals.preserved,
+      color: "var(--fx-line-strong)",
+    },
+    { key: "conflicts", label: "Conflitos", value: totals.conflicts, color: "var(--fx-risk)" },
+    { key: "unmatched", label: "Não encontrados", value: totals.unmatched, color: "var(--fx-bad)" },
+  ];
+  const splitTotal = split.reduce((a, b) => a + b.value, 0);
+
   return (
     <PageShell
       eyebrow="PCM · Inteligência de Ativos"
@@ -493,17 +504,17 @@ function PreencherPlanilha() {
       description="Prédio, Andar e Ambiente resolvidos pela árvore real de ativos — sem PROCV, sem fórmula quebrada."
       actions={
         <>
-          <Button variant="outline" asChild className="border-primary/40 text-primary hover:bg-primary/10">
+          <Button variant="outline" asChild>
             <Link to="/base-ativos">
               <Database className="mr-2 h-4 w-4" /> Base de Ativos
             </Link>
           </Button>
-          <Button variant="outline" asChild className="border-primary/40 text-primary hover:bg-primary/10">
+          <Button variant="outline" asChild>
             <Link to="/inteligencia-ativos/nao-encontrados">
               <Search className="mr-2 h-4 w-4" /> Não encontrados
             </Link>
           </Button>
-          <Button variant="outline" asChild className="border-primary/40 text-primary hover:bg-primary/10">
+          <Button variant="outline" asChild>
             <Link to="/inteligencia-ativos/historico">
               <History className="mr-2 h-4 w-4" /> Histórico
             </Link>
@@ -511,580 +522,738 @@ function PreencherPlanilha() {
         </>
       }
     >
-      <div className="space-y-5">
-        {/* Stepper */}
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          {STEPS.map((s, i) => (
-            <div key={s.key} className="flex items-center gap-2">
-              <span
-                aria-current={i === stepIndex ? "step" : undefined}
-                className={cn(
-                  "asset-fill-step flex h-8 items-center gap-2 border px-3 text-[11px] font-medium transition-colors sm:text-xs",
-                  i === stepIndex
-                    ? "border-primary bg-primary/20 text-primary shadow-[0_0_15px_-3px_oklch(0.85_0.12_220/0.4)]"
-                    : i < stepIndex
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
-                      : "border-border/60 text-muted-foreground",
-                )}
-              >
-                {i < stepIndex ? <CheckCircle2 className="h-3.5 w-3.5" /> : <span>{i + 1}</span>}
-                {s.label}
-              </span>
-              {i < STEPS.length - 1 && <span className="hidden h-px w-4 bg-border sm:block" />}
-            </div>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <Badge variant="outline" className="border-primary/30 text-primary">
-            catálogo: {catalogQuery.isLoading ? "carregando…" : catalogName}
-          </Badge>
+      <div className="fx">
+        <div className="fx-statusbar">
+          <span className="fx-dot" data-state={catalogQuery.isLoading ? "loading" : "ready"} />
+          <span>
+            Catálogo <strong>{catalogQuery.isLoading ? "carregando…" : catalogName}</strong>
+          </span>
           {catalogQuery.data && (
-            <span>{catalogQuery.data.total.toLocaleString("pt-BR")} ativos indexados</span>
+            <span>
+              <strong>{catalogQuery.data.total.toLocaleString("pt-BR")}</strong> ativos indexados
+            </span>
           )}
         </div>
 
-        {/* -------------------------------------------------------- UPLOAD */}
-        {step === "upload" && (
-          <LiquidPanel tone="accent" className="text-center">
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragging(true);
-              }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragging(false);
-                const f = e.dataTransfer.files?.[0];
-                if (f) void handleFile(f);
-              }}
-              className={cn(
-                "asset-fill-dropzone flex flex-col items-center gap-5 rounded-2xl border border-dashed px-4 py-12 transition-all sm:py-16",
-                dragging ? "border-primary bg-primary/[0.07] scale-[1.005]" : "border-primary/25",
-              )}
-            >
-              <div className="relative">
-                <div className="asset-fill-upload-aura absolute inset-0 -z-10 rounded-3xl bg-primary/30 blur-2xl" />
-                <div className="asset-fill-upload-icon flex h-24 w-24 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10">
-                  <FileSpreadsheet className="h-11 w-11 text-primary" />
-                </div>
+        <div className="fx-grid">
+          {/* ------------------------------------------------ etapas */}
+          <nav className="fx-rail" aria-label="Etapas do preenchimento">
+            <div className="fx-rail-mobile">
+              <div className="fx-rail-mobile-head">
+                <strong>{STEPS[stepIndex].label}</strong>
+                <span>
+                  Etapa {stepIndex + 1} de {STEPS.length}
+                </span>
               </div>
-              <div className="space-y-1.5">
-                <h3 className="font-display text-xl font-bold sm:text-2xl">
-                  Arraste sua planilha aqui
-                </h3>
-                <p className="mx-auto max-w-md text-sm text-muted-foreground">
-                  .xlsx, .xls ou .csv · até 25 MB. Arquivos .xlsx preservam estilos, fórmulas,
-                  larguras, filtros e abas ocultas.
-                </p>
+              <div className="fx-rail-mobile-bar">
+                <span style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }} />
               </div>
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void handleFile(f);
-                  e.target.value = "";
-                }}
-              />
-              <Button
-                type="button"
-                size="lg"
-                disabled={busy || catalogQuery.isLoading}
-                onClick={() => inputRef.current?.click()}
-                className="asset-fill-primary-action h-12 px-8 text-base font-semibold"
-              >
-                {busy || catalogQuery.isLoading ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : (
-                  <Upload className="mr-2 h-5 w-5" />
-                )}
-                {catalogQuery.isLoading ? "Carregando base de ativos…" : busy ? "Lendo planilha…" : "Importar planilha"}
-              </Button>
-              <p className="text-[11px] text-muted-foreground">
-                Após importar, o sistema identifica a coluna de ativo e prepara o preenchimento automático de Prédio, Andar e Ambiente.
-              </p>
             </div>
-            <div className="asset-fill-secondary-actions mt-4 flex flex-col items-center justify-between gap-3 rounded-xl border border-border/50 bg-background/30 px-4 py-3 text-left sm:flex-row">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">Precisa começar do zero?</p>
-                <p className="text-xs text-muted-foreground">Baixe um modelo vazio apenas se você ainda não tiver uma planilha para importar.</p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={downloadTemplate}
-                className="shrink-0 border-border/70 bg-background/50 text-foreground hover:border-primary/40 hover:bg-primary/5"
-              >
-                <FileSpreadsheet className="mr-2 h-4 w-4" /> Baixar modelo vazio
-              </Button>
-            </div>
-          </LiquidPanel>
-        )}
-
-        {/* -------------------------------------------------------- ANÁLISE */}
-        {step === "analise" && loaded && (
-          <div className="space-y-4">
-            <GlassCard>
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold">{loaded.fileName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {(loaded.fileSize / 1024).toFixed(0)} KB · {loaded.sheets.length} aba(s) ·{" "}
-                    {loaded.kind === "xlsx"
-                      ? "estilos preservados"
-                      : "sem estilos (formato de origem)"}
-                  </p>
-                </div>
-                <Button variant="ghost" size="sm" onClick={reset}>
-                  <X className="mr-1 h-4 w-4" /> Trocar arquivo
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {loaded.sheets.map((s) => {
-                  const cfg = configs[s.name];
-                  const ignored = isAssetSheetName(s.name);
-                  return (
-                    <div
-                      key={s.name}
-                      className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/60 bg-background/40 p-3"
-                    >
-                      <Checkbox
-                        checked={cfg?.selected}
-                        onCheckedChange={(v) =>
-                          setConfigs((c) => ({
-                            ...c,
-                            [s.name]: { ...c[s.name], selected: Boolean(v) },
-                          }))
-                        }
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{s.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          cabeçalho na linha {cfg.headerRow + 1} ·{" "}
-                          {s.totalRows.toLocaleString("pt-BR")} linhas
-                          {cfg.ativoIndex >= 0
-                            ? ` · Ativo em ${colLetter(cfg.ativoIndex)} (${s.headers[cfg.ativoIndex]})`
-                            : " · coluna Ativo não identificada"}
-                        </p>
-                      </div>
-                      {ignored && <Badge variant="outline">base de ativos</Badge>}
-                      {s.hidden && <Badge variant="outline">oculta</Badge>}
-                      {cfg.detection && (
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            cfg.detection.confidence === "high"
-                              ? "border-emerald-500/40 text-emerald-500"
-                              : cfg.detection.confidence === "medium"
-                                ? "border-amber-500/40 text-amber-500"
-                                : "border-destructive/40 text-destructive",
-                          )}
-                        >
-                          confiança{" "}
-                          {cfg.detection.confidence === "high"
-                            ? "alta"
-                            : cfg.detection.confidence === "medium"
-                              ? "média"
-                              : "baixa"}
-                        </Badge>
+            <ol className="fx-steps">
+              {STEPS.map((s, i) => {
+                const state = i < stepIndex ? "done" : i === stepIndex ? "current" : "todo";
+                return (
+                  <li
+                    key={s.key}
+                    className="fx-step"
+                    data-state={state}
+                    aria-current={state === "current" ? "step" : undefined}
+                  >
+                    <span className="fx-step-mark">
+                      {state === "done" ? (
+                        <Check className="h-3.5 w-3.5" strokeWidth={2.4} />
+                      ) : (
+                        i + 1
                       )}
+                    </span>
+                    <span className="fx-step-copy">
+                      <span className="fx-step-title">{s.label}</span>
+                      <span className="fx-step-hint block">{s.hint}</span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
+
+          <div className="fx-main">
+            {/* ---------------------------------------------------- UPLOAD */}
+            {step === "upload" && (
+              <>
+                <section className="fx-panel">
+                  <PanelHead
+                    icon={Upload}
+                    title="Importar planilha"
+                    description="Envie a planilha com o código do ativo. O sistema identifica a coluna e prepara o preenchimento de Prédio, Andar e Ambiente."
+                  />
+                  <div className="fx-body">
+                    <div
+                      className="fx-drop"
+                      data-drag={dragging}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragging(true);
+                      }}
+                      onDragLeave={() => setDragging(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setDragging(false);
+                        const f = e.dataTransfer.files?.[0];
+                        if (f) void handleFile(f);
+                      }}
+                    >
+                      <div className="fx-tile">
+                        <FileSpreadsheet />
+                      </div>
+                      <div>
+                        <h3 className="fx-drop-title">Arraste a planilha para esta área</h3>
+                        <p className="fx-drop-sub">ou selecione o arquivo no seu computador</p>
+                      </div>
+                      <input
+                        ref={inputRef}
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) void handleFile(f);
+                          e.target.value = "";
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="fx-btn fx-btn-primary fx-btn-lg"
+                        disabled={busy || catalogQuery.isLoading}
+                        onClick={() => inputRef.current?.click()}
+                      >
+                        {busy || catalogQuery.isLoading ? (
+                          <Loader2 className="fx-spin" />
+                        ) : (
+                          <Upload />
+                        )}
+                        {catalogQuery.isLoading
+                          ? "Carregando base de ativos…"
+                          : busy
+                            ? "Lendo planilha…"
+                            : "Importar planilha"}
+                      </button>
+                      <ul className="fx-specs" aria-label="Formatos aceitos">
+                        <li>.xlsx</li>
+                        <li>.xls</li>
+                        <li>.csv</li>
+                        <li>até 25 MB</li>
+                      </ul>
                     </div>
+
+                    <div className="fx-feats">
+                      <div className="fx-feat">
+                        <ScanSearch />
+                        <div>
+                          <b>Detecta a coluna</b>
+                          <span>Localiza o código do ativo e indica o nível de confiança.</span>
+                        </div>
+                      </div>
+                      <div className="fx-feat">
+                        <GitBranch />
+                        <div>
+                          <b>Resolve pela árvore</b>
+                          <span>
+                            Sobe a hierarquia real de ativos até Prédio, Andar e Ambiente.
+                          </span>
+                        </div>
+                      </div>
+                      <div className="fx-feat">
+                        <ShieldCheck />
+                        <div>
+                          <b>Preserva o arquivo</b>
+                          <span>Em .xlsx mantém estilos, fórmulas, filtros e abas ocultas.</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="fx-panel">
+                  <div className="fx-body fx-template">
+                    <p>
+                      <b>Ainda não tem uma planilha?</b>
+                      Baixe o modelo vazio com as colunas esperadas e preencha com seus ativos.
+                    </p>
+                    <button type="button" className="fx-btn" onClick={downloadTemplate}>
+                      <Download /> Baixar modelo vazio
+                    </button>
+                  </div>
+                </section>
+              </>
+            )}
+
+            {/* ---------------------------------------------------- ANÁLISE */}
+            {step === "analise" && loaded && (
+              <section className="fx-panel">
+                <div className="fx-file">
+                  <div className="fx-tile">
+                    <FileSpreadsheet />
+                  </div>
+                  <div className="fx-file-main">
+                    <div className="fx-file-name">{loaded.fileName}</div>
+                    <div className="fx-file-meta">
+                      {(loaded.fileSize / 1024).toFixed(0)} KB · {loaded.sheets.length} aba(s) ·{" "}
+                      {loaded.kind === "xlsx"
+                        ? "estilos preservados"
+                        : "sem estilos (formato de origem)"}
+                    </div>
+                  </div>
+                  <button type="button" className="fx-btn fx-btn-ghost fx-btn-sm" onClick={reset}>
+                    <X /> Trocar arquivo
+                  </button>
+                </div>
+                <div>
+                  {loaded.sheets.map((s) => {
+                    const cfg = configs[s.name];
+                    const ignored = isAssetSheetName(s.name);
+                    return (
+                      <div key={s.name} className="fx-row">
+                        <Checkbox
+                          checked={cfg?.selected}
+                          aria-label={`Processar aba ${s.name}`}
+                          onCheckedChange={(v) =>
+                            setConfigs((c) => ({
+                              ...c,
+                              [s.name]: { ...c[s.name], selected: Boolean(v) },
+                            }))
+                          }
+                        />
+                        <div className="fx-row-main">
+                          <div className="fx-row-name">{s.name}</div>
+                          <div className="fx-row-meta">
+                            cabeçalho na linha {cfg.headerRow + 1} ·{" "}
+                            {s.totalRows.toLocaleString("pt-BR")} linhas
+                            {cfg.ativoIndex >= 0
+                              ? ` · Ativo em ${colLetter(cfg.ativoIndex)} (${s.headers[cfg.ativoIndex]})`
+                              : " · coluna Ativo não identificada"}
+                          </div>
+                        </div>
+                        {ignored && (
+                          <span className="fx-tag" data-tone="plain">
+                            base de ativos
+                          </span>
+                        )}
+                        {s.hidden && (
+                          <span className="fx-tag" data-tone="plain">
+                            oculta
+                          </span>
+                        )}
+                        {cfg.detection && (
+                          <span
+                            className="fx-tag"
+                            data-tone={
+                              cfg.detection.confidence === "high"
+                                ? "ok"
+                                : cfg.detection.confidence === "medium"
+                                  ? "warn"
+                                  : "bad"
+                            }
+                          >
+                            confiança{" "}
+                            {cfg.detection.confidence === "high"
+                              ? "alta"
+                              : cfg.detection.confidence === "medium"
+                                ? "média"
+                                : "baixa"}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <StepNav
+                  onBack={reset}
+                  backLabel="Cancelar"
+                  onNext={() => setStep("mapeamento")}
+                  nextDisabled={selectedSheets.length === 0}
+                />
+              </section>
+            )}
+
+            {/* ------------------------------------------------- MAPEAMENTO */}
+            {step === "mapeamento" && loaded && (
+              <>
+                {selectedSheets.map((s) => {
+                  const cfg = configs[s.name];
+                  return (
+                    <section key={s.name} className="fx-panel">
+                      <PanelHead
+                        icon={Columns3}
+                        title={s.name}
+                        description="Indique a coluna com o código do ativo e onde gravar Prédio, Andar e Ambiente."
+                      />
+                      <div className="fx-body">
+                        <div className="fx-fields">
+                          <ColumnSelect
+                            icon={ScanBarcode}
+                            label="Coluna Ativo"
+                            help="Origem do código"
+                            headers={s.headers}
+                            value={cfg.ativoIndex}
+                            allowNone={false}
+                            onChange={(v) =>
+                              setConfigs((c) => ({
+                                ...c,
+                                [s.name]: {
+                                  ...c[s.name],
+                                  ativoIndex: v,
+                                  targets: detectTargetColumns(s.headers, v),
+                                },
+                              }))
+                            }
+                          />
+                          {(
+                            [
+                              ["predio", "Prédio", Building2],
+                              ["andar", "Andar / Pavimento", Layers],
+                              ["ambiente", "Ambiente / Local", DoorOpen],
+                            ] as const
+                          ).map(([k, label, Icon]) => (
+                            <ColumnSelect
+                              key={k}
+                              icon={Icon}
+                              label={label}
+                              help="Coluna de destino"
+                              headers={s.headers}
+                              value={cfg.targets[k]}
+                              allowNone
+                              noneLabel="criar coluna nova"
+                              onChange={(v) =>
+                                setConfigs((c) => ({
+                                  ...c,
+                                  [s.name]: {
+                                    ...c[s.name],
+                                    targets: { ...c[s.name].targets, [k]: v },
+                                  },
+                                }))
+                              }
+                            />
+                          ))}
+                        </div>
+                        {cfg.detection && cfg.detection.confidence !== "high" && (
+                          <div className="fx-note" role="status">
+                            <AlertTriangle />
+                            <div>
+                              <b>Confirme a coluna do código do ativo</b>
+                              <ul>
+                                {cfg.detection.candidates.slice(0, 3).map((c) => (
+                                  <li key={c.index}>
+                                    {colLetter(c.index)} · {c.header || "(sem título)"} — score{" "}
+                                    {c.score}, {Math.round(c.sampleHitRate * 100)}% dos valores no
+                                    catálogo ({c.reason})
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </section>
                   );
                 })}
-              </div>
-            </GlassCard>
-            <StepNav
-              onBack={reset}
-              backLabel="Cancelar"
-              onNext={() => setStep("mapeamento")}
-              nextDisabled={selectedSheets.length === 0}
-            />
-          </div>
-        )}
+                <StepNav solo onBack={() => setStep("analise")} onNext={() => setStep("opcoes")} />
+              </>
+            )}
 
-        {/* ----------------------------------------------------- MAPEAMENTO */}
-        {step === "mapeamento" && loaded && (
-          <div className="space-y-4">
-            {selectedSheets.map((s) => {
-              const cfg = configs[s.name];
-              return (
-                <GlassCard key={s.name}>
-                  <p className="mb-3 font-semibold">{s.name}</p>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    <ColumnSelect
-                      label="Coluna Ativo"
-                      headers={s.headers}
-                      value={cfg.ativoIndex}
-                      allowNone={false}
-                      onChange={(v) =>
-                        setConfigs((c) => ({
-                          ...c,
-                          [s.name]: {
-                            ...c[s.name],
-                            ativoIndex: v,
-                            targets: detectTargetColumns(s.headers, v),
-                          },
-                        }))
-                      }
-                    />
-                    {(["predio", "andar", "ambiente"] as const).map((k) => (
-                      <ColumnSelect
+            {/* ------------------------------------------------------ OPÇÕES */}
+            {step === "opcoes" && (
+              <section className="fx-panel">
+                <PanelHead
+                  icon={SlidersHorizontal}
+                  title="Opções de gravação"
+                  description="Defina como os valores são escritos na planilha final."
+                />
+                <div>
+                  <ToggleRow
+                    label="Sobrescrever valores existentes"
+                    hint="Por padrão, apenas células vazias são preenchidas."
+                    checked={options.overwrite}
+                    onChange={(v) => setOptions((o) => ({ ...o, overwrite: v }))}
+                  />
+                  <ToggleRow
+                    label="Adicionar coluna “Método de Resolução”"
+                    hint="Registra se o valor veio da árvore, do fallback legado ou já existia."
+                    checked={options.addMethodColumn}
+                    onChange={(v) => setOptions((o) => ({ ...o, addMethodColumn: v }))}
+                  />
+                  <ToggleRow
+                    label="Adicionar comentário na célula"
+                    hint="Anota o código do ativo e o catálogo utilizado."
+                    checked={options.addComment}
+                    onChange={(v) => setOptions((o) => ({ ...o, addComment: v }))}
+                  />
+                  <ToggleRow
+                    label="Incluir aba “Base de Ativos Utilizada”"
+                    hint="Aba oculta com o catálogo aplicado, para auditoria."
+                    checked={options.includeCatalogSheet}
+                    onChange={(v) => setOptions((o) => ({ ...o, includeCatalogSheet: v }))}
+                  />
+                </div>
+                <StepNav
+                  onBack={() => setStep("mapeamento")}
+                  onNext={() => setStep("previa")}
+                  nextLabel="Ver prévia"
+                />
+              </section>
+            )}
+
+            {/* ------------------------------------------------------ PRÉVIA */}
+            {step === "previa" && loaded && (
+              <section className="fx-panel">
+                <PanelHead
+                  icon={Table2}
+                  title="Prévia do preenchimento"
+                  description="Confira os valores calculados. Você pode editar qualquer célula antes de processar."
+                />
+                <div className="fx-toolbar">
+                  <Select value={activeSheet} onValueChange={setActiveSheet}>
+                    <SelectTrigger className="fx-select w-full sm:w-56" aria-label="Aba da prévia">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedSheets.map((s) => (
+                        <SelectItem key={s.name} value={s.name}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="fx-seg" role="group" aria-label="Filtrar por status">
+                    {(
+                      [
+                        ["all", "Todos"],
+                        ["exact", "Exata"],
+                        ["tree", "Hierarquia"],
+                        ["legacy", "Legado"],
+                        ["conflict", "Conflitos"],
+                        ["unmatched", "Não encontrados"],
+                      ] as [PreviewFilter, string][]
+                    ).map(([k, label]) => (
+                      <button
                         key={k}
-                        label={
-                          k === "predio"
-                            ? "Prédio"
-                            : k === "andar"
-                              ? "Andar / Pavimento"
-                              : "Ambiente / Local"
-                        }
-                        headers={s.headers}
-                        value={cfg.targets[k]}
-                        allowNone
-                        noneLabel="criar coluna nova"
-                        onChange={(v) =>
-                          setConfigs((c) => ({
-                            ...c,
-                            [s.name]: { ...c[s.name], targets: { ...c[s.name].targets, [k]: v } },
-                          }))
-                        }
-                      />
+                        type="button"
+                        aria-pressed={filter === k}
+                        onClick={() => setFilter(k)}
+                      >
+                        {label} <i>{counts[k].toLocaleString("pt-BR")}</i>
+                      </button>
                     ))}
                   </div>
-                  {cfg.detection && cfg.detection.confidence !== "high" && (
-                    <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
-                      <p className="mb-1 flex items-center gap-2 font-medium text-amber-500">
-                        <AlertTriangle className="h-3.5 w-3.5" /> Confirme a coluna do código do
-                        ativo
-                      </p>
-                      <ul className="space-y-0.5 text-muted-foreground">
-                        {cfg.detection.candidates.slice(0, 3).map((c) => (
-                          <li key={c.index}>
-                            {colLetter(c.index)} · {c.header || "(sem título)"} — score {c.score},{" "}
-                            {Math.round(c.sampleHitRate * 100)}% dos valores no catálogo ({c.reason}
-                            )
-                          </li>
+                </div>
+
+                <div className="fx-scroll">
+                  <table className="fx-table">
+                    <thead>
+                      <tr>
+                        <th>Linha</th>
+                        <th>Ativo</th>
+                        {(["Prédio", "Andar", "Ambiente"] as const).map((g) => (
+                          <Fragment key={g}>
+                            <th data-group>
+                              <small>{g}</small>Atual
+                            </th>
+                            <th>
+                              <small>{g}</small>Calculado
+                            </th>
+                          </Fragment>
                         ))}
+                        <th data-group>Método</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredPreview.map((r) => {
+                        const key = `${activeSheet}:${r.row}`;
+                        const ov = overrides[key];
+                        const calc = ov ?? r.computed;
+                        return (
+                          <tr key={key}>
+                            <td className="fx-mute">{r.row}</td>
+                            <td className="fx-mono">{r.code}</td>
+                            {[0, 1, 2].map((k) => (
+                              <Fragment key={k}>
+                                <td className="fx-mute" data-group>
+                                  {r.current[k] || "—"}
+                                </td>
+                                <td>
+                                  <input
+                                    value={calc[k]}
+                                    aria-label={`${["Prédio", "Andar", "Ambiente"][k]} calculado da linha ${r.row}`}
+                                    data-changed={Boolean(calc[k] && calc[k] !== r.current[k])}
+                                    onChange={(e) => {
+                                      const next: [string, string, string] = [...calc] as [
+                                        string,
+                                        string,
+                                        string,
+                                      ];
+                                      next[k] = e.target.value;
+                                      setOverrides((o) => ({ ...o, [key]: next }));
+                                    }}
+                                    className="fx-cell"
+                                  />
+                                </td>
+                              </Fragment>
+                            ))}
+                            <td className="fx-mute" data-group>
+                              {r.method}
+                            </td>
+                            <td>
+                              <span className="fx-tag" data-tone={STATUS_TONE[r.status]}>
+                                {STATUS_LABEL[r.status]}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredPreview.length === 0 && (
+                        <tr>
+                          <td colSpan={10}>
+                            <div className="fx-empty">Nenhuma linha para este filtro.</div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="fx-caption">
+                  Prévia de até 100 linhas. Valores destacados serão alterados.
+                </p>
+                <StepNav
+                  onBack={() => setStep("opcoes")}
+                  onNext={runProcessing}
+                  nextLabel="Processar planilha"
+                  nextIcon={<Play />}
+                />
+              </section>
+            )}
+
+            {/* ------------------------------------------------ PROCESSANDO */}
+            {step === "processando" && (
+              <section className="fx-panel">
+                <PanelHead
+                  icon={Cog}
+                  title="Processando planilha"
+                  description="Mantenha esta página aberta até a conclusão."
+                />
+                <div className="fx-run">
+                  <div className="fx-run-head">
+                    <div className="fx-pct">
+                      {pct}
+                      <small>%</small>
+                    </div>
+                    <div className="fx-run-label" aria-live="polite">
+                      {progress.sheet ? (
+                        <>
+                          Aba <b>{progress.sheet}</b> · {progress.done.toLocaleString("pt-BR")} de{" "}
+                          {progress.total.toLocaleString("pt-BR")} linhas
+                        </>
+                      ) : (
+                        "Preparando…"
+                      )}
+                    </div>
+                  </div>
+                  <div
+                    className="fx-bar"
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={pct}
+                    data-running="true"
+                  >
+                    <span style={{ width: `${pct}%` }} />
+                  </div>
+                  <div className="fx-metrics">
+                    <div className="fx-metric">
+                      <span>Aba atual</span>
+                      <b>{progress.sheet || "—"}</b>
+                    </div>
+                    <div className="fx-metric">
+                      <span>Linhas</span>
+                      <b>
+                        {progress.done.toLocaleString("pt-BR")} /{" "}
+                        {progress.total.toLocaleString("pt-BR")}
+                      </b>
+                    </div>
+                    <div className="fx-metric">
+                      <span>Abas</span>
+                      <b>{selectedSheets.length}</b>
+                    </div>
+                  </div>
+                  <div className="fx-actions">
+                    <button type="button" className="fx-btn" onClick={cancelProcessing}>
+                      <X /> Cancelar
+                    </button>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* ----------------------------------------------------- RESULTADO */}
+            {step === "resultado" && (
+              <>
+                <section className="fx-panel">
+                  <PanelHead
+                    icon={PackageCheck}
+                    title="Processamento concluído"
+                    description={loaded?.fileName}
+                  />
+                  <div className="fx-stats">
+                    <Stat label="Abas processadas" value={totals.sheets} />
+                    <Stat label="Linhas com ativo" value={totals.rowsWithAsset} />
+                    <Stat label="Pela árvore" value={totals.tree} tone="ok" />
+                    <Stat label="Fallback legado" value={totals.legacy} tone="warn" />
+                    <Stat label="Valores preservados" value={totals.preserved} />
+                    <Stat label="Conflitos" value={totals.conflicts} tone="risk" />
+                    <Stat label="Não encontrados" value={totals.unmatched} tone="bad" />
+                    <Stat label="Tempo" value={`${(duration / 1000).toFixed(1)}s`} />
+                  </div>
+                  {splitTotal > 0 && (
+                    <div className="fx-split">
+                      <div
+                        className="fx-split-bar"
+                        role="img"
+                        aria-label="Distribuição por método de resolução"
+                      >
+                        {split
+                          .filter((x) => x.value > 0)
+                          .map((x) => (
+                            <span
+                              key={x.key}
+                              style={{ flexGrow: x.value, background: x.color }}
+                              title={`${x.label}: ${x.value.toLocaleString("pt-BR")}`}
+                            />
+                          ))}
+                      </div>
+                      <ul className="fx-legend">
+                        {split
+                          .filter((x) => x.value > 0)
+                          .map((x) => (
+                            <li key={x.key} style={{ ["--c" as string]: x.color }}>
+                              <i /> {x.label} · {x.value.toLocaleString("pt-BR")}
+                            </li>
+                          ))}
                       </ul>
                     </div>
                   )}
-                </GlassCard>
-              );
-            })}
-            <StepNav onBack={() => setStep("analise")} onNext={() => setStep("opcoes")} />
-          </div>
-        )}
+                </section>
 
-        {/* --------------------------------------------------------- OPÇÕES */}
-        {step === "opcoes" && (
-          <div className="space-y-4">
-            <GlassCard className="space-y-4">
-              <ToggleRow
-                label="Sobrescrever valores existentes"
-                hint="Por padrão, apenas células vazias são preenchidas."
-                checked={options.overwrite}
-                onChange={(v) => setOptions((o) => ({ ...o, overwrite: v }))}
-              />
-              <ToggleRow
-                label="Adicionar coluna “Método de Resolução”"
-                hint="Registra se o valor veio da árvore, do fallback legado ou já existia."
-                checked={options.addMethodColumn}
-                onChange={(v) => setOptions((o) => ({ ...o, addMethodColumn: v }))}
-              />
-              <ToggleRow
-                label="Adicionar comentário na célula"
-                hint="Anota o código do ativo e o catálogo utilizado."
-                checked={options.addComment}
-                onChange={(v) => setOptions((o) => ({ ...o, addComment: v }))}
-              />
-              <ToggleRow
-                label="Incluir aba “Base de Ativos Utilizada”"
-                hint="Aba oculta com o catálogo aplicado, para auditoria."
-                checked={options.includeCatalogSheet}
-                onChange={(v) => setOptions((o) => ({ ...o, includeCatalogSheet: v }))}
-              />
-            </GlassCard>
-            <StepNav
-              onBack={() => setStep("mapeamento")}
-              onNext={() => setStep("previa")}
-              nextLabel="Ver prévia"
-            />
-          </div>
-        )}
-
-        {/* ---------------------------------------------------------- PRÉVIA */}
-        {step === "previa" && loaded && (
-          <div className="space-y-4">
-            <GlassCard>
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <Select value={activeSheet} onValueChange={setActiveSheet}>
-                  <SelectTrigger className="h-9 w-full sm:w-56">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {selectedSheets.map((s) => (
-                      <SelectItem key={s.name} value={s.name}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="flex flex-wrap gap-1.5">
-                  {(
-                    [
-                      ["all", "Todos"],
-                      ["exact", "Exata"],
-                      ["tree", "Hierarquia"],
-                      ["legacy", "Legado"],
-                      ["conflict", "Conflitos"],
-                      ["unmatched", "Não encontrados"],
-                    ] as [PreviewFilter, string][]
-                  ).map(([k, label]) => (
-                    <Button
-                      key={k}
-                      size="sm"
-                      variant={filter === k ? "default" : "outline"}
-                      className={cn(
-                        "h-8 rounded-full px-3 text-xs transition-all",
-                        filter === k 
-                          ? "bg-primary text-primary-foreground shadow-[0_0_10px_-2px_oklch(0.85_0.12_220/0.4)]" 
-                          : "border-primary/30 text-primary hover:bg-primary/10"
+                {errors.length > 0 && (
+                  <div className="fx-note" data-tone="bad" role="alert">
+                    <AlertTriangle />
+                    <div>
+                      <b>
+                        {errors.length} aba(s) falharam — o restante foi processado normalmente.
+                      </b>
+                      <br />
+                      <button
+                        type="button"
+                        className="fx-link"
+                        aria-expanded={showTech}
+                        onClick={() => setShowTech((v) => !v)}
+                      >
+                        <ChevronDown /> Detalhes técnicos
+                      </button>
+                      {showTech && (
+                        <pre>{errors.map((e) => `[${e.sheet}] ${e.message}`).join("\n")}</pre>
                       )}
-                      onClick={() => setFilter(k)}
-                    >
-                      {label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="max-h-[26rem] overflow-auto rounded-2xl border border-border/60">
-                <table className="w-full min-w-[900px] text-xs">
-                  <thead className="sticky top-0 z-10 bg-card/95 backdrop-blur">
-                    <tr className="[&>th]:whitespace-nowrap [&>th]:px-3 [&>th]:py-2 [&>th]:text-left [&>th]:font-medium [&>th]:text-muted-foreground">
-                      <th>Linha</th>
-                      <th>Ativo</th>
-                      <th>Prédio atual</th>
-                      <th>Prédio calculado</th>
-                      <th>Andar atual</th>
-                      <th>Andar calculado</th>
-                      <th>Ambiente atual</th>
-                      <th>Ambiente calculado</th>
-                      <th>Método</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPreview.map((r) => {
-                      const key = `${activeSheet}:${r.row}`;
-                      const ov = overrides[key];
-                      const calc = ov ?? r.computed;
-                      return (
-                        <tr key={key} className="border-t border-border/40 hover:bg-muted/30">
-                          <td className="px-3 py-1.5 text-muted-foreground">{r.row}</td>
-                          <td className="px-3 py-1.5 font-mono">{r.code}</td>
-                          {[0, 1, 2].map((k) => (
-                            <Fragment key={k}>
-                              <td className="px-3 py-1.5 text-muted-foreground">
-                                {r.current[k] || "—"}
-                              </td>
-                              <td className="px-1 py-1">
-                                <input
-                                  value={calc[k]}
-                                  onChange={(e) => {
-                                    const next: [string, string, string] = [...calc] as [
-                                      string,
-                                      string,
-                                      string,
-                                    ];
-                                    next[k] = e.target.value;
-                                    setOverrides((o) => ({ ...o, [key]: next }));
-                                  }}
-                                  className={cn(
-                                    "w-full rounded-md border border-transparent bg-transparent px-2 py-1 outline-none transition-colors focus:border-primary/50 focus:bg-background",
-                                    calc[k] &&
-                                      calc[k] !== r.current[k] &&
-                                      "bg-primary/10 font-medium",
-                                  )}
-                                />
-                              </td>
-                            </Fragment>
-                          ))}
-
-                          <td className="px-3 py-1.5 text-muted-foreground">{r.method}</td>
-                          <td className="px-3 py-1.5">
-                            <Badge
-                              variant="outline"
-                              className={cn("text-[10px]", STATUS_TONE[r.status])}
-                            >
-                              {STATUS_LABEL[r.status]}
-                            </Badge>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {filteredPreview.length === 0 && (
-                      <tr>
-                        <td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">
-                          Nenhuma linha para este filtro.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                Prévia de até 100 linhas. Valores destacados serão alterados; edite qualquer célula
-                calculada antes de processar.
-              </p>
-            </GlassCard>
-            <StepNav
-              onBack={() => setStep("opcoes")}
-              onNext={runProcessing}
-              nextLabel="Processar planilha"
-              nextIcon={<Sparkles className="ml-2 h-4 w-4" />}
-            />
-          </div>
-        )}
-
-        {/* --------------------------------------------------- PROCESSANDO */}
-        {step === "processando" && (
-          <LiquidPanel tone="accent" className="asset-fill-processing space-y-5 text-center">
-            <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-            <div>
-              <p className="font-display text-lg font-bold">Processando…</p>
-              <p className="text-sm text-muted-foreground">
-                {progress.sheet
-                  ? `Aba “${progress.sheet}” · ${progress.done}/${progress.total} linhas`
-                  : "Preparando"}
-              </p>
-            </div>
-            <Progress value={Math.round(progress.overall * 100)} className="h-2" />
-            <Button variant="outline" onClick={cancelProcessing}>
-              <X className="mr-2 h-4 w-4" /> Cancelar
-            </Button>
-          </LiquidPanel>
-        )}
-
-        {/* ------------------------------------------------------- RESULTADO */}
-        {step === "resultado" && (
-          <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Stat label="Abas processadas" value={totals.sheets} />
-              <Stat label="Linhas com ativo" value={totals.rowsWithAsset} />
-              <Stat label="Pela árvore" value={totals.tree} tone="emerald" />
-              <Stat label="Fallback legado" value={totals.legacy} tone="amber" />
-              <Stat label="Valores preservados" value={totals.preserved} />
-              <Stat label="Conflitos" value={totals.conflicts} tone="orange" />
-              <Stat label="Não encontrados" value={totals.unmatched} tone="red" />
-              <Stat label="Tempo" value={`${(duration / 1000).toFixed(1)}s`} />
-            </div>
-
-            {errors.length > 0 && (
-              <GlassCard className="border-destructive/30">
-                <p className="flex items-center gap-2 font-medium text-destructive">
-                  <AlertTriangle className="h-4 w-4" /> {errors.length} aba(s) falharam — o restante
-                  foi processado normalmente.
-                </p>
-                <button
-                  onClick={() => setShowTech((v) => !v)}
-                  className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"
-                >
-                  <ChevronDown
-                    className={cn("h-3 w-3 transition-transform", showTech && "rotate-180")}
-                  />
-                  Detalhes técnicos
-                </button>
-                {showTech && (
-                  <pre className="mt-2 max-h-40 overflow-auto rounded-xl bg-muted/40 p-3 text-[11px]">
-                    {errors.map((e) => `[${e.sheet}] ${e.message}`).join("\n")}
-                  </pre>
+                      <div className="fx-actions" style={{ marginTop: "0.6rem" }}>
+                        <button
+                          type="button"
+                          className="fx-btn fx-btn-sm"
+                          onClick={downloadFailureReport}
+                        >
+                          <Download /> Relatório de falha
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-3"
-                  onClick={downloadFailureReport}
-                >
-                  <Download className="mr-2 h-4 w-4" /> Relatório de falha
-                </Button>
-              </GlassCard>
+
+                <section className="fx-panel">
+                  <div className="fx-download">
+                    <div className="fx-tile">
+                      <FileSpreadsheet />
+                    </div>
+                    <div className="fx-file-main">
+                      <div className="fx-file-name">{output?.fileName ?? processedFileName()}</div>
+                      <div className="fx-file-meta">
+                        {output
+                          ? `${(output.size / 1024 / 1024).toFixed(2)} MB`
+                          : `~${((loaded?.fileSize ?? 0) / 1024 / 1024 + 0.15).toFixed(2)} MB estimados`}{" "}
+                        · cópia do original com as abas “Resumo do Processamento” e “Ativos Não
+                        Encontrados”
+                      </div>
+                    </div>
+                    {output && (
+                      <span className="fx-ok-badge">
+                        <CheckCircle2 /> Gerado e validado
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className="fx-btn fx-btn-primary fx-btn-lg"
+                      onClick={downloadProcessed}
+                      disabled={busy}
+                    >
+                      {busy ? <Loader2 className="fx-spin" /> : <Download />} Baixar planilha
+                    </button>
+                  </div>
+                  <div className="fx-secondary">
+                    <div className="fx-actions">
+                      <button
+                        type="button"
+                        className="fx-btn fx-btn-sm"
+                        onClick={downloadUnmatched}
+                      >
+                        <Download /> Relatório de não encontrados
+                      </button>
+                      <button type="button" className="fx-btn fx-btn-sm" onClick={downloadTemplate}>
+                        <FileSpreadsheet /> Baixar modelo de planilha
+                      </button>
+                      <Link to="/inteligencia-ativos/nao-encontrados" className="fx-btn fx-btn-sm">
+                        <Search /> Revisar não encontrados
+                      </Link>
+                      <button type="button" className="fx-btn fx-btn-sm" onClick={saveTemplate}>
+                        <Save /> Salvar mapeamento como modelo
+                      </button>
+                      <button
+                        type="button"
+                        className="fx-btn fx-btn-ghost fx-btn-sm"
+                        onClick={reset}
+                      >
+                        <RefreshCw /> Processar outro arquivo
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              </>
             )}
 
-            <GlassCard className="space-y-3">
-              <button
-                type="button"
-                onClick={downloadProcessed}
-                disabled={busy}
-                className="asset-fill-download-card group relative flex w-full items-center gap-4 overflow-hidden border p-4 text-left transition-all disabled:opacity-60 sm:p-5"
-              >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
-                  {busy ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    <Download className="h-6 w-6" />
-                  )}
+            {fatal && step !== "resultado" && (
+              <div className="fx-note" data-tone="bad" role="alert">
+                <AlertTriangle />
+                <div>
+                  <b>Algo deu errado ao ler o arquivo.</b>
+                  <br />
+                  <button
+                    type="button"
+                    className="fx-link"
+                    aria-expanded={showTech}
+                    onClick={() => setShowTech((v) => !v)}
+                  >
+                    <ChevronDown /> Detalhes técnicos
+                  </button>
+                  {showTech && <pre>{fatal}</pre>}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-display text-base font-bold sm:text-lg">
-                    Baixar planilha processada
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {output?.fileName ?? processedFileName()} ·{" "}
-                    {output
-                      ? `${(output.size / 1024 / 1024).toFixed(2)} MB`
-                      : `~${((loaded?.fileSize ?? 0) / 1024 / 1024 + 0.15).toFixed(2)} MB estimados`}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    Cópia do original com abas “Resumo do Processamento” e “Ativos Não Encontrados”.
-                  </p>
-                </div>
-                {output && <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />}
-              </button>
-
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={downloadUnmatched} className="border-primary/40 text-primary hover:bg-primary/10">
-                  <Download className="mr-2 h-4 w-4" /> Relatório de não encontrados
-                </Button>
-                <Button variant="outline" onClick={downloadTemplate} className="border-primary/40 text-primary hover:bg-primary/10">
-                  <FileSpreadsheet className="mr-2 h-4 w-4" /> Baixar modelo de planilha
-                </Button>
-                <Button variant="outline" asChild className="border-primary/40 text-primary hover:bg-primary/10">
-                  <Link to="/inteligencia-ativos/nao-encontrados">
-                    <Search className="mr-2 h-4 w-4" /> Revisar não encontrados
-                  </Link>
-                </Button>
-                <Button variant="outline" onClick={saveTemplate} className="border-primary/40 text-primary hover:bg-primary/10">
-                  <Save className="mr-2 h-4 w-4" /> Salvar mapeamento como modelo
-                </Button>
-                <Button variant="ghost" onClick={reset}>
-                  <RefreshCw className="mr-2 h-4 w-4" /> Processar outro arquivo
-                </Button>
               </div>
-            </GlassCard>
+            )}
           </div>
-        )}
-
-        {fatal && step !== "resultado" && (
-          <GlassCard className="border-destructive/30">
-            <p className="flex items-center gap-2 text-sm font-medium text-destructive">
-              <AlertTriangle className="h-4 w-4" /> Algo deu errado ao ler o arquivo.
-            </p>
-            <button
-              onClick={() => setShowTech((v) => !v)}
-              className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"
-            >
-              <ChevronDown
-                className={cn("h-3 w-3 transition-transform", showTech && "rotate-180")}
-              />{" "}
-              Detalhes técnicos
-            </button>
-            {showTech && <pre className="mt-2 rounded-xl bg-muted/40 p-3 text-[11px]">{fatal}</pre>}
-          </GlassCard>
-        )}
+        </div>
       </div>
     </PageShell>
   );
@@ -1102,6 +1271,28 @@ function colLetter(index: number) {
   return out;
 }
 
+function PanelHead({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="fx-panel-head">
+      <div className="fx-tile">
+        <Icon />
+      </div>
+      <div className="min-w-0">
+        <h3 className="fx-title">{title}</h3>
+        {description && <p className="fx-sub">{description}</p>}
+      </div>
+    </div>
+  );
+}
+
 function StepNav({
   onBack,
   onNext,
@@ -1109,6 +1300,7 @@ function StepNav({
   nextLabel = "Continuar",
   nextDisabled,
   nextIcon,
+  solo,
 }: {
   onBack: () => void;
   onNext: () => void;
@@ -1116,32 +1308,40 @@ function StepNav({
   nextLabel?: string;
   nextDisabled?: boolean;
   nextIcon?: React.ReactNode;
+  solo?: boolean;
 }) {
   return (
-    <div className="flex flex-wrap justify-between gap-2">
-      <Button variant="ghost" onClick={onBack}>
-        <ArrowLeft className="mr-2 h-4 w-4" /> {backLabel}
-      </Button>
-      <Button
-        onClick={onNext}
-        disabled={nextDisabled}
-        className="asset-fill-primary-action text-primary-foreground transition-all"
-      >
-        {nextLabel} {nextIcon ?? <ArrowRight className="ml-2 h-4 w-4" />}
-      </Button>
+    <div className={cn("fx-foot", solo && "fx-foot-solo")}>
+      <button type="button" className="fx-btn fx-btn-ghost" onClick={onBack}>
+        <ArrowLeft /> {backLabel}
+      </button>
+      <div className="fx-foot-end">
+        <button
+          type="button"
+          className="fx-btn fx-btn-primary"
+          onClick={onNext}
+          disabled={nextDisabled}
+        >
+          {nextLabel} {nextIcon ?? <ArrowRight />}
+        </button>
+      </div>
     </div>
   );
 }
 
 function ColumnSelect({
+  icon: Icon,
   label,
+  help,
   headers,
   value,
   onChange,
   allowNone,
   noneLabel = "nenhuma",
 }: {
+  icon: LucideIcon;
   label: string;
+  help?: string;
   headers: string[];
   value: number;
   onChange: (v: number) => void;
@@ -1149,10 +1349,12 @@ function ColumnSelect({
   noneLabel?: string;
 }) {
   return (
-    <div className="space-y-1.5">
-      <Label className="text-xs">{label}</Label>
+    <div className="fx-field">
+      <span className="fx-label">
+        <Icon /> {label}
+      </span>
       <Select value={String(value)} onValueChange={(v) => onChange(Number(v))}>
-        <SelectTrigger className="h-9">
+        <SelectTrigger className="fx-select" aria-label={label}>
           <SelectValue placeholder="Selecionar" />
         </SelectTrigger>
         <SelectContent>
@@ -1164,6 +1366,7 @@ function ColumnSelect({
           ))}
         </SelectContent>
       </Select>
+      {help && <span className="fx-help">{help}</span>}
     </div>
   );
 }
@@ -1184,21 +1387,14 @@ function ToggleRow({
       type="button"
       role="switch"
       aria-checked={checked}
-      data-state={checked ? "checked" : "unchecked"}
-      className="asset-fill-option-card"
+      className="fx-switch-row"
       onClick={() => onChange(!checked)}
     >
-      <span className="asset-fill-option-copy">
-        <span className="asset-fill-option-title">{label}</span>
-        <span className="asset-fill-option-hint">{hint}</span>
+      <span className="fx-switch-copy">
+        <b>{label}</b>
+        <span>{hint}</span>
       </span>
-
-      <span className="asset-fill-option-control" data-state={checked ? "checked" : "unchecked"} aria-hidden="true">
-        <span className="asset-fill-option-state">{checked ? "Ativado" : "Desativado"}</span>
-        <span className="asset-fill-option-indicator">
-          {checked ? <CheckCircle2 className="h-4 w-4" /> : <X className="h-4 w-4" />}
-        </span>
-      </span>
+      <span className="fx-switch" aria-hidden="true" />
     </button>
   );
 }
@@ -1210,24 +1406,12 @@ function Stat({
 }: {
   label: string;
   value: number | string;
-  tone?: "emerald" | "amber" | "orange" | "red";
+  tone?: "ok" | "warn" | "risk" | "bad";
 }) {
-  const toneClass =
-    tone === "emerald"
-      ? "text-emerald-500"
-      : tone === "amber"
-        ? "text-amber-500"
-        : tone === "orange"
-          ? "text-orange-500"
-          : tone === "red"
-            ? "text-destructive"
-            : "text-foreground";
   return (
-    <GlassCard className="p-4">
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={cn("font-display text-2xl font-bold", toneClass)}>
-        {typeof value === "number" ? value.toLocaleString("pt-BR") : value}
-      </p>
-    </GlassCard>
+    <div className="fx-stat" data-tone={tone}>
+      <span>{label}</span>
+      <b>{typeof value === "number" ? value.toLocaleString("pt-BR") : value}</b>
+    </div>
   );
 }

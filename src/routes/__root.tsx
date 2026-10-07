@@ -17,7 +17,7 @@ import scrollbarCss from "../scrollbar-system.css?url";
 import interactionMotionResetCss from "../interaction-motion-reset.css?url";
 import institutionalPagesCss from "../institutional-pages.css?url";
 import loadingBrandCss from "../loading-brand.css?url";
-import preencherImportCtaCss from "../inteligencia-ativos-preencher-import-cta.css?url";
+import preencherCss from "../inteligencia-ativos-preencher.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -122,8 +122,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: loadingBrandCss },
       { rel: "stylesheet", href: "/legal-panel-premium.css" },
       { rel: "stylesheet", href: "/corretiva-card-alignment.css" },
-      { rel: "stylesheet", href: "/inteligencia-ativos-preencher-premium.css" },
-      { rel: "stylesheet", href: preencherImportCtaCss },
+      { rel: "stylesheet", href: preencherCss },
       { rel: "icon", href: "/favicon.ico" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/pwa-192.png" },
