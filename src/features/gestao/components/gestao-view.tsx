@@ -1465,7 +1465,7 @@ export function GestaoView() {
               acao={
                 isAdmin ? (
                   <Button asChild variant="outline" size="sm" className="min-h-10">
-                    <Link to="/observabilidade">Detalhes técnicos</Link>
+                    <Link to="/qualidade-dados">Detalhes técnicos</Link>
                   </Button>
                 ) : undefined
               }

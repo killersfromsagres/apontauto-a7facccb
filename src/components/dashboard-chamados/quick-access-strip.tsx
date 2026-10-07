@@ -32,7 +32,7 @@ const quickModules = [
   {
     key: "backorder",
     title: "Backorder",
-    to: "/backorder",
+    to: "/preventiva",
     icon: AlertTriangle,
     tint: "text-amber-600 dark:text-amber-400",
   },
