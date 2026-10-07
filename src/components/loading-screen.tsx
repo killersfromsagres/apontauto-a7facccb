@@ -8,7 +8,7 @@ import { useRouterState } from "@tanstack/react-router";
  */
 export function LoadingScreen() {
   const routerLoading = useRouterState({
-    select: (state) => state.isLoading || state.isTransitioning,
+    select: (state) => state.isLoading || state.status === "pending",
   });
 
   const [mounted, setMounted] = useState(false);

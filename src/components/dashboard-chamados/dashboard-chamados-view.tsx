@@ -154,7 +154,7 @@ export function DashboardChamadosView() {
               description="Importe a planilha na aba Backorder — os indicadores são atualizados automaticamente em tempo real, com os status lidos da coluna G."
               action={
                 <Button asChild size="sm" variant="outline">
-                  <Link to="/backorder">
+                  <Link to="/preventiva">
                     <ArrowRight className="mr-2 h-4 w-4" />
                     Abrir Backorder
                   </Link>

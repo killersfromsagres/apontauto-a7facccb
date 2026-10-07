@@ -15,7 +15,6 @@ import { VitePWA } from "vite-plugin-pwa";
  */
 const HEAVY_VENDORS: Record<string, RegExp> = {
   "vendor-react": /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
-  "vendor-tanstack": /[\\/]node_modules[\\/]@tanstack[\\/]/,
   "vendor-recharts":
     /[\\/]node_modules[\\/](recharts|d3-[^/\\]+|victory-vendor|internmap|delaunator|robust-predicates)[\\/]/,
   "vendor-exceljs": /[\\/]node_modules[\\/]exceljs[\\/]/,

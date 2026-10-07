@@ -425,7 +425,7 @@ export async function generateProgramacaoPDF(
       );
     },
     didDrawPage: () => {
-      const current = doc.internal.getCurrentPageInfo().pageNumber;
+      const current = doc.getCurrentPageInfo().pageNumber;
       if (current > 1) drawCompactHeader(current);
     },
   });

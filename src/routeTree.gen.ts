@@ -35,16 +35,12 @@ import { Route as AuthenticatedRefrigeracaoRouteImport } from './routes/_authent
 import { Route as AuthenticatedRecuperacaoLocalRouteImport } from './routes/_authenticated/recuperacao-local'
 import { Route as AuthenticatedRecuperacaoCloudRouteImport } from './routes/_authenticated/recuperacao-cloud'
 import { Route as AuthenticatedQualidadeDadosRouteImport } from './routes/_authenticated/qualidade-dados'
-import { Route as AuthenticatedProgramacaoPreventivasRouteImport } from './routes/_authenticated/programacao-preventivas'
-import { Route as AuthenticatedProgramacaoGpsRouteImport } from './routes/_authenticated/programacao-gps'
-import { Route as AuthenticatedProgramacaoCapacidadeRouteImport } from './routes/_authenticated/programacao-capacidade'
 import { Route as AuthenticatedProgramacaoRouteImport } from './routes/_authenticated/programacao'
 import { Route as AuthenticatedPreventivaAcRouteImport } from './routes/_authenticated/preventiva-ac'
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
 import { Route as AuthenticatedPainelLegalRouteImport } from './routes/_authenticated/painel-legal'
 import { Route as AuthenticatedOutrosRouteImport } from './routes/_authenticated/outros'
 import { Route as AuthenticatedOrganogramaRouteImport } from './routes/_authenticated/organograma'
-import { Route as AuthenticatedObservabilidadeRouteImport } from './routes/_authenticated/observabilidade'
 import { Route as AuthenticatedNotificacoesAdminRouteImport } from './routes/_authenticated/notificacoes-admin'
 import { Route as AuthenticatedNotificacoesRouteImport } from './routes/_authenticated/notificacoes'
 import { Route as AuthenticatedMensageriaRouteImport } from './routes/_authenticated/mensageria'
@@ -52,26 +48,19 @@ import { Route as AuthenticatedMateriaisOsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedLavanderiaRouteImport } from './routes/_authenticated/lavanderia'
 import { Route as AuthenticatedImagensRouteImport } from './routes/_authenticated/imagens'
 import { Route as AuthenticatedFrotaRouteImport } from './routes/_authenticated/frota'
+import { Route as AuthenticatedEstoqueEpiRouteImport } from './routes/_authenticated/estoque-epi'
 import { Route as AuthenticatedCorretivaPecasStatusRouteImport } from './routes/_authenticated/corretiva-pecas-status'
 import { Route as AuthenticatedCorretivaNovoRouteImport } from './routes/_authenticated/corretiva-novo'
 import { Route as AuthenticatedCorretivaHistoricoRouteImport } from './routes/_authenticated/corretiva-historico'
 import { Route as AuthenticatedCorretivaGestorRouteImport } from './routes/_authenticated/corretiva-gestor'
 import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authenticated/corretiva'
-import { Route as AuthenticatedCopilotoRouteImport } from './routes/_authenticated/copiloto'
 import { Route as AuthenticatedControleMateriaisRouteImport } from './routes/_authenticated/controle-materiais'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedConfiabilidadeRouteImport } from './routes/_authenticated/confiabilidade'
-import { Route as AuthenticatedBiStudioRouteImport } from './routes/_authenticated/bi-studio'
 import { Route as AuthenticatedBaseAtivosRouteImport } from './routes/_authenticated/base-ativos'
-import { Route as AuthenticatedBackorderMensalRouteImport } from './routes/_authenticated/backorder-mensal'
-import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
-import { Route as AuthenticatedBacklogInteligenteRouteImport } from './routes/_authenticated/backlog-inteligente'
 import { Route as AuthenticatedAvaliacaoChamadosRouteImport } from './routes/_authenticated/avaliacao-chamados'
-import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
-import { Route as AuthenticatedAgenteIaRouteImport } from './routes/_authenticated/agente-ia'
 import { Route as AuthenticatedAbastecimentoRouteImport } from './routes/_authenticated/abastecimento'
-import { Route as AuthenticatedPreventivaAutomacaoIndexRouteImport } from './routes/_authenticated/preventiva-automacao/index'
 import { Route as ApiPublicManualRouteImport } from './routes/api/public/manual'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
@@ -243,24 +232,6 @@ const AuthenticatedQualidadeDadosRoute =
     path: '/qualidade-dados',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedProgramacaoPreventivasRoute =
-  AuthenticatedProgramacaoPreventivasRouteImport.update({
-    id: '/programacao-preventivas',
-    path: '/programacao-preventivas',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedProgramacaoGpsRoute =
-  AuthenticatedProgramacaoGpsRouteImport.update({
-    id: '/programacao-gps',
-    path: '/programacao-gps',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedProgramacaoCapacidadeRoute =
-  AuthenticatedProgramacaoCapacidadeRouteImport.update({
-    id: '/programacao-capacidade',
-    path: '/programacao-capacidade',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedProgramacaoRoute =
   AuthenticatedProgramacaoRouteImport.update({
     id: '/programacao',
@@ -293,12 +264,6 @@ const AuthenticatedOrganogramaRoute =
   AuthenticatedOrganogramaRouteImport.update({
     id: '/organograma',
     path: '/organograma',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedObservabilidadeRoute =
-  AuthenticatedObservabilidadeRouteImport.update({
-    id: '/observabilidade',
-    path: '/observabilidade',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedNotificacoesAdminRoute =
@@ -339,6 +304,11 @@ const AuthenticatedFrotaRoute = AuthenticatedFrotaRouteImport.update({
   path: '/frota',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEstoqueEpiRoute = AuthenticatedEstoqueEpiRouteImport.update({
+  id: '/estoque-epi',
+  path: '/estoque-epi',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCorretivaPecasStatusRoute =
   AuthenticatedCorretivaPecasStatusRouteImport.update({
     id: '/corretiva-pecas-status',
@@ -368,11 +338,6 @@ const AuthenticatedCorretivaRoute = AuthenticatedCorretivaRouteImport.update({
   path: '/corretiva',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedCopilotoRoute = AuthenticatedCopilotoRouteImport.update({
-  id: '/copiloto',
-  path: '/copiloto',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedControleMateriaisRoute =
   AuthenticatedControleMateriaisRouteImport.update({
     id: '/controle-materiais',
@@ -391,65 +356,27 @@ const AuthenticatedConfiabilidadeRoute =
     path: '/confiabilidade',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedBiStudioRoute = AuthenticatedBiStudioRouteImport.update({
-  id: '/bi-studio',
-  path: '/bi-studio',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedBaseAtivosRoute = AuthenticatedBaseAtivosRouteImport.update({
   id: '/base-ativos',
   path: '/base-ativos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedBackorderMensalRoute =
-  AuthenticatedBackorderMensalRouteImport.update({
-    id: '/backorder-mensal',
-    path: '/backorder-mensal',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedBackorderRoute = AuthenticatedBackorderRouteImport.update({
-  id: '/backorder',
-  path: '/backorder',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedBacklogInteligenteRoute =
-  AuthenticatedBacklogInteligenteRouteImport.update({
-    id: '/backlog-inteligente',
-    path: '/backlog-inteligente',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedAvaliacaoChamadosRoute =
   AuthenticatedAvaliacaoChamadosRouteImport.update({
     id: '/avaliacao-chamados',
     path: '/avaliacao-chamados',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAuditoriaRoute = AuthenticatedAuditoriaRouteImport.update({
-  id: '/auditoria',
-  path: '/auditoria',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedApontamentosRoute =
   AuthenticatedApontamentosRouteImport.update({
     id: '/apontamentos',
     path: '/apontamentos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAgenteIaRoute = AuthenticatedAgenteIaRouteImport.update({
-  id: '/agente-ia',
-  path: '/agente-ia',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedAbastecimentoRoute =
   AuthenticatedAbastecimentoRouteImport.update({
     id: '/abastecimento',
     path: '/abastecimento',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPreventivaAutomacaoIndexRoute =
-  AuthenticatedPreventivaAutomacaoIndexRouteImport.update({
-    id: '/preventiva-automacao/',
-    path: '/preventiva-automacao/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const ApiPublicManualRoute = ApiPublicManualRouteImport.update({
@@ -633,24 +560,18 @@ export interface FileRoutesByFullPath {
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/abastecimento': typeof AuthenticatedAbastecimentoRouteWithChildren
-  '/agente-ia': typeof AuthenticatedAgenteIaRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
-  '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/avaliacao-chamados': typeof AuthenticatedAvaliacaoChamadosRoute
-  '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
-  '/backorder': typeof AuthenticatedBackorderRoute
-  '/backorder-mensal': typeof AuthenticatedBackorderMensalRoute
   '/base-ativos': typeof AuthenticatedBaseAtivosRoute
-  '/bi-studio': typeof AuthenticatedBiStudioRoute
   '/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
-  '/copiloto': typeof AuthenticatedCopilotoRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/corretiva-novo': typeof AuthenticatedCorretivaNovoRoute
   '/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
+  '/estoque-epi': typeof AuthenticatedEstoqueEpiRoute
   '/frota': typeof AuthenticatedFrotaRoute
   '/imagens': typeof AuthenticatedImagensRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
@@ -658,16 +579,12 @@ export interface FileRoutesByFullPath {
   '/mensageria': typeof AuthenticatedMensageriaRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
-  '/observabilidade': typeof AuthenticatedObservabilidadeRoute
   '/organograma': typeof AuthenticatedOrganogramaRoute
   '/outros': typeof AuthenticatedOutrosRoute
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
-  '/programacao-capacidade': typeof AuthenticatedProgramacaoCapacidadeRoute
-  '/programacao-gps': typeof AuthenticatedProgramacaoGpsRoute
-  '/programacao-preventivas': typeof AuthenticatedProgramacaoPreventivasRoute
   '/qualidade-dados': typeof AuthenticatedQualidadeDadosRoute
   '/recuperacao-cloud': typeof AuthenticatedRecuperacaoCloudRoute
   '/recuperacao-local': typeof AuthenticatedRecuperacaoLocalRoute
@@ -694,7 +611,6 @@ export interface FileRoutesByFullPath {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/manual': typeof ApiPublicManualRoute
-  '/preventiva-automacao/': typeof AuthenticatedPreventivaAutomacaoIndexRoute
   '/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
   '/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
@@ -726,24 +642,18 @@ export interface FileRoutesByTo {
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/abastecimento': typeof AuthenticatedAbastecimentoRouteWithChildren
-  '/agente-ia': typeof AuthenticatedAgenteIaRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
-  '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/avaliacao-chamados': typeof AuthenticatedAvaliacaoChamadosRoute
-  '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
-  '/backorder': typeof AuthenticatedBackorderRoute
-  '/backorder-mensal': typeof AuthenticatedBackorderMensalRoute
   '/base-ativos': typeof AuthenticatedBaseAtivosRoute
-  '/bi-studio': typeof AuthenticatedBiStudioRoute
   '/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
-  '/copiloto': typeof AuthenticatedCopilotoRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/corretiva-novo': typeof AuthenticatedCorretivaNovoRoute
   '/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
+  '/estoque-epi': typeof AuthenticatedEstoqueEpiRoute
   '/frota': typeof AuthenticatedFrotaRoute
   '/imagens': typeof AuthenticatedImagensRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
@@ -751,16 +661,12 @@ export interface FileRoutesByTo {
   '/mensageria': typeof AuthenticatedMensageriaRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
-  '/observabilidade': typeof AuthenticatedObservabilidadeRoute
   '/organograma': typeof AuthenticatedOrganogramaRoute
   '/outros': typeof AuthenticatedOutrosRoute
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
-  '/programacao-capacidade': typeof AuthenticatedProgramacaoCapacidadeRoute
-  '/programacao-gps': typeof AuthenticatedProgramacaoGpsRoute
-  '/programacao-preventivas': typeof AuthenticatedProgramacaoPreventivasRoute
   '/qualidade-dados': typeof AuthenticatedQualidadeDadosRoute
   '/recuperacao-cloud': typeof AuthenticatedRecuperacaoCloudRoute
   '/recuperacao-local': typeof AuthenticatedRecuperacaoLocalRoute
@@ -786,7 +692,6 @@ export interface FileRoutesByTo {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/manual': typeof ApiPublicManualRoute
-  '/preventiva-automacao': typeof AuthenticatedPreventivaAutomacaoIndexRoute
   '/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
   '/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
@@ -820,24 +725,18 @@ export interface FileRoutesById {
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/_authenticated/abastecimento': typeof AuthenticatedAbastecimentoRouteWithChildren
-  '/_authenticated/agente-ia': typeof AuthenticatedAgenteIaRoute
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
-  '/_authenticated/auditoria': typeof AuthenticatedAuditoriaRoute
   '/_authenticated/avaliacao-chamados': typeof AuthenticatedAvaliacaoChamadosRoute
-  '/_authenticated/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
-  '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
-  '/_authenticated/backorder-mensal': typeof AuthenticatedBackorderMensalRoute
   '/_authenticated/base-ativos': typeof AuthenticatedBaseAtivosRoute
-  '/_authenticated/bi-studio': typeof AuthenticatedBiStudioRoute
   '/_authenticated/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/controle-materiais': typeof AuthenticatedControleMateriaisRoute
-  '/_authenticated/copiloto': typeof AuthenticatedCopilotoRoute
   '/_authenticated/corretiva': typeof AuthenticatedCorretivaRoute
   '/_authenticated/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/_authenticated/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/_authenticated/corretiva-novo': typeof AuthenticatedCorretivaNovoRoute
   '/_authenticated/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
+  '/_authenticated/estoque-epi': typeof AuthenticatedEstoqueEpiRoute
   '/_authenticated/frota': typeof AuthenticatedFrotaRoute
   '/_authenticated/imagens': typeof AuthenticatedImagensRoute
   '/_authenticated/lavanderia': typeof AuthenticatedLavanderiaRoute
@@ -845,16 +744,12 @@ export interface FileRoutesById {
   '/_authenticated/mensageria': typeof AuthenticatedMensageriaRoute
   '/_authenticated/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/_authenticated/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
-  '/_authenticated/observabilidade': typeof AuthenticatedObservabilidadeRoute
   '/_authenticated/organograma': typeof AuthenticatedOrganogramaRoute
   '/_authenticated/outros': typeof AuthenticatedOutrosRoute
   '/_authenticated/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
   '/_authenticated/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
   '/_authenticated/programacao': typeof AuthenticatedProgramacaoRoute
-  '/_authenticated/programacao-capacidade': typeof AuthenticatedProgramacaoCapacidadeRoute
-  '/_authenticated/programacao-gps': typeof AuthenticatedProgramacaoGpsRoute
-  '/_authenticated/programacao-preventivas': typeof AuthenticatedProgramacaoPreventivasRoute
   '/_authenticated/qualidade-dados': typeof AuthenticatedQualidadeDadosRoute
   '/_authenticated/recuperacao-cloud': typeof AuthenticatedRecuperacaoCloudRoute
   '/_authenticated/recuperacao-local': typeof AuthenticatedRecuperacaoLocalRoute
@@ -881,7 +776,6 @@ export interface FileRoutesById {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/manual': typeof ApiPublicManualRoute
-  '/_authenticated/preventiva-automacao/': typeof AuthenticatedPreventivaAutomacaoIndexRoute
   '/_authenticated/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
   '/_authenticated/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/_authenticated/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
@@ -915,24 +809,18 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/termos'
     | '/abastecimento'
-    | '/agente-ia'
     | '/apontamentos'
-    | '/auditoria'
     | '/avaliacao-chamados'
-    | '/backlog-inteligente'
-    | '/backorder'
-    | '/backorder-mensal'
     | '/base-ativos'
-    | '/bi-studio'
     | '/confiabilidade'
     | '/configuracoes'
     | '/controle-materiais'
-    | '/copiloto'
     | '/corretiva'
     | '/corretiva-gestor'
     | '/corretiva-historico'
     | '/corretiva-novo'
     | '/corretiva-pecas-status'
+    | '/estoque-epi'
     | '/frota'
     | '/imagens'
     | '/lavanderia'
@@ -940,16 +828,12 @@ export interface FileRouteTypes {
     | '/mensageria'
     | '/notificacoes'
     | '/notificacoes-admin'
-    | '/observabilidade'
     | '/organograma'
     | '/outros'
     | '/painel-legal'
     | '/preventiva'
     | '/preventiva-ac'
     | '/programacao'
-    | '/programacao-capacidade'
-    | '/programacao-gps'
-    | '/programacao-preventivas'
     | '/qualidade-dados'
     | '/recuperacao-cloud'
     | '/recuperacao-local'
@@ -976,7 +860,6 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/manual'
-    | '/preventiva-automacao/'
     | '/abastecimento/agua/bags'
     | '/abastecimento/agua/configuracoes'
     | '/abastecimento/agua/evidencias'
@@ -1008,24 +891,18 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/termos'
     | '/abastecimento'
-    | '/agente-ia'
     | '/apontamentos'
-    | '/auditoria'
     | '/avaliacao-chamados'
-    | '/backlog-inteligente'
-    | '/backorder'
-    | '/backorder-mensal'
     | '/base-ativos'
-    | '/bi-studio'
     | '/confiabilidade'
     | '/configuracoes'
     | '/controle-materiais'
-    | '/copiloto'
     | '/corretiva'
     | '/corretiva-gestor'
     | '/corretiva-historico'
     | '/corretiva-novo'
     | '/corretiva-pecas-status'
+    | '/estoque-epi'
     | '/frota'
     | '/imagens'
     | '/lavanderia'
@@ -1033,16 +910,12 @@ export interface FileRouteTypes {
     | '/mensageria'
     | '/notificacoes'
     | '/notificacoes-admin'
-    | '/observabilidade'
     | '/organograma'
     | '/outros'
     | '/painel-legal'
     | '/preventiva'
     | '/preventiva-ac'
     | '/programacao'
-    | '/programacao-capacidade'
-    | '/programacao-gps'
-    | '/programacao-preventivas'
     | '/qualidade-dados'
     | '/recuperacao-cloud'
     | '/recuperacao-local'
@@ -1068,7 +941,6 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/manual'
-    | '/preventiva-automacao'
     | '/abastecimento/agua/bags'
     | '/abastecimento/agua/configuracoes'
     | '/abastecimento/agua/evidencias'
@@ -1101,24 +973,18 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/termos'
     | '/_authenticated/abastecimento'
-    | '/_authenticated/agente-ia'
     | '/_authenticated/apontamentos'
-    | '/_authenticated/auditoria'
     | '/_authenticated/avaliacao-chamados'
-    | '/_authenticated/backlog-inteligente'
-    | '/_authenticated/backorder'
-    | '/_authenticated/backorder-mensal'
     | '/_authenticated/base-ativos'
-    | '/_authenticated/bi-studio'
     | '/_authenticated/confiabilidade'
     | '/_authenticated/configuracoes'
     | '/_authenticated/controle-materiais'
-    | '/_authenticated/copiloto'
     | '/_authenticated/corretiva'
     | '/_authenticated/corretiva-gestor'
     | '/_authenticated/corretiva-historico'
     | '/_authenticated/corretiva-novo'
     | '/_authenticated/corretiva-pecas-status'
+    | '/_authenticated/estoque-epi'
     | '/_authenticated/frota'
     | '/_authenticated/imagens'
     | '/_authenticated/lavanderia'
@@ -1126,16 +992,12 @@ export interface FileRouteTypes {
     | '/_authenticated/mensageria'
     | '/_authenticated/notificacoes'
     | '/_authenticated/notificacoes-admin'
-    | '/_authenticated/observabilidade'
     | '/_authenticated/organograma'
     | '/_authenticated/outros'
     | '/_authenticated/painel-legal'
     | '/_authenticated/preventiva'
     | '/_authenticated/preventiva-ac'
     | '/_authenticated/programacao'
-    | '/_authenticated/programacao-capacidade'
-    | '/_authenticated/programacao-gps'
-    | '/_authenticated/programacao-preventivas'
     | '/_authenticated/qualidade-dados'
     | '/_authenticated/recuperacao-cloud'
     | '/_authenticated/recuperacao-local'
@@ -1162,7 +1024,6 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/manual'
-    | '/_authenticated/preventiva-automacao/'
     | '/_authenticated/abastecimento/agua/bags'
     | '/_authenticated/abastecimento/agua/configuracoes'
     | '/_authenticated/abastecimento/agua/evidencias'
@@ -1396,27 +1257,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQualidadeDadosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/programacao-preventivas': {
-      id: '/_authenticated/programacao-preventivas'
-      path: '/programacao-preventivas'
-      fullPath: '/programacao-preventivas'
-      preLoaderRoute: typeof AuthenticatedProgramacaoPreventivasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/programacao-gps': {
-      id: '/_authenticated/programacao-gps'
-      path: '/programacao-gps'
-      fullPath: '/programacao-gps'
-      preLoaderRoute: typeof AuthenticatedProgramacaoGpsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/programacao-capacidade': {
-      id: '/_authenticated/programacao-capacidade'
-      path: '/programacao-capacidade'
-      fullPath: '/programacao-capacidade'
-      preLoaderRoute: typeof AuthenticatedProgramacaoCapacidadeRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/programacao': {
       id: '/_authenticated/programacao'
       path: '/programacao'
@@ -1457,13 +1297,6 @@ declare module '@tanstack/react-router' {
       path: '/organograma'
       fullPath: '/organograma'
       preLoaderRoute: typeof AuthenticatedOrganogramaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/observabilidade': {
-      id: '/_authenticated/observabilidade'
-      path: '/observabilidade'
-      fullPath: '/observabilidade'
-      preLoaderRoute: typeof AuthenticatedObservabilidadeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/notificacoes-admin': {
@@ -1515,6 +1348,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFrotaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/estoque-epi': {
+      id: '/_authenticated/estoque-epi'
+      path: '/estoque-epi'
+      fullPath: '/estoque-epi'
+      preLoaderRoute: typeof AuthenticatedEstoqueEpiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/corretiva-pecas-status': {
       id: '/_authenticated/corretiva-pecas-status'
       path: '/corretiva-pecas-status'
@@ -1550,13 +1390,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCorretivaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/copiloto': {
-      id: '/_authenticated/copiloto'
-      path: '/copiloto'
-      fullPath: '/copiloto'
-      preLoaderRoute: typeof AuthenticatedCopilotoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/controle-materiais': {
       id: '/_authenticated/controle-materiais'
       path: '/controle-materiais'
@@ -1578,39 +1411,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiabilidadeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/bi-studio': {
-      id: '/_authenticated/bi-studio'
-      path: '/bi-studio'
-      fullPath: '/bi-studio'
-      preLoaderRoute: typeof AuthenticatedBiStudioRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/base-ativos': {
       id: '/_authenticated/base-ativos'
       path: '/base-ativos'
       fullPath: '/base-ativos'
       preLoaderRoute: typeof AuthenticatedBaseAtivosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/backorder-mensal': {
-      id: '/_authenticated/backorder-mensal'
-      path: '/backorder-mensal'
-      fullPath: '/backorder-mensal'
-      preLoaderRoute: typeof AuthenticatedBackorderMensalRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/backorder': {
-      id: '/_authenticated/backorder'
-      path: '/backorder'
-      fullPath: '/backorder'
-      preLoaderRoute: typeof AuthenticatedBackorderRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/backlog-inteligente': {
-      id: '/_authenticated/backlog-inteligente'
-      path: '/backlog-inteligente'
-      fullPath: '/backlog-inteligente'
-      preLoaderRoute: typeof AuthenticatedBacklogInteligenteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/avaliacao-chamados': {
@@ -1620,13 +1425,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAvaliacaoChamadosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/auditoria': {
-      id: '/_authenticated/auditoria'
-      path: '/auditoria'
-      fullPath: '/auditoria'
-      preLoaderRoute: typeof AuthenticatedAuditoriaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/apontamentos': {
       id: '/_authenticated/apontamentos'
       path: '/apontamentos'
@@ -1634,25 +1432,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApontamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/agente-ia': {
-      id: '/_authenticated/agente-ia'
-      path: '/agente-ia'
-      fullPath: '/agente-ia'
-      preLoaderRoute: typeof AuthenticatedAgenteIaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/abastecimento': {
       id: '/_authenticated/abastecimento'
       path: '/abastecimento'
       fullPath: '/abastecimento'
       preLoaderRoute: typeof AuthenticatedAbastecimentoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/preventiva-automacao/': {
-      id: '/_authenticated/preventiva-automacao/'
-      path: '/preventiva-automacao'
-      fullPath: '/preventiva-automacao/'
-      preLoaderRoute: typeof AuthenticatedPreventivaAutomacaoIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/manual': {
@@ -1941,24 +1725,18 @@ const AuthenticatedRondasCalhasRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAbastecimentoRoute: typeof AuthenticatedAbastecimentoRouteWithChildren
-  AuthenticatedAgenteIaRoute: typeof AuthenticatedAgenteIaRoute
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
-  AuthenticatedAuditoriaRoute: typeof AuthenticatedAuditoriaRoute
   AuthenticatedAvaliacaoChamadosRoute: typeof AuthenticatedAvaliacaoChamadosRoute
-  AuthenticatedBacklogInteligenteRoute: typeof AuthenticatedBacklogInteligenteRoute
-  AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
-  AuthenticatedBackorderMensalRoute: typeof AuthenticatedBackorderMensalRoute
   AuthenticatedBaseAtivosRoute: typeof AuthenticatedBaseAtivosRoute
-  AuthenticatedBiStudioRoute: typeof AuthenticatedBiStudioRoute
   AuthenticatedConfiabilidadeRoute: typeof AuthenticatedConfiabilidadeRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedControleMateriaisRoute: typeof AuthenticatedControleMateriaisRoute
-  AuthenticatedCopilotoRoute: typeof AuthenticatedCopilotoRoute
   AuthenticatedCorretivaRoute: typeof AuthenticatedCorretivaRoute
   AuthenticatedCorretivaGestorRoute: typeof AuthenticatedCorretivaGestorRoute
   AuthenticatedCorretivaHistoricoRoute: typeof AuthenticatedCorretivaHistoricoRoute
   AuthenticatedCorretivaNovoRoute: typeof AuthenticatedCorretivaNovoRoute
   AuthenticatedCorretivaPecasStatusRoute: typeof AuthenticatedCorretivaPecasStatusRoute
+  AuthenticatedEstoqueEpiRoute: typeof AuthenticatedEstoqueEpiRoute
   AuthenticatedFrotaRoute: typeof AuthenticatedFrotaRoute
   AuthenticatedImagensRoute: typeof AuthenticatedImagensRoute
   AuthenticatedLavanderiaRoute: typeof AuthenticatedLavanderiaRoute
@@ -1966,16 +1744,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMensageriaRoute: typeof AuthenticatedMensageriaRoute
   AuthenticatedNotificacoesRoute: typeof AuthenticatedNotificacoesRoute
   AuthenticatedNotificacoesAdminRoute: typeof AuthenticatedNotificacoesAdminRoute
-  AuthenticatedObservabilidadeRoute: typeof AuthenticatedObservabilidadeRoute
   AuthenticatedOrganogramaRoute: typeof AuthenticatedOrganogramaRoute
   AuthenticatedOutrosRoute: typeof AuthenticatedOutrosRoute
   AuthenticatedPainelLegalRoute: typeof AuthenticatedPainelLegalRoute
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
   AuthenticatedPreventivaAcRoute: typeof AuthenticatedPreventivaAcRoute
   AuthenticatedProgramacaoRoute: typeof AuthenticatedProgramacaoRoute
-  AuthenticatedProgramacaoCapacidadeRoute: typeof AuthenticatedProgramacaoCapacidadeRoute
-  AuthenticatedProgramacaoGpsRoute: typeof AuthenticatedProgramacaoGpsRoute
-  AuthenticatedProgramacaoPreventivasRoute: typeof AuthenticatedProgramacaoPreventivasRoute
   AuthenticatedQualidadeDadosRoute: typeof AuthenticatedQualidadeDadosRoute
   AuthenticatedRecuperacaoCloudRoute: typeof AuthenticatedRecuperacaoCloudRoute
   AuthenticatedRecuperacaoLocalRoute: typeof AuthenticatedRecuperacaoLocalRoute
@@ -1993,30 +1767,23 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInteligenciaAtivosHistoricoRoute: typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   AuthenticatedInteligenciaAtivosNaoEncontradosRoute: typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   AuthenticatedInteligenciaAtivosPreencherRoute: typeof AuthenticatedInteligenciaAtivosPreencherRoute
-  AuthenticatedPreventivaAutomacaoIndexRoute: typeof AuthenticatedPreventivaAutomacaoIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAbastecimentoRoute: AuthenticatedAbastecimentoRouteWithChildren,
-  AuthenticatedAgenteIaRoute: AuthenticatedAgenteIaRoute,
   AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
-  AuthenticatedAuditoriaRoute: AuthenticatedAuditoriaRoute,
   AuthenticatedAvaliacaoChamadosRoute: AuthenticatedAvaliacaoChamadosRoute,
-  AuthenticatedBacklogInteligenteRoute: AuthenticatedBacklogInteligenteRoute,
-  AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,
-  AuthenticatedBackorderMensalRoute: AuthenticatedBackorderMensalRoute,
   AuthenticatedBaseAtivosRoute: AuthenticatedBaseAtivosRoute,
-  AuthenticatedBiStudioRoute: AuthenticatedBiStudioRoute,
   AuthenticatedConfiabilidadeRoute: AuthenticatedConfiabilidadeRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedControleMateriaisRoute: AuthenticatedControleMateriaisRoute,
-  AuthenticatedCopilotoRoute: AuthenticatedCopilotoRoute,
   AuthenticatedCorretivaRoute: AuthenticatedCorretivaRoute,
   AuthenticatedCorretivaGestorRoute: AuthenticatedCorretivaGestorRoute,
   AuthenticatedCorretivaHistoricoRoute: AuthenticatedCorretivaHistoricoRoute,
   AuthenticatedCorretivaNovoRoute: AuthenticatedCorretivaNovoRoute,
   AuthenticatedCorretivaPecasStatusRoute:
     AuthenticatedCorretivaPecasStatusRoute,
+  AuthenticatedEstoqueEpiRoute: AuthenticatedEstoqueEpiRoute,
   AuthenticatedFrotaRoute: AuthenticatedFrotaRoute,
   AuthenticatedImagensRoute: AuthenticatedImagensRoute,
   AuthenticatedLavanderiaRoute: AuthenticatedLavanderiaRoute,
@@ -2024,18 +1791,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMensageriaRoute: AuthenticatedMensageriaRoute,
   AuthenticatedNotificacoesRoute: AuthenticatedNotificacoesRoute,
   AuthenticatedNotificacoesAdminRoute: AuthenticatedNotificacoesAdminRoute,
-  AuthenticatedObservabilidadeRoute: AuthenticatedObservabilidadeRoute,
   AuthenticatedOrganogramaRoute: AuthenticatedOrganogramaRoute,
   AuthenticatedOutrosRoute: AuthenticatedOutrosRoute,
   AuthenticatedPainelLegalRoute: AuthenticatedPainelLegalRoute,
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
   AuthenticatedPreventivaAcRoute: AuthenticatedPreventivaAcRoute,
   AuthenticatedProgramacaoRoute: AuthenticatedProgramacaoRoute,
-  AuthenticatedProgramacaoCapacidadeRoute:
-    AuthenticatedProgramacaoCapacidadeRoute,
-  AuthenticatedProgramacaoGpsRoute: AuthenticatedProgramacaoGpsRoute,
-  AuthenticatedProgramacaoPreventivasRoute:
-    AuthenticatedProgramacaoPreventivasRoute,
   AuthenticatedQualidadeDadosRoute: AuthenticatedQualidadeDadosRoute,
   AuthenticatedRecuperacaoCloudRoute: AuthenticatedRecuperacaoCloudRoute,
   AuthenticatedRecuperacaoLocalRoute: AuthenticatedRecuperacaoLocalRoute,
@@ -2060,8 +1821,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedInteligenciaAtivosNaoEncontradosRoute,
   AuthenticatedInteligenciaAtivosPreencherRoute:
     AuthenticatedInteligenciaAtivosPreencherRoute,
-  AuthenticatedPreventivaAutomacaoIndexRoute:
-    AuthenticatedPreventivaAutomacaoIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

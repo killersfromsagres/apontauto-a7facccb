@@ -712,7 +712,7 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
       doc.line(data.cell.x, data.cell.y + data.cell.height, pageW - marginX, data.cell.y + data.cell.height);
     },
     didDrawPage: () => {
-      const current = doc.internal.getCurrentPageInfo().pageNumber;
+      const current = doc.getCurrentPageInfo().pageNumber;
       if (current > 1) drawCompactPageHeader(current);
     },
   });
