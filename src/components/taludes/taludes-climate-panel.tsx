@@ -72,8 +72,8 @@ export function TaludesClimatePanel() {
   if (weather.isLoading) {
     return (
       <div className="space-y-4">
-        <GlassCard className="min-h-44 animate-pulse border-white/[0.06] bg-white/[0.025]" />
-        <GlassCard className="min-h-56 animate-pulse border-white/[0.06] bg-white/[0.025]" />
+        <GlassCard className="min-h-44 animate-pulse border-white/[0.06] bg-white/[0.025]">{null}</GlassCard>
+        <GlassCard className="min-h-56 animate-pulse border-white/[0.06] bg-white/[0.025]">{null}</GlassCard>
       </div>
     );
   }
