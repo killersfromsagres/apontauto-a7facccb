@@ -61,13 +61,13 @@ export function parseScheduleMatrix(matrix: unknown[][], sourceFile: string): Sc
 
   for (const rawRow of matrix) {
     const row = Array.isArray(rawRow) ? rawRow : [];
-    const joined = row.map((value) => String(value ?? "")).join(" • ");
-    const detectedDate = toIsoDate(joined);
     const first = normalize(row[0]);
+    const detectedDate = toIsoDate(String(row[0] ?? ""));
 
-    // Os arquivos de programação usam uma faixa de título por dia. A data dessa
-    // faixa passa a valer para as OS logo abaixo até o próximo título diário.
-    if (detectedDate && !["OS", "TERMINO SLA", "SLA"].includes(first)) {
+    // A data válida de programação vem exclusivamente da faixa de título do dia
+    // (ex.: "SEGUNDA-FEIRA • 05/10/2026..."). Datas de SLA dentro das OS não
+    // podem alterar o dia ao qual a ordem foi programada.
+    if (detectedDate && first.includes("FEIRA")) {
       currentDate = detectedDate;
       headers = [];
       continue;
