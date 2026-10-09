@@ -4,6 +4,7 @@ import { maintenanceAreaRank, type ScheduledMaintenance } from "./daily-maintena
 import {
   buildCompletedReportRows,
   buildReportDaySummaries,
+  shouldReplaceSchedule,
   consolidateCorrectiveCompletionSources,
   mapCompletedCorrectives,
   type CorrectiveReportSourceRow,
@@ -207,5 +208,35 @@ describe("relatório diário + Corretiva Novo", () => {
     expect(day?.completed).toBe(4);
     expect(day?.completedCorrective).toBe(4);
     expect(day?.extraCorrective).toBe(3);
+  });
+
+  it("com programação importada, limita os dias ao período das planilhas", () => {
+    const week = ["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09"].map((date, i) => ({
+      ...scheduled[0],
+      id: `${date}|${i}`,
+      date,
+      os: `9${i}`,
+    }));
+    const summaries = buildReportDaySummaries({
+      scheduledRows: week,
+      executions: {},
+      correctiveRows: [
+        ...correctiveRows,
+        { id: "ago", numero_os: "AG1", status: "concluida", fim: "2026-08-12T15:00:00.000Z", equipe: "Civil" },
+        { id: "ago2", numero_os: "AG2", status: "concluida", fim: "2026-08-20T15:00:00.000Z", equipe: "Elétrica" },
+      ],
+    });
+    const dates = summaries.map((item) => item.date);
+    expect(dates).toEqual(["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09"]);
+    expect(summaries.find((item) => item.date === "2026-10-09")?.extraCorrective).toBe(4);
+  });
+
+  it("nova semana sem sobreposição substitui; mesmo período mescla", () => {
+    const w40 = [{ ...scheduled[0], date: "2026-09-28" }, { ...scheduled[0], date: "2026-10-02" }];
+    const w41 = [{ ...scheduled[0], date: "2026-10-05" }];
+    const w41b = [{ ...scheduled[0], date: "2026-10-07" }];
+    expect(shouldReplaceSchedule(w40, w41)).toBe(true);
+    expect(shouldReplaceSchedule([...w41, { ...scheduled[0], date: "2026-10-09" }], w41b)).toBe(false);
+    expect(shouldReplaceSchedule([], w41)).toBe(false);
   });
 });
