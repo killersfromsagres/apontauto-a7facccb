@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Building2,
@@ -22,18 +22,26 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  buildCompletedReportRows,
+  buildReportDaySummaries,
+  mapCompletedCorrectives,
+  type CorrectiveReportSourceRow,
+} from "@/features/relatorio-diario/lib/corrective-report";
+import {
   formatDateBr,
   formatWeekdayBr,
   inferMaintenanceArea,
   maintenanceAreaRank,
   mergeSchedules,
+  normalizeOs,
   parseScheduleFile,
   PRIMARY_MAINTENANCE_AREAS,
-  summarizeScheduleRows,
   type MaintenanceArea,
   type MaintenanceType,
   type ScheduledMaintenance,
 } from "@/features/relatorio-diario/lib/daily-maintenance";
+import { supabase } from "@/integrations/supabase/client";
+import { equipeHex, equipeStyles } from "@/lib/corretiva/equipe";
 
 export const Route = createFileRoute("/_authenticated/relatorio-diario")({
   component: DailyMaintenanceReport,
@@ -81,6 +89,11 @@ type LoadedLogo = {
   ratio: number;
 };
 
+type ResolvedCompletion = {
+  completedAt: string;
+  source: "relatorio-diario" | "corretiva-novo";
+};
+
 const todayIso = () => {
   const now = new Date();
   const offset = now.getTimezoneOffset() * 60_000;
@@ -103,8 +116,16 @@ const maintenanceLocation = (row: ScheduledMaintenance) =>
 const rowArea = (row: ScheduledMaintenance): MaintenanceArea =>
   row.area ?? inferMaintenanceArea(row.team, row.sourceFile, row.name);
 
-const uniqueRows = (rows: ScheduledMaintenance[]) =>
-  Array.from(new Map(rows.map((row) => [row.id, row])).values());
+const osKey = (value: unknown) => normalizeOs(value).trim().toUpperCase();
+
+const uniqueRows = (rows: ScheduledMaintenance[]) => {
+  const unique = new Map<string, ScheduledMaintenance>();
+  rows.forEach((row) => {
+    const key = osKey(row.os) || row.id;
+    if (!unique.has(key)) unique.set(key, row);
+  });
+  return Array.from(unique.values());
+};
 
 const areaBadgeClass = (area: MaintenanceArea) => {
   if (area === "Elétrica") return "border-amber-500/25 bg-amber-500/8 text-amber-700 dark:text-amber-300";
@@ -139,10 +160,38 @@ const loadLogo = (src: string): Promise<LoadedLogo | null> =>
     image.src = src;
   });
 
+const hexToRgb = (hex: string): [number, number, number] => {
+  const normalized = hex.replace("#", "").padEnd(6, "0").slice(0, 6);
+  return [
+    Number.parseInt(normalized.slice(0, 2), 16) || 148,
+    Number.parseInt(normalized.slice(2, 4), 16) || 163,
+    Number.parseInt(normalized.slice(4, 6), 16) || 184,
+  ];
+};
+
+const subtleTeamTint = (hex: string): [number, number, number] => {
+  const [r, g, b] = hexToRgb(hex);
+  const blend = (value: number) => Math.round(255 - (255 - value) * 0.09);
+  return [blend(r), blend(g), blend(b)];
+};
+
+const darkTeamText = (hex: string): [number, number, number] => {
+  const [r, g, b] = hexToRgb(hex);
+  return [Math.round(r * 0.62), Math.round(g * 0.62), Math.round(b * 0.62)];
+};
+
+const reportOriginLabel = (row: ScheduledMaintenance) => {
+  if (row.programmingSource === "extra-dia") return "Extra do dia";
+  if (row.programmingSource === "corretiva-novo") return "Programada no Corretiva Novo";
+  return "Programação semanal";
+};
+
 function DailyMaintenanceReport() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const externalInitialDateResolved = useRef(false);
   const [rows, setRows] = useState<ScheduledMaintenance[]>([]);
   const [executions, setExecutions] = useState<ExecutionMap>({});
+  const [correctiveRows, setCorrectiveRows] = useState<CorrectiveReportSourceRow[]>([]);
   const [selectedDate, setSelectedDate] = useState(todayIso());
   const [dayView, setDayView] = useState<DayView>("programadas");
   const [search, setSearch] = useState("");
@@ -155,7 +204,39 @@ function DailyMaintenanceReport() {
   const [importing, setImporting] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [syncingCorrectives, setSyncingCorrectives] = useState(false);
+  const [correctiveSyncError, setCorrectiveSyncError] = useState("");
   const [lastImport, setLastImport] = useState<ImportBatchSummary | null>(null);
+
+  const loadCorrectiveCompletions = useCallback(async (notify = false) => {
+    setSyncingCorrectives(true);
+    setCorrectiveSyncError("");
+    try {
+      const { data, error } = await supabase
+        .from("corretiva_os")
+        .select(
+          "id,numero_os,status,fim,data_programada,data_criacao,data_sla,equipe,nome_os,equipamento,ativo,patrimonio,predio,andar,local,observacao_conclusao",
+        )
+        .not("fim", "is", null)
+        .order("fim", { ascending: false })
+        .limit(5000);
+
+      if (error) throw error;
+      const loaded = (data ?? []) as CorrectiveReportSourceRow[];
+      setCorrectiveRows(loaded);
+      if (notify) {
+        toast.success(`${mapCompletedCorrectives(loaded).length} corretiva(s) concluída(s) sincronizada(s).`);
+      }
+      return loaded;
+    } catch (error: any) {
+      const message = error?.message || "Não foi possível sincronizar as corretivas concluídas.";
+      setCorrectiveSyncError(message);
+      if (notify) toast.error(message);
+      return null;
+    } finally {
+      setSyncingCorrectives(false);
+    }
+  }, []);
 
   useEffect(() => {
     const storedRows = safeRead<ScheduledMaintenance[]>(ROWS_KEY, []);
@@ -167,6 +248,7 @@ function DailyMaintenanceReport() {
       const availableDates = Array.from(new Set(hydratedRows.map((row) => row.date))).sort();
       const today = todayIso();
       setSelectedDate(availableDates.includes(today) ? today : availableDates[0]);
+      externalInitialDateResolved.current = true;
     }
 
     if (Object.keys(storedExecutions).length) {
@@ -181,7 +263,23 @@ function DailyMaintenanceReport() {
     }
 
     setAuthor(window.localStorage.getItem(AUTHOR_KEY) ?? "");
-  }, []);
+    void loadCorrectiveCompletions(false);
+  }, [loadCorrectiveCompletions]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("relatorio-diario-corretivas")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "corretiva_os" },
+        () => void loadCorrectiveCompletions(false),
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [loadCorrectiveCompletions]);
 
   useEffect(() => {
     if (typeof window !== "undefined") window.localStorage.setItem(ROWS_KEY, JSON.stringify(rows));
@@ -195,7 +293,54 @@ function DailyMaintenanceReport() {
     if (typeof window !== "undefined") window.localStorage.setItem(AUTHOR_KEY, author);
   }, [author]);
 
-  const daySummaries = useMemo(() => summarizeScheduleRows(rows), [rows]);
+  const syncedCorrectiveRows = useMemo(() => mapCompletedCorrectives(correctiveRows), [correctiveRows]);
+
+  useEffect(() => {
+    if (externalInitialDateResolved.current || rows.length || !syncedCorrectiveRows.length) return;
+    const availableDates = Array.from(
+      new Set(syncedCorrectiveRows.map((row) => row.completedAt).filter(Boolean) as string[]),
+    ).sort();
+    if (!availableDates.length) return;
+    const today = todayIso();
+    setSelectedDate(availableDates.includes(today) ? today : availableDates[availableDates.length - 1]);
+    externalInitialDateResolved.current = true;
+  }, [rows.length, syncedCorrectiveRows]);
+
+  const externalCompletionByOs = useMemo(() => {
+    const map = new Map<string, ScheduledMaintenance>();
+    syncedCorrectiveRows.forEach((row) => {
+      const key = osKey(row.os);
+      if (key && !map.has(key)) map.set(key, row);
+    });
+    return map;
+  }, [syncedCorrectiveRows]);
+
+  const resolveCompletion = useCallback(
+    (row: ScheduledMaintenance): ResolvedCompletion | null => {
+      const official = externalCompletionByOs.get(osKey(row.os));
+      if (official?.completedAt) {
+        return { completedAt: official.completedAt, source: "corretiva-novo" };
+      }
+      if (row.completedAt && row.completionSource === "corretiva-novo") {
+        return { completedAt: row.completedAt, source: "corretiva-novo" };
+      }
+      const local = executions[row.id];
+      if (local?.completedAt) return { completedAt: local.completedAt, source: "relatorio-diario" };
+      if (row.completedAt) {
+        return {
+          completedAt: row.completedAt,
+          source: row.completionSource === "corretiva-novo" ? "corretiva-novo" : "relatorio-diario",
+        };
+      }
+      return null;
+    },
+    [executions, externalCompletionByOs],
+  );
+
+  const daySummaries = useMemo(
+    () => buildReportDaySummaries({ scheduledRows: rows, executions, correctiveRows }),
+    [correctiveRows, executions, rows],
+  );
   const dates = useMemo(() => daySummaries.map((day) => day.date), [daySummaries]);
   const daySummaryByDate = useMemo(
     () => new Map(daySummaries.map((day) => [day.date, day])),
@@ -208,8 +353,8 @@ function DailyMaintenanceReport() {
   );
 
   const completedOnDate = useMemo(
-    () => rows.filter((row) => executions[row.id]?.completedAt === selectedDate),
-    [rows, executions, selectedDate],
+    () => buildCompletedReportRows({ scheduledRows: rows, executions, correctiveRows, selectedDate }),
+    [correctiveRows, executions, rows, selectedDate],
   );
 
   const referenceRows = useMemo(() => {
@@ -224,11 +369,11 @@ function DailyMaintenanceReport() {
   );
 
   const areaOptions = useMemo(() => {
-    const present = Array.from(new Set(rows.map(rowArea))).sort(
+    const present = Array.from(new Set([...rows, ...syncedCorrectiveRows].map(rowArea))).sort(
       (a, b) => maintenanceAreaRank(a) - maintenanceAreaRank(b),
     );
     return Array.from(new Set([...PRIMARY_MAINTENANCE_AREAS, ...present]));
-  }, [rows]);
+  }, [rows, syncedCorrectiveRows]);
 
   const visibleRows = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("pt-BR");
@@ -239,7 +384,7 @@ function DailyMaintenanceReport() {
         if (typeFilter !== "todos" && row.activity !== typeFilter) return false;
         if (teamFilter !== "todos" && (row.team || "Sem equipe") !== teamFilter) return false;
 
-        const completed = Boolean(executions[row.id]);
+        const completed = Boolean(resolveCompletion(row));
         if (statusFilter === "concluidas" && !completed) return false;
         if (statusFilter === "pendentes" && completed) return false;
 
@@ -267,7 +412,7 @@ function DailyMaintenanceReport() {
           a.team.localeCompare(b.team) ||
           a.os.localeCompare(b.os),
       );
-  }, [areaFilter, executions, referenceRows, search, statusFilter, teamFilter, typeFilter]);
+  }, [areaFilter, referenceRows, resolveCompletion, search, statusFilter, teamFilter, typeFilter]);
 
   const groupedVisibleRows = useMemo(() => {
     const grouped = new Map<MaintenanceArea, ScheduledMaintenance[]>();
@@ -306,33 +451,37 @@ function DailyMaintenanceReport() {
   const areaBaseSummary = useMemo(
     () =>
       areaOptions.map((area) => {
-        const areaRows = rows.filter((row) => rowArea(row) === area);
+        const scheduleAreaRows = rows.filter((row) => rowArea(row) === area);
+        const completedAreaRows = syncedCorrectiveRows.filter((row) => rowArea(row) === area);
+        const areaRows = uniqueRows([...scheduleAreaRows, ...completedAreaRows]);
         return {
           area,
           total: areaRows.length,
           preventive: areaRows.filter((row) => row.activity === "Preventiva").length,
           corrective: areaRows.filter((row) => row.activity === "Corretiva").length,
-          files: new Set(areaRows.map((row) => row.sourceFile)).size,
+          files: new Set(scheduleAreaRows.map((row) => row.sourceFile)).size,
         };
       }),
-    [areaOptions, rows],
+    [areaOptions, rows, syncedCorrectiveRows],
   );
 
   const completedScheduledEver = useMemo(
-    () => scheduledRows.filter((row) => Boolean(executions[row.id])).length,
-    [scheduledRows, executions],
+    () => scheduledRows.filter((row) => Boolean(resolveCompletion(row))).length,
+    [resolveCompletion, scheduledRows],
   );
 
   const completedScheduledOnDate = useMemo(
-    () => scheduledRows.filter((row) => executions[row.id]?.completedAt === selectedDate).length,
-    [scheduledRows, executions, selectedDate],
+    () => scheduledRows.filter((row) => resolveCompletion(row)?.completedAt === selectedDate).length,
+    [resolveCompletion, scheduledRows, selectedDate],
   );
 
-  const pendingScheduled = scheduledRows.length - completedScheduledEver;
+  const pendingScheduled = Math.max(0, scheduledRows.length - completedScheduledEver);
   const scheduledPreventive = scheduledRows.filter((row) => row.activity === "Preventiva").length;
   const scheduledCorrective = scheduledRows.filter((row) => row.activity === "Corretiva").length;
   const reportPreventive = completedOnDate.filter((row) => row.activity === "Preventiva").length;
   const reportCorrective = completedOnDate.filter((row) => row.activity === "Corretiva").length;
+  const extraCorrectiveCount = completedOnDate.filter((row) => row.extraCorrective).length;
+  const correctiveNovoCount = completedOnDate.filter((row) => row.completionSource === "corretiva-novo").length;
   const sameDayCompletionRate = scheduledRows.length
     ? Math.round((completedScheduledOnDate / scheduledRows.length) * 100)
     : 0;
@@ -376,6 +525,7 @@ function DailyMaintenanceReport() {
 
       setRows((current) => mergeSchedules(current, imported));
       if (nextDate) setSelectedDate(nextDate);
+      externalInitialDateResolved.current = true;
       setDayView("programadas");
       setStatusFilter("todos");
       setTeamFilter("todos");
@@ -424,7 +574,7 @@ function DailyMaintenanceReport() {
   }
 
   function concludeRow(row: ScheduledMaintenance, date = selectedDate) {
-    if (!date) return;
+    if (!date || resolveCompletion(row)?.source === "corretiva-novo") return;
     setExecutions((current) => ({ ...current, [row.id]: { completedAt: date } }));
   }
 
@@ -445,6 +595,8 @@ function DailyMaintenanceReport() {
     setExecutions((current) => {
       const next = { ...current };
       visibleRows.forEach((row) => {
+        const official = externalCompletionByOs.has(osKey(row.os)) || row.completionSource === "corretiva-novo";
+        if (official) return;
         if (value) {
           if (!next[row.id]) next[row.id] = { completedAt: selectedDate };
         } else {
@@ -456,7 +608,7 @@ function DailyMaintenanceReport() {
   }
 
   function clearBase() {
-    if (!window.confirm("Remover todas as programações importadas e confirmações de execução?")) return;
+    if (!window.confirm("Remover as programações importadas e as confirmações locais? As conclusões do Corretiva Novo serão preservadas.")) return;
     setRows([]);
     setExecutions({});
     setLastImport(null);
@@ -465,22 +617,43 @@ function DailyMaintenanceReport() {
     setAreaFilter("todas");
     setTypeFilter("todos");
     setStatusFilter("todos");
-    setDayView("programadas");
-    setSelectedDate(todayIso());
+    setDayView("concluidas");
+    externalInitialDateResolved.current = false;
     window.localStorage.removeItem(ROWS_KEY);
     window.localStorage.removeItem(EXECUTIONS_KEY);
     window.localStorage.removeItem(LEGACY_DONE_KEY);
-    toast.success("Base importada removida.");
+    toast.success("Base importada removida. As corretivas concluídas do Corretiva Novo foram preservadas.");
   }
 
   async function generatePdf() {
-    if (!completedOnDate.length) {
-      toast.error("Não há OS concluídas nesta data para gerar o relatório.");
-      return;
-    }
-
     setGenerating(true);
     try {
+      const latestCorrectiveRows = await loadCorrectiveCompletions(false);
+      const sourceCorrectives = latestCorrectiveRows ?? correctiveRows;
+      const pdfRows = buildCompletedReportRows({
+        scheduledRows: rows,
+        executions,
+        correctiveRows: sourceCorrectives,
+        selectedDate,
+      });
+
+      if (!pdfRows.length) {
+        toast.error("Não há OS concluídas nesta data para gerar o relatório.");
+        return;
+      }
+
+      const pdfPreventive = pdfRows.filter((row) => row.activity === "Preventiva").length;
+      const pdfCorrective = pdfRows.filter((row) => row.activity === "Corretiva").length;
+      const pdfExtraCorrective = pdfRows.filter((row) => row.extraCorrective).length;
+      const pdfCompletedScheduledOnDate = scheduledRows.filter((scheduled) => {
+        const key = osKey(scheduled.os);
+        const reportRow = pdfRows.find((row) => osKey(row.os) === key);
+        return Boolean(reportRow && !reportRow.extraCorrective && reportRow.completedAt === selectedDate);
+      }).length;
+      const pdfSameDayRate = scheduledRows.length
+        ? Math.round((pdfCompletedScheduledOnDate / scheduledRows.length) * 100)
+        : 0;
+
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       const width = doc.internal.pageSize.getWidth();
       const height = doc.internal.pageSize.getHeight();
@@ -517,38 +690,29 @@ function DailyMaintenanceReport() {
       doc.text(`Grupo GPS • Sherwin-Williams • Execuções concluídas em ${titleDate}`, width / 2, 19, {
         align: "center",
       });
-      doc.text("Civil/Hidráulica • Refrigeração 1, 2 e 3 • Elétrica", width / 2, 24, { align: "center" });
+      doc.text("Civil/Hidráulica → Refrigeração → Outros serviços → Elétrica", width / 2, 24, {
+        align: "center",
+      });
 
-      doc.setTextColor(15, 23, 42);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.text(String(completedOnDate.length), margin, 43);
-      doc.setFontSize(7.5);
-      doc.setFont("helvetica", "normal");
-      doc.text("CONCLUÍDAS", margin, 48);
+      const kpis = [
+        { x: margin, value: pdfRows.length, label: "CONCLUÍDAS" },
+        { x: 48, value: pdfPreventive, label: "PREVENTIVAS" },
+        { x: 82, value: pdfCorrective, label: "CORRETIVAS" },
+        { x: 116, value: pdfExtraCorrective, label: "EXTRAS DO DIA" },
+        { x: 156, value: `${pdfSameDayRate}%`, label: "PROGRAMAÇÃO CONCLUÍDA NO DIA" },
+      ];
 
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.text(String(reportPreventive), 51, 43);
-      doc.setFontSize(7.5);
-      doc.setFont("helvetica", "normal");
-      doc.text("PREVENTIVAS", 51, 48);
+      kpis.forEach((kpi) => {
+        doc.setTextColor(15, 23, 42);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.text(String(kpi.value), kpi.x, 43);
+        doc.setFontSize(7.2);
+        doc.setFont("helvetica", "normal");
+        doc.text(kpi.label, kpi.x, 48);
+      });
 
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.text(String(reportCorrective), 86, 43);
-      doc.setFontSize(7.5);
-      doc.setFont("helvetica", "normal");
-      doc.text("CORRETIVAS", 86, 48);
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.text(`${sameDayCompletionRate}%`, 121, 43);
-      doc.setFontSize(7.5);
-      doc.setFont("helvetica", "normal");
-      doc.text("CONCLUÍDAS NO MESMO DIA", 121, 48);
-
-      const reportAreas = Array.from(new Set(completedOnDate.map(rowArea))).sort(
+      const reportAreas = Array.from(new Set(pdfRows.map(rowArea))).sort(
         (a, b) => maintenanceAreaRank(a) - maintenanceAreaRank(b),
       );
       doc.setFontSize(8.2);
@@ -561,34 +725,46 @@ function DailyMaintenanceReport() {
         });
       }
 
-      const sorted = [...completedOnDate].sort(
+      const sorted = [...pdfRows].sort(
         (a, b) =>
           maintenanceAreaRank(rowArea(a)) - maintenanceAreaRank(rowArea(b)) ||
-          a.activity.localeCompare(b.activity) ||
           a.team.localeCompare(b.team) ||
+          a.activity.localeCompare(b.activity) ||
           a.os.localeCompare(b.os),
       );
 
       autoTable(doc, {
         startY: dailyNote.trim() ? 72 : author.trim() ? 67 : 63,
         margin: { left: margin, right: margin, bottom: 18 },
-        head: [["OS", "Tipo", "Área", "Equipe", "Programada", "Local", "Serviço / Denominação", "SLA", "Ativo"]],
+        head: [[
+          "OS",
+          "Tipo",
+          "Área",
+          "Equipe",
+          "Programada",
+          "Concluída",
+          "Origem",
+          "Local",
+          "Serviço / Denominação",
+          "Ativo",
+        ]],
         body: sorted.map((row) => [
           row.os,
           row.activity,
           rowArea(row),
           row.team || "—",
-          formatDateBr(row.date),
+          row.extraCorrective ? "—" : formatDateBr(row.date),
+          formatDateBr(row.completedAt || selectedDate),
+          reportOriginLabel(row),
           maintenanceLocation(row),
           row.name || row.equipment || "—",
-          row.sla || "—",
           row.asset || "—",
         ]),
         theme: "grid",
         styles: {
           font: "helvetica",
-          fontSize: 6.6,
-          cellPadding: 2,
+          fontSize: 6.2,
+          cellPadding: 1.8,
           lineColor: [226, 232, 240],
           lineWidth: 0.15,
           textColor: [31, 41, 55],
@@ -599,19 +775,33 @@ function DailyMaintenanceReport() {
           fillColor: [15, 23, 42],
           textColor: [255, 255, 255],
           fontStyle: "bold",
-          fontSize: 6.8,
+          fontSize: 6.4,
         },
-        alternateRowStyles: { fillColor: [248, 250, 252] },
         columnStyles: {
-          0: { cellWidth: 18, fontStyle: "bold" },
-          1: { cellWidth: 20 },
-          2: { cellWidth: 32 },
-          3: { cellWidth: 27 },
-          4: { cellWidth: 22 },
-          5: { cellWidth: 40 },
-          6: { cellWidth: 66 },
-          7: { cellWidth: 21 },
-          8: { cellWidth: 23 },
+          0: { cellWidth: 16, fontStyle: "bold" },
+          1: { cellWidth: 17 },
+          2: { cellWidth: 28 },
+          3: { cellWidth: 24 },
+          4: { cellWidth: 20 },
+          5: { cellWidth: 20 },
+          6: { cellWidth: 27 },
+          7: { cellWidth: 34 },
+          8: { cellWidth: 57 },
+          9: { cellWidth: 20 },
+        },
+        didParseCell: (data) => {
+          if (data.section !== "body") return;
+          const reportRow = sorted[data.row.index];
+          if (!reportRow) return;
+          const color = equipeHex(reportRow.team);
+          data.cell.styles.fillColor = subtleTeamTint(color);
+          if (data.column.index === 3) {
+            data.cell.styles.fontStyle = "bold";
+            data.cell.styles.textColor = darkTeamText(color);
+          }
+          if (data.column.index === 6 && reportRow.extraCorrective) {
+            data.cell.styles.fontStyle = "bold";
+          }
         },
         didDrawPage: () => {
           const page = doc.getNumberOfPages();
@@ -620,19 +810,23 @@ function DailyMaintenanceReport() {
           doc.setFont("helvetica", "normal");
           doc.setFontSize(7);
           doc.setTextColor(100, 116, 139);
-          doc.text("Programação consolidada e execução confirmada no sistema.", margin, height - 7);
+          doc.text(
+            "Programação consolidada + corretivas concluídas no Corretiva Novo; chamados extras do dia identificados automaticamente.",
+            margin,
+            height - 7,
+          );
           doc.text(`Página ${page}`, width - margin, height - 7, { align: "right" });
         },
       });
 
       doc.setProperties({
         title: `Relatório Diário de Manutenção - ${titleDate}`,
-        subject: "Preventivas e corretivas concluídas na data selecionada",
+        subject: "Preventivas e corretivas concluídas, incluindo chamados extras realizados no dia",
         author: author.trim() || "Grupo GPS / Sherwin-Williams",
         creator: "ApontAuto",
       });
       doc.save(`RELATORIO_DIARIO_MANUTENCAO_${selectedDate}.pdf`);
-      toast.success("PDF diário gerado com sucesso.");
+      toast.success(`PDF gerado com ${pdfRows.length} execução(ões), incluindo ${pdfExtraCorrective} corretiva(s) extra(s).`);
     } catch (error) {
       console.error(error);
       toast.error("Não foi possível gerar o PDF.");
@@ -642,6 +836,7 @@ function DailyMaintenanceReport() {
   }
 
   const hasBase = rows.length > 0;
+  const hasReportData = hasBase || syncedCorrectiveRows.length > 0;
   const currentSummary = daySummaryByDate.get(selectedDate);
 
   return (
@@ -667,8 +862,8 @@ function DailyMaintenanceReport() {
                   Relatório Diário de Manutenção
                 </h1>
                 <p className="mt-1.5 max-w-3xl text-sm leading-6 text-slate-300">
-                  Consolide Civil/Hidráulica, Refrigeração 1, 2 e 3 e Elétrica em uma única visão profissional,
-                  separando automaticamente Preventivas, Corretivas, programação e conclusão real.
+                  Consolidação da programação semanal com as corretivas efetivamente concluídas no Corretiva Novo,
+                  incluindo Chaveiro e demais equipes, chamadas programadas e atendimentos extras realizados no dia.
                 </p>
               </div>
             </div>
@@ -680,7 +875,7 @@ function DailyMaintenanceReport() {
                 className="shrink-0 gap-2 border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
               >
                 <Trash2 className="h-4 w-4" />
-                Limpar base
+                Limpar base importada
               </Button>
             )}
           </div>
@@ -729,11 +924,11 @@ function DailyMaintenanceReport() {
                   ? "Lendo e organizando as planilhas..."
                   : hasBase
                     ? "Adicionar mais planilhas à consolidação"
-                    : "Anexar todas as planilhas da programação"}
+                    : "Anexar as planilhas da programação semanal"}
               </span>
               <span className="mt-1.5 block max-w-2xl text-xs leading-5 text-muted-foreground">
-                Selecione várias planilhas de uma só vez ou adicione uma por uma. O sistema classifica automaticamente
-                Civil/Hidráulica, Refrigeração 1, 2 e 3 e Elétrica pela equipe e pelo nome do arquivo.
+                As planilhas continuam sendo a referência da programação. As conclusões e os chamados corretivos extras
+                são sincronizados automaticamente do Corretiva Novo.
               </span>
               <span className="mt-3 inline-flex rounded-lg bg-slate-950 px-3 py-1.5 text-[11px] font-semibold text-white dark:bg-slate-100 dark:text-slate-950">
                 Selecionar várias planilhas
@@ -744,30 +939,41 @@ function DailyMaintenanceReport() {
           <div className="rounded-2xl border border-border bg-background/60 p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Verificação da importação</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Fontes do relatório</p>
                 <p className="mt-1 text-sm font-medium text-foreground">
-                  {lastImport
-                    ? `${lastImport.importedFiles} de ${lastImport.requestedFiles} arquivo(s) aproveitado(s)`
-                    : hasBase
-                      ? `${sourceSummaries.length} arquivo(s) atualmente na base`
-                      : "Aguardando planilhas"}
+                  {hasBase ? `${sourceSummaries.length} planilha(s) + Corretiva Novo` : "Corretiva Novo conectado"}
                 </p>
               </div>
               <ShieldCheck className="h-5 w-5 text-muted-foreground" />
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <MiniStat label="OS consolidadas" value={lastImport?.records ?? rows.length} />
-              <MiniStat label="Dias" value={lastImport?.dates ?? dates.length} />
-              <MiniStat
-                label="Preventivas"
-                value={lastImport?.preventive ?? rows.filter((row) => row.activity === "Preventiva").length}
-              />
-              <MiniStat
-                label="Corretivas"
-                value={lastImport?.corrective ?? rows.filter((row) => row.activity === "Corretiva").length}
-              />
+              <MiniStat label="OS programadas" value={rows.length} />
+              <MiniStat label="Dias no report" value={dates.length} />
+              <MiniStat label="Corretivas concluídas" value={syncedCorrectiveRows.length} />
+              <MiniStat label="Equipes concluídas" value={new Set(syncedCorrectiveRows.map((row) => row.team).filter(Boolean)).size} />
             </div>
+
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold text-foreground">Sincronização de corretivas realizadas</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">Usa status concluído + data real do campo “fim”.</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 shrink-0 gap-1.5 px-2.5 text-xs"
+                onClick={() => void loadCorrectiveCompletions(true)}
+                disabled={syncingCorrectives}
+              >
+                <RefreshCcw className={`h-3.5 w-3.5 ${syncingCorrectives ? "animate-spin" : ""}`} />
+                Atualizar
+              </Button>
+            </div>
+
+            {correctiveSyncError && (
+              <p className="mt-2 text-[11px] leading-4 text-red-600 dark:text-red-400">{correctiveSyncError}</p>
+            )}
 
             {lastImport && (lastImport.warnings.length > 0 || lastImport.errors.length > 0) && (
               <div className="mt-3 space-y-1.5 text-[11px] leading-4">
@@ -788,13 +994,13 @@ function DailyMaintenanceReport() {
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <Building2 className="h-4 w-4 text-muted-foreground" />
-              Estrutura da programação consolidada
+              Estrutura do report por área
             </div>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Cada área fica separada, mas todas participam do mesmo filtro diário e do mesmo fechamento.
+              Ordem do PDF: Civil/Hidráulica, Refrigeração, demais equipes e por último Elétrica.
             </p>
           </div>
-          {hasBase && (
+          {hasReportData && (
             <button
               type="button"
               onClick={() => setAreaFilter("todas")}
@@ -852,15 +1058,15 @@ function DailyMaintenanceReport() {
         </section>
       )}
 
-      {!hasBase ? (
+      {!hasReportData ? (
         <section className="rounded-2xl border border-dashed border-border bg-card/50 px-6 py-12 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-background">
             <FileSpreadsheet className="h-6 w-6 text-muted-foreground" />
           </div>
-          <h2 className="mt-4 text-base font-semibold">Importe o conjunto da programação semanal</h2>
+          <h2 className="mt-4 text-base font-semibold">Aguardando programação ou corretivas concluídas</h2>
           <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Você pode anexar simultaneamente a planilha de Civil/Hidráulica, as programações de Refrigeração 1, 2 e 3
-            e a planilha de Elétrica. Arquivos válidos são aproveitados mesmo se outro arquivo do lote apresentar erro.
+            Importe as planilhas da programação semanal. O sistema também consulta automaticamente as corretivas concluídas
+            no Corretiva Novo para incluir os atendimentos realizados fora da programação.
           </p>
           <Button className="mt-5 gap-2" onClick={() => inputRef.current?.click()}>
             <Upload className="h-4 w-4" /> Selecionar planilhas
@@ -895,7 +1101,7 @@ function DailyMaintenanceReport() {
               </label>
 
               <div className="min-w-0">
-                <span className="text-xs font-medium text-muted-foreground">Dias encontrados nas planilhas</span>
+                <span className="text-xs font-medium text-muted-foreground">Dias programados ou apontados como concluídos</span>
                 <div className="mt-1.5 flex gap-2 overflow-x-auto pb-1">
                   {daySummaries.map((day) => {
                     const active = day.date === selectedDate;
@@ -913,8 +1119,13 @@ function DailyMaintenanceReport() {
                         </span>
                         <span className="mt-0.5 block text-sm font-semibold">{formatDateBr(day.date)}</span>
                         <span className={`mt-0.5 block text-[10px] ${active ? "text-slate-300 dark:text-slate-600" : "text-muted-foreground"}`}>
-                          {day.total} OS • {day.corrective} corretiva{day.corrective === 1 ? "" : "s"}
+                          {day.total} programada{day.total === 1 ? "" : "s"} • {day.completed} concluída{day.completed === 1 ? "" : "s"}
                         </span>
+                        {day.extraCorrective > 0 && (
+                          <span className={`mt-0.5 block text-[10px] font-semibold ${active ? "text-amber-200 dark:text-amber-700" : "text-amber-700 dark:text-amber-300"}`}>
+                            +{day.extraCorrective} corretiva{day.extraCorrective === 1 ? "" : "s"} extra{day.extraCorrective === 1 ? "" : "s"}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -923,20 +1134,23 @@ function DailyMaintenanceReport() {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border pt-4 text-xs text-muted-foreground">
-              <span><strong className="font-semibold text-foreground">{rows.length}</strong> OS na base</span>
+              <span><strong className="font-semibold text-foreground">{rows.length}</strong> OS programadas na base</span>
+              <span><strong className="font-semibold text-foreground">{syncedCorrectiveRows.length}</strong> corretivas concluídas sincronizadas</span>
               <span><strong className="font-semibold text-foreground">{dates.length}</strong> dias identificados</span>
-              <span><strong className="font-semibold text-foreground">{sourceSummaries.length}</strong> planilhas de origem</span>
               {currentSummary && (
-                <span>{currentSummary.areas.join(" • ")} • {currentSummary.preventive} preventivas • {currentSummary.corrective} corretivas</span>
+                <span>
+                  {currentSummary.areas.join(" • ") || "Sem área programada"} • {currentSummary.completed} concluídas • {currentSummary.extraCorrective} extras
+                </span>
               )}
             </div>
           </section>
 
-          <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
             <Metric label="Programadas" value={scheduledRows.length} detail={formatDateBr(selectedDate)} />
             <Metric label="Preventivas" value={scheduledPreventive} detail="programadas no dia" />
             <Metric label="Corretivas" value={scheduledCorrective} detail="programadas no dia" warning />
-            <Metric label="Concluídas" value={completedOnDate.length} detail="pela data real" accent />
+            <Metric label="Concluídas" value={completedOnDate.length} detail={`${correctiveNovoCount} via Corretiva Novo`} accent />
+            <Metric label="Extras do dia" value={extraCorrectiveCount} detail="fora da programação" warning />
             <Metric label="Pendentes" value={pendingScheduled} detail="da programação" />
             <Metric label="Mesmo dia" value={completedScheduledOnDate} detail={`${sameDayCompletionRate}% da programação`} />
           </section>
@@ -954,16 +1168,16 @@ function DailyMaintenanceReport() {
                           : `Programadas ou concluídas em ${formatDateBr(selectedDate)}`}
                     </h2>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      A lista é agrupada por área. Preventivas e Corretivas permanecem identificadas dentro de cada equipe.
+                      As equipes recebem uma cor discreta. Conclusões do Corretiva Novo são oficiais e ficam bloqueadas para edição nesta tela.
                     </p>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
                     <Button variant="outline" size="sm" onClick={() => markVisible(true)} disabled={!visibleRows.length} className="gap-1.5">
-                      <Check className="h-3.5 w-3.5" /> Concluir visíveis
+                      <Check className="h-3.5 w-3.5" /> Concluir programadas visíveis
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => markVisible(false)} disabled={!visibleRows.length}>
-                      Reabrir visíveis
+                      Reabrir confirmações locais
                     </Button>
                   </div>
                 </div>
@@ -1019,16 +1233,36 @@ function DailyMaintenanceReport() {
 
                           <div className="divide-y divide-border">
                             {areaRows.map((row) => {
-                              const execution = executions[row.id];
-                              const completed = Boolean(execution);
-                              const movedDay = completed && execution.completedAt !== row.date;
+                              const completion = resolveCompletion(row);
+                              const completedAt = completion?.completedAt ?? "";
+                              const completed = Boolean(completedAt);
+                              const official = completion?.source === "corretiva-novo";
+                              const movedDay = completed && completedAt !== row.date;
+                              const teamStyle = equipeStyles(row.team);
+                              const sourceLabel = row.extraCorrective
+                                ? "Chamado extra do dia"
+                                : row.programmingSource === "corretiva-novo"
+                                  ? "Programada no Corretiva Novo"
+                                  : "Programação semanal";
+
                               return (
-                                <div key={row.id} className={`grid gap-3 px-4 py-4 lg:grid-cols-[34px_108px_minmax(0,1fr)_175px_195px] ${completed ? "bg-emerald-500/[0.035]" : ""}`}>
+                                <div
+                                  key={row.id}
+                                  className={`grid gap-3 px-4 py-4 lg:grid-cols-[34px_108px_minmax(0,1fr)_185px_205px] ${completed ? "bg-emerald-500/[0.025]" : ""}`}
+                                  style={{ borderLeftColor: equipeHex(row.team), borderLeftWidth: 3 }}
+                                >
                                   <button
                                     type="button"
+                                    disabled={official}
                                     onClick={() => (completed ? reopenRow(row.id) : concludeRow(row))}
-                                    aria-label={completed ? `Reabrir OS ${row.os}` : `Concluir OS ${row.os}`}
-                                    className={`mt-0.5 flex h-7 w-7 items-center justify-center rounded-md border transition-colors ${completed ? "border-emerald-600 bg-emerald-600 text-white" : "border-border bg-background hover:border-slate-500"}`}
+                                    aria-label={official ? `OS ${row.os} concluída no Corretiva Novo` : completed ? `Reabrir OS ${row.os}` : `Concluir OS ${row.os}`}
+                                    className={`mt-0.5 flex h-7 w-7 items-center justify-center rounded-md border transition-colors ${
+                                      completed
+                                        ? official
+                                          ? "cursor-default border-emerald-500/40 bg-emerald-600/90 text-white"
+                                          : "border-emerald-600 bg-emerald-600 text-white"
+                                        : "border-border bg-background hover:border-slate-500"
+                                    }`}
                                   >
                                     {completed && <Check className="h-4 w-4" />}
                                   </button>
@@ -1047,25 +1281,44 @@ function DailyMaintenanceReport() {
                                       {row.asset ? `Ativo ${row.asset}` : "Ativo não informado"}
                                       {row.sla ? ` • SLA ${row.sla}` : ""}
                                     </span>
+                                    {row.observation && (
+                                      <span className="mt-1 block truncate text-[10px] text-muted-foreground" title={row.observation}>Obs.: {row.observation}</span>
+                                    )}
                                   </div>
 
                                   <div>
-                                    <span className="block text-xs font-semibold text-foreground">{row.team || area}</span>
-                                    <span className="mt-1 block text-[11px] text-muted-foreground">Programada: {formatDateBr(row.date)}</span>
-                                    <span className="mt-1 block truncate text-[10px] text-muted-foreground" title={row.sourceFile}>{row.sourceFile}</span>
+                                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-semibold ${teamStyle.badge}`}>
+                                      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: equipeHex(row.team) }} />
+                                      {row.team || area}
+                                    </span>
+                                    <span className="mt-2 block text-[11px] text-muted-foreground">
+                                      {row.extraCorrective ? "Sem programação prévia" : `Programada: ${formatDateBr(row.date)}`}
+                                    </span>
+                                    <span className="mt-1 block text-[10px] font-medium text-muted-foreground">{sourceLabel}</span>
                                     {movedDay && <span className="mt-1 block text-[10px] font-medium text-amber-700 dark:text-amber-300">Executada em dia diferente</span>}
                                   </div>
 
                                   <div className="rounded-lg border border-border bg-background/70 p-2.5">
                                     {completed ? (
-                                      <>
-                                        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
-                                          <CheckCircle2 className="h-3.5 w-3.5" /> Concluída
-                                        </div>
-                                        <label className="mt-2 block text-[10px] font-medium text-muted-foreground">Data real de conclusão</label>
-                                        <Input type="date" value={execution.completedAt} onChange={(event) => updateCompletionDate(row.id, event.target.value)} className="mt-1 h-8 text-xs" />
-                                        <button type="button" onClick={() => reopenRow(row.id)} className="mt-2 text-[10px] font-medium text-muted-foreground hover:text-foreground">Reabrir OS</button>
-                                      </>
+                                      official ? (
+                                        <>
+                                          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                                            <CheckCircle2 className="h-3.5 w-3.5" /> Concluída no Corretiva Novo
+                                          </div>
+                                          <p className="mt-2 text-[10px] text-muted-foreground">Data real de conclusão</p>
+                                          <p className="mt-0.5 text-xs font-semibold text-foreground">{formatDateBr(completedAt)}</p>
+                                          <p className="mt-2 text-[10px] leading-4 text-muted-foreground">Registro sincronizado do atendimento de campo.</p>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                                            <CheckCircle2 className="h-3.5 w-3.5" /> Concluída localmente
+                                          </div>
+                                          <label className="mt-2 block text-[10px] font-medium text-muted-foreground">Data real de conclusão</label>
+                                          <Input type="date" value={completedAt} onChange={(event) => updateCompletionDate(row.id, event.target.value)} className="mt-1 h-8 text-xs" />
+                                          <button type="button" onClick={() => reopenRow(row.id)} className="mt-2 text-[10px] font-medium text-muted-foreground hover:text-foreground">Reabrir confirmação local</button>
+                                        </>
+                                      )
                                     ) : (
                                       <>
                                         <p className="text-[11px] font-semibold text-foreground">Pendente</p>
@@ -1099,12 +1352,12 @@ function DailyMaintenanceReport() {
                     <p className="text-xs font-medium text-muted-foreground">Fechamento do dia</p>
                     <h2 className="mt-1 font-semibold text-foreground">{formatDateBr(selectedDate)}</h2>
                   </div>
-                  <span className="rounded-full border border-border bg-muted/25 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">PDF</span>
+                  <span className="rounded-full border border-border bg-muted/25 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">PDF cliente</span>
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <MiniStat label="Concluídas" value={completedOnDate.length} />
-                  <MiniStat label="Mesmo dia" value={`${sameDayCompletionRate}%`} />
+                  <MiniStat label="Extras do dia" value={extraCorrectiveCount} />
                   <MiniStat label="Preventivas" value={reportPreventive} />
                   <MiniStat label="Corretivas" value={reportCorrective} />
                 </div>
@@ -1129,17 +1382,17 @@ function DailyMaintenanceReport() {
                 <div className="mt-5 rounded-xl border border-border bg-muted/20 p-4">
                   <div className="flex items-end justify-between gap-3">
                     <div>
-                      <p className="text-xs text-muted-foreground">Conclusão no mesmo dia</p>
+                      <p className="text-xs text-muted-foreground">Programação concluída no dia</p>
                       <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{sameDayCompletionRate}%</p>
                     </div>
-                    <p className="text-right text-xs text-muted-foreground">{completedScheduledOnDate} de {scheduledRows.length}<br />OS da programação</p>
+                    <p className="text-right text-xs text-muted-foreground">{completedScheduledOnDate} de {scheduledRows.length}<br />OS programadas</p>
                   </div>
                   <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
                     <div className="h-full rounded-full bg-emerald-600 transition-[width] duration-300" style={{ width: `${sameDayCompletionRate}%` }} />
                   </div>
                 </div>
 
-                <Button onClick={generatePdf} disabled={!completedOnDate.length || generating} className="mt-5 w-full gap-2 bg-slate-950 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white">
+                <Button onClick={generatePdf} disabled={generating} className="mt-5 w-full gap-2 bg-slate-950 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white">
                   {generating ? <RefreshCcw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                   Gerar relatório consolidado
                 </Button>
@@ -1148,7 +1401,7 @@ function DailyMaintenanceReport() {
               <section className="rounded-2xl border border-border bg-card p-5 text-xs leading-5 text-muted-foreground">
                 <div className="flex items-center gap-2 font-semibold text-foreground"><ShieldCheck className="h-4 w-4" /> Regra de consolidação</div>
                 <p className="mt-2">
-                  As planilhas são combinadas sem misturar as áreas. A data programada permanece vinculada à OS e a data real de conclusão é registrada separadamente.
+                  A programação semanal permanece como referência. O Corretiva Novo informa a data real de conclusão e inclui automaticamente Chaveiro e demais equipes. Chamados concluídos sem programação são marcados como “Extra do dia” no PDF.
                 </p>
               </section>
             </aside>
@@ -1222,7 +1475,7 @@ function AreaOverviewCard({
         {preventive} preventivas • {corrective} corretivas
       </p>
       <p className={`mt-2 text-[10px] ${active ? "text-slate-400 dark:text-slate-500" : "text-muted-foreground"}`}>
-        {files ? `${files} arquivo(s) de origem` : "Nenhuma planilha classificada"}
+        {files ? `${files} arquivo(s) de programação` : "Dados do Corretiva Novo"}
       </p>
     </button>
   );

@@ -19,9 +19,13 @@ export const PRIMARY_MAINTENANCE_AREAS: MaintenanceArea[] = [
 ];
 
 const MAINTENANCE_AREA_ORDER: MaintenanceArea[] = [
-  ...PRIMARY_MAINTENANCE_AREAS,
+  "Civil / Hidráulica",
+  "Refrigeração 1",
+  "Refrigeração 2",
+  "Refrigeração 3",
   "Refrigeração",
   "Outros",
+  "Elétrica",
 ];
 
 export type ScheduledMaintenance = {
@@ -40,6 +44,10 @@ export type ScheduledMaintenance = {
   equipment: string;
   observation: string;
   sourceFile: string;
+  completedAt?: string;
+  completionSource?: "relatorio-diario" | "corretiva-novo";
+  programmingSource?: "programacao-semanal" | "corretiva-novo" | "extra-dia";
+  extraCorrective?: boolean;
 };
 
 export type ScheduleDaySummary = {
