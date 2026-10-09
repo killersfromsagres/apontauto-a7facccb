@@ -698,15 +698,72 @@ function DailyMaintenanceReport() {
 
       const pdfPreventive = pdfRows.filter((row) => row.activity === "Preventiva").length;
       const pdfCorrective = pdfRows.filter((row) => row.activity === "Corretiva").length;
+
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       const width = doc.internal.pageSize.getWidth();
       const height = doc.internal.pageSize.getHeight();
-      const margin = 12;
+      const margin = 14;
       const titleDate = formatDateBr(selectedDate);
       const [gpsLogo, swLogo] = await Promise.all([
         loadLogo("/logos/gps-logo.png"),
         loadLogo("/logos/sw-logo.png"),
       ]);
+
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, width, 29, "F");
+      doc.setDrawColor(226, 232, 240);
+      doc.line(margin, 28, width - margin, 28);
+
+      if (gpsLogo) {
+        const logoHeight = 9;
+        const logoWidth = Math.min(34, logoHeight * gpsLogo.ratio);
+        doc.addImage(gpsLogo.data, "PNG", margin, 8, logoWidth, logoHeight);
+      }
+      if (swLogo) {
+        const logoHeight = 10;
+        const logoWidth = Math.min(37, logoHeight * swLogo.ratio);
+        doc.addImage(swLogo.data, "PNG", width - margin - logoWidth, 7, logoWidth, logoHeight);
+      }
+
+      doc.setTextColor(15, 23, 42);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("RELATÓRIO DIÁRIO DE MANUTENÇÃO", width / 2, 12, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text(`Grupo GPS • Sherwin-Williams • Execuções concluídas em ${titleDate}`, width / 2, 19, {
+        align: "center",
+      });
+
+      const kpis = [
+        { x: margin, value: pdfRows.length, label: "CONCLUÍDAS" },
+        { x: 47, value: pdfPreventive, label: "PREVENTIVAS" },
+        { x: 78, value: pdfCorrective, label: "CORRETIVAS" },
+      ];
+
+      kpis.forEach((kpi) => {
+        doc.setTextColor(15, 23, 42);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(17);
+        doc.text(String(kpi.value), kpi.x, 40);
+        doc.setFontSize(6.8);
+        doc.setFont("helvetica", "normal");
+        doc.text(kpi.label, kpi.x, 45);
+      });
+
+      const reportAreas = Array.from(new Set(pdfRows.map(rowArea))).sort(
+        (a, b) => maintenanceAreaRank(a) - maintenanceAreaRank(b),
+      );
+      doc.setFontSize(8.2);
+      doc.setTextColor(71, 85, 105);
+      doc.text(`Áreas atendidas: ${reportAreas.join(" • ")}`, margin, 53, { maxWidth: width - margin * 2 });
+      if (author.trim()) doc.text(`Responsável: ${author.trim()}`, margin, 58);
+      if (dailyNote.trim()) {
+        doc.text(`Observação: ${dailyNote.trim()}`, margin, author.trim() ? 63 : 58, {
+          maxWidth: width - margin * 2,
+        });
+      }
 
       const sorted = [...pdfRows].sort(
         (a, b) =>
@@ -716,257 +773,96 @@ function DailyMaintenanceReport() {
           a.os.localeCompare(b.os),
       );
 
-      const grouped = new Map<string, ScheduledMaintenance[]>();
-      sorted.forEach((row) => {
-        const team = row.team || "Sem equipe";
-        const current = grouped.get(team) ?? [];
-        current.push(row);
-        grouped.set(team, current);
-      });
-
-      const supportOrder = (team: string) => {
-        const normalized = team.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        if (normalized.includes("chaveiro")) return 0;
-        if (normalized.includes("pintura")) return 1;
-        if (normalized.includes("limpeza")) return 2;
-        return 9;
-      };
-      const teamGroups = Array.from(grouped.entries()).sort(([teamA, rowsA], [teamB, rowsB]) => {
-        const areaDiff = maintenanceAreaRank(rowArea(rowsA[0])) - maintenanceAreaRank(rowArea(rowsB[0]));
-        return areaDiff || supportOrder(teamA) - supportOrder(teamB) || teamA.localeCompare(teamB);
-      });
-
-      const reportAreas = Array.from(new Set(pdfRows.map(rowArea))).sort(
-        (a, b) => maintenanceAreaRank(a) - maintenanceAreaRank(b),
-      );
-      const noteLines = dailyNote.trim()
-        ? (doc.splitTextToSize(dailyNote.trim(), width - margin * 2 - 28) as string[]).slice(0, 2)
-        : [];
-      const firstTableY = noteLines.length ? 75 : author.trim() ? 70 : 66;
-
-      const drawLogoCard = (logo: LoadedLogo | null, x: number, y: number, maxW: number, maxH: number) => {
-        if (!logo) return;
-        const h = Math.min(maxH - 4, (maxW - 5) / logo.ratio);
-        const w = Math.min(maxW - 5, h * logo.ratio);
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(x, y, maxW, maxH, 2, 2, "F");
-        doc.addImage(logo.data, "PNG", x + (maxW - w) / 2, y + (maxH - h) / 2, w, h);
-      };
-
-      const drawPageChrome = (pageNumber: number) => {
-        const first = pageNumber === 1;
-        doc.setFillColor(15, 23, 42);
-        doc.rect(0, 0, width, first ? 31 : 18, "F");
-        doc.setFillColor(178, 146, 82);
-        doc.rect(0, first ? 30 : 17, width, 1, "F");
-
-        // Marca d'água discreta: sem branding do sistema.
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(26);
-        doc.setTextColor(246, 247, 249);
-        doc.text("SHERWIN WILLIAMS DEMARCHI", width / 2, height / 2 + 8, {
-          align: "center",
-          angle: 330,
-        });
-
-        if (first) {
-          drawLogoCard(gpsLogo, margin, 6, 31, 15);
-          drawLogoCard(swLogo, width - margin - 36, 6, 36, 15);
-
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(15.5);
-          doc.setTextColor(255, 255, 255);
-          doc.text("RELATÓRIO DIÁRIO DE MANUTENÇÃO", width / 2, 11.5, { align: "center" });
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(7.5);
-          doc.setTextColor(203, 213, 225);
-          doc.text("Grupo GPS  •  Sherwin-Williams Demarchi  •  Serviços realizados", width / 2, 18, {
-            align: "center",
-          });
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(9.2);
-          doc.setTextColor(226, 232, 240);
-          doc.text(titleDate, width / 2, 24.3, { align: "center" });
-
-          const cardY = 36;
-          const cardH = 15;
-          const gap = 4;
-          const cardW = 37;
-          const cards = [
-            { label: "EXECUÇÕES", value: pdfRows.length },
-            { label: "PREVENTIVAS", value: pdfPreventive },
-            { label: "CORRETIVAS", value: pdfCorrective },
-            { label: "EQUIPES", value: teamGroups.length },
-          ];
-          cards.forEach((card, index) => {
-            const x = margin + index * (cardW + gap);
-            doc.setFillColor(248, 250, 252);
-            doc.setDrawColor(226, 232, 240);
-            doc.roundedRect(x, cardY, cardW, cardH, 2.2, 2.2, "FD");
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(13);
-            doc.setTextColor(15, 23, 42);
-            doc.text(String(card.value), x + 4, cardY + 7);
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(6.3);
-            doc.setTextColor(100, 116, 139);
-            doc.text(card.label, x + 4, cardY + 11.7);
-          });
-
-          const infoX = margin + 4 * (cardW + gap) + 4;
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(6.6);
-          doc.setTextColor(71, 85, 105);
-          doc.text("RESUMO EXECUTIVO", infoX, cardY + 3.8);
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(7);
-          doc.setTextColor(51, 65, 85);
-          doc.text(`Áreas: ${reportAreas.join(" • ")}`, infoX, cardY + 8.2, {
-            maxWidth: width - margin - infoX,
-          });
-          doc.text(`Equipes: ${teamGroups.map(([team]) => team).join(" • ")}`, infoX, cardY + 12.3, {
-            maxWidth: width - margin - infoX,
-          });
-
-          let detailY = 57.5;
-          if (author.trim()) {
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(6.8);
-            doc.setTextColor(71, 85, 105);
-            doc.text("Responsável", margin, detailY);
-            doc.setFont("helvetica", "normal");
-            doc.text(author.trim(), margin + 18, detailY);
-            detailY += 4;
-          }
-          if (noteLines.length) {
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(6.8);
-            doc.setTextColor(71, 85, 105);
-            doc.text("Observação", margin, detailY);
-            doc.setFont("helvetica", "normal");
-            doc.text(noteLines, margin + 18, detailY, { maxWidth: width - margin * 2 - 18 });
-          }
-        } else {
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(9.2);
-          doc.setTextColor(255, 255, 255);
-          doc.text("RELATÓRIO DIÁRIO DE MANUTENÇÃO", margin, 9.5);
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(7.1);
-          doc.setTextColor(203, 213, 225);
-          doc.text(`Sherwin-Williams Demarchi • ${titleDate}`, width - margin, 9.5, { align: "right" });
-        }
-      };
-
-      const tableBody: any[] = [];
-      const tableMeta: Array<ScheduledMaintenance | null> = [];
-      teamGroups.forEach(([team, teamRows]) => {
-        const color = equipeHex(team);
-        tableBody.push([
-          {
-            content: `${team.toUpperCase()}  •  ${teamRows.length} ${teamRows.length === 1 ? "EXECUÇÃO" : "EXECUÇÕES"}`,
-            colSpan: 6,
-            styles: {
-              fillColor: subtleTeamTint(color),
-              textColor: darkTeamText(color),
-              fontStyle: "bold",
-              fontSize: 7.5,
-              cellPadding: { top: 2.2, right: 2.2, bottom: 2.2, left: 3 },
-              lineColor: [226, 232, 240],
-              lineWidth: { bottom: 0.18 },
-            },
-          },
-        ]);
-        tableMeta.push(null);
-        teamRows.forEach((row) => {
-          tableBody.push([
-            row.os,
-            row.activity,
-            formatDateBr(row.completedAt || selectedDate),
-            maintenanceLocation(row),
-            row.name || row.equipment || "—",
-            row.asset || "—",
-          ]);
-          tableMeta.push(row);
-        });
-      });
-
       autoTable(doc, {
-        startY: firstTableY,
-        margin: { left: margin, right: margin, top: 22, bottom: 16 },
-        showHead: "everyPage",
-        head: [["OS", "Tipo", "Concluída", "Local", "Serviço / Denominação", "Ativo"]],
-        body: tableBody,
-        theme: "plain",
+        startY: dailyNote.trim() ? 69 : author.trim() ? 64 : 60,
+        margin: { left: margin, right: margin, bottom: 18 },
+        head: [[
+          "OS",
+          "Tipo",
+          "Área",
+          "Equipe",
+          "Programada",
+          "Concluída",
+          "Local",
+          "Serviço / Denominação",
+          "Ativo",
+        ]],
+        body: sorted.map((row) => [
+          row.os,
+          row.activity,
+          rowArea(row),
+          row.team || "—",
+          row.extraCorrective ? "—" : formatDateBr(row.date),
+          formatDateBr(row.completedAt || selectedDate),
+          maintenanceLocation(row),
+          row.name || row.equipment || "—",
+          row.asset || "—",
+        ]),
+        theme: "grid",
         styles: {
           font: "helvetica",
-          fontSize: 6.9,
-          cellPadding: { top: 1.8, right: 1.8, bottom: 1.8, left: 1.8 },
+          fontSize: 7,
+          cellPadding: 1.6,
           lineColor: [226, 232, 240],
-          lineWidth: { bottom: 0.18 },
-          textColor: [30, 41, 59],
+          lineWidth: 0.15,
+          textColor: [31, 41, 55],
           overflow: "linebreak",
           valign: "middle",
         },
         headStyles: {
-          fillColor: [30, 41, 59],
+          fillColor: [15, 23, 42],
           textColor: [255, 255, 255],
           fontStyle: "bold",
-          fontSize: 6.9,
-          cellPadding: { top: 2.1, right: 1.8, bottom: 2.1, left: 1.8 },
-          lineWidth: 0,
+          fontSize: 7,
         },
         columnStyles: {
-          0: { cellWidth: 18, fontStyle: "bold" },
-          1: { cellWidth: 18 },
-          2: { cellWidth: 21 },
-          3: { cellWidth: 50 },
-          4: { cellWidth: 143 },
-          5: { cellWidth: 20 },
+          0: { cellWidth: 16, fontStyle: "bold" },
+          1: { cellWidth: 17 },
+          2: { cellWidth: 27 },
+          3: { cellWidth: 28 },
+          4: { cellWidth: 18 },
+          5: { cellWidth: 18 },
+          6: { cellWidth: 42 },
+          7: { cellWidth: width - margin * 2 - 184 },
+          8: { cellWidth: 18 },
         },
         didParseCell: (data) => {
           if (data.section !== "body") return;
-          const reportRow = tableMeta[data.row.index];
+          const reportRow = sorted[data.row.index];
           if (!reportRow) return;
-          if (data.row.index % 2 === 0) data.cell.styles.fillColor = [250, 251, 252];
-          if (data.column.index === 0) {
-            const color = equipeHex(reportRow.team);
-            data.cell.styles.fillColor = subtleTeamTint(color);
-            data.cell.styles.textColor = darkTeamText(color);
+          const color = equipeHex(reportRow.team);
+          data.cell.styles.fillColor = subtleTeamTint(color);
+          if (data.column.index === 3) {
             data.cell.styles.fontStyle = "bold";
+            data.cell.styles.textColor = darkTeamText(color);
           }
         },
-        willDrawPage: (data) => drawPageChrome(data.pageNumber),
-        didDrawPage: (data) => {
+        didDrawPage: () => {
+          const page = doc.getNumberOfPages();
           doc.setDrawColor(226, 232, 240);
-          doc.line(margin, height - 11.5, width - margin, height - 11.5);
+          doc.line(margin, height - 12, width - margin, height - 12);
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(6.5);
+          doc.setFontSize(7);
           doc.setTextColor(100, 116, 139);
-          doc.text("Sherwin-Williams Demarchi • Relatório diário de serviços executados", margin, height - 6.7);
-          doc.text(`Página ${data.pageNumber}`, width - margin, height - 6.7, { align: "right" });
+          doc.text(
+            "Relatório diário de execuções concluídas.",
+            margin,
+            height - 7,
+          );
+          doc.text(`Página ${page}`, width - margin, height - 7, { align: "right" });
         },
       });
-
-      const totalPages = doc.getNumberOfPages();
-      for (let page = 1; page <= totalPages; page += 1) {
-        doc.setPage(page);
-        doc.setFillColor(255, 255, 255);
-        doc.rect(width - margin - 24, height - 9.5, 24, 5, "F");
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(6.5);
-        doc.setTextColor(100, 116, 139);
-        doc.text(`Página ${page} de ${totalPages}`, width - margin, height - 6.7, { align: "right" });
-      }
 
       doc.setProperties({
         title: `Relatório Diário de Manutenção - ${titleDate}`,
-        subject: "Serviços de manutenção executados no dia",
-        author: author.trim() || "Grupo GPS / Sherwin-Williams Demarchi",
-        creator: "Grupo GPS / Sherwin-Williams Demarchi",
+        subject: "Execuções de manutenção concluídas no dia",
+        author: author.trim() || "Grupo GPS / Sherwin-Williams",
+        creator: "ApontAuto",
       });
       doc.save(`RELATORIO_DIARIO_MANUTENCAO_${selectedDate}.pdf`);
-      toast.success(`PDF premium gerado com ${pdfRows.length} execução(ões) em ${teamGroups.length} equipe(s).`);
+      toast.success(
+        `PDF gerado com ${pdfRows.length} execução(ões).`,
+      );
     } catch (error) {
       console.error(error);
       toast.error("Não foi possível gerar o PDF.");
