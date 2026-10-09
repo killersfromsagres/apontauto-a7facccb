@@ -36,7 +36,7 @@ jobs:
         run: bunx vitest run src/features/relatorio-diario
 
       - name: Typecheck
-        run: bunx tsgo --noEmit
+        run: bunx tsc --noEmit
 
       - name: Production build
         run: bun run build
