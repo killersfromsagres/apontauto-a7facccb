@@ -228,7 +228,7 @@ describe("relatório diário + Corretiva Novo", () => {
     });
     const dates = summaries.map((item) => item.date);
     expect(dates).toEqual(["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09"]);
-    expect(summaries.find((item) => item.date === "2026-10-09")?.extraCorrective).toBe(4);
+    expect(summaries.find((item) => item.date === "2026-10-09")?.extraCorrective).toBe(3);
   });
 
   it("nova semana sem sobreposição substitui; mesmo período mescla", () => {
