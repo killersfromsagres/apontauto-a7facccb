@@ -1,6 +1,28 @@
 import * as XLSX from "xlsx";
 
 export type MaintenanceType = "Preventiva" | "Corretiva";
+export type MaintenanceArea =
+  | "Civil / Hidráulica"
+  | "Elétrica"
+  | "Refrigeração 1"
+  | "Refrigeração 2"
+  | "Refrigeração 3"
+  | "Refrigeração"
+  | "Outros";
+
+export const PRIMARY_MAINTENANCE_AREAS: MaintenanceArea[] = [
+  "Civil / Hidráulica",
+  "Refrigeração 1",
+  "Refrigeração 2",
+  "Refrigeração 3",
+  "Elétrica",
+];
+
+const MAINTENANCE_AREA_ORDER: MaintenanceArea[] = [
+  ...PRIMARY_MAINTENANCE_AREAS,
+  "Refrigeração",
+  "Outros",
+];
 
 export type ScheduledMaintenance = {
   id: string;
@@ -13,6 +35,7 @@ export type ScheduledMaintenance = {
   activity: MaintenanceType;
   sla: string;
   team: string;
+  area: MaintenanceArea;
   asset: string;
   equipment: string;
   observation: string;
@@ -25,6 +48,7 @@ export type ScheduleDaySummary = {
   preventive: number;
   corrective: number;
   teams: string[];
+  areas: MaintenanceArea[];
 };
 
 export type ImportResult = {
@@ -34,6 +58,7 @@ export type ImportResult = {
   fileName: string;
   days: ScheduleDaySummary[];
   teams: string[];
+  areas: MaintenanceArea[];
   preventive: number;
   corrective: number;
   warnings: string[];
@@ -79,6 +104,40 @@ const isDayTitle = (value: unknown) => {
   );
 };
 
+const refrigerationGroup = (text: string) => {
+  const normalized = normalize(text);
+  if (!/(REFRIGERACAO|REFRIG|HVAC|AR CONDICIONADO)/.test(normalized)) return null;
+
+  const digitMatch = normalized.match(/(?:REFRIGERACAO|REFRIG|HVAC)[^0-9]{0,18}0?([123])\b/);
+  if (digitMatch?.[1]) return Number(digitMatch[1]);
+
+  if (/\b(?:REFRIGERACAO|REFRIG|HVAC)[^A-Z0-9]{0,8}III\b/.test(normalized)) return 3;
+  if (/\b(?:REFRIGERACAO|REFRIG|HVAC)[^A-Z0-9]{0,8}II\b/.test(normalized)) return 2;
+  if (/\b(?:REFRIGERACAO|REFRIG|HVAC)[^A-Z0-9]{0,8}I\b/.test(normalized)) return 1;
+
+  return 0;
+};
+
+export function inferMaintenanceArea(team: string, sourceFile = "", description = ""): MaintenanceArea {
+  const combined = normalize([team, sourceFile, description].filter(Boolean).join(" "));
+
+  const refGroup = refrigerationGroup(combined);
+  if (refGroup === 1) return "Refrigeração 1";
+  if (refGroup === 2) return "Refrigeração 2";
+  if (refGroup === 3) return "Refrigeração 3";
+  if (refGroup === 0) return "Refrigeração";
+
+  if (combined.includes("ELETRICA") || combined.includes("ELETRICISTA")) return "Elétrica";
+  if (combined.includes("CIVIL") || combined.includes("HIDRAULICA")) return "Civil / Hidráulica";
+
+  return "Outros";
+}
+
+export function maintenanceAreaRank(area: MaintenanceArea) {
+  const index = MAINTENANCE_AREA_ORDER.indexOf(area);
+  return index >= 0 ? index : MAINTENANCE_AREA_ORDER.length;
+}
+
 export function summarizeScheduleRows(rows: ScheduledMaintenance[]): ScheduleDaySummary[] {
   const grouped = new Map<string, ScheduledMaintenance[]>();
 
@@ -96,6 +155,9 @@ export function summarizeScheduleRows(rows: ScheduledMaintenance[]): ScheduleDay
       preventive: dayRows.filter((row) => row.activity === "Preventiva").length,
       corrective: dayRows.filter((row) => row.activity === "Corretiva").length,
       teams: Array.from(new Set(dayRows.map((row) => row.team).filter(Boolean))).sort(),
+      areas: Array.from(new Set(dayRows.map((row) => row.area))).sort(
+        (a, b) => maintenanceAreaRank(a) - maintenanceAreaRank(b),
+      ),
     }));
 }
 
@@ -109,7 +171,7 @@ export function parseScheduleMatrix(matrix: unknown[][], sourceFile: string): Sc
     const detectedDate = toIsoDate(String(row[0] ?? ""));
 
     // O dia programado vem somente da faixa de título do bloco
-    // (ex.: "SEGUNDA-FEIRA • 05/10/2026 • CIVIL...").
+    // (ex.: "SEGUNDA-FEIRA • 05/10/2026 • ELÉTRICA...").
     // Datas internas da OS, principalmente Término SLA, nunca alteram o dia programado.
     if (detectedDate && isDayTitle(row[0])) {
       currentDate = detectedDate;
@@ -137,11 +199,12 @@ export function parseScheduleMatrix(matrix: unknown[][], sourceFile: string): Sc
     const floor = cell(row, findIndex(headers, ["ANDAR"]));
     const space = cell(row, findIndex(headers, ["ESPAÇO", "ESPACO", "AMBIENTE"]));
     const sla = cell(row, findIndex(headers, ["TÉRMINO SLA", "TERMINO SLA", "SLA"]));
-    const team = cell(row, findIndex(headers, ["EQUIPE"]));
+    const team = cell(row, findIndex(headers, ["EQUIPE", "TIME", "DISCIPLINA"]));
     const asset = cell(row, findIndex(headers, ["ATIVO"]));
     const equipment = cell(row, findIndex(headers, ["EQUIPAMENTO"]));
     const observation = cell(row, findIndex(headers, ["OBSERVAÇÃO", "OBSERVACAO", "OBS.", "OBS"]));
-    const id = [currentDate, os, normalize(team || sourceFile)].join("|");
+    const area = inferMaintenanceArea(team, sourceFile, name);
+    const id = [currentDate, os, normalize(team || area || sourceFile)].join("|");
 
     rows.push({
       id,
@@ -154,6 +217,7 @@ export function parseScheduleMatrix(matrix: unknown[][], sourceFile: string): Sc
       activity,
       sla,
       team,
+      area,
       asset,
       equipment,
       observation,
@@ -191,6 +255,9 @@ export async function parseScheduleFile(file: File): Promise<ImportResult> {
 
   const days = summarizeScheduleRows(rows);
   const teams = Array.from(new Set(rows.map((row) => row.team).filter(Boolean))).sort();
+  const areas = Array.from(new Set(rows.map((row) => row.area))).sort(
+    (a, b) => maintenanceAreaRank(a) - maintenanceAreaRank(b),
+  );
   const warnings: string[] = [];
 
   if (!exactScheduleSheet) {
@@ -199,6 +266,10 @@ export async function parseScheduleFile(file: File): Promise<ImportResult> {
 
   if (days.length < 5) {
     warnings.push(`Foram identificados ${days.length} dia(s) programado(s) no arquivo.`);
+  }
+
+  if (areas.includes("Outros")) {
+    warnings.push(`Há registros cuja área não pôde ser classificada automaticamente em ${file.name}.`);
   }
 
   const ignoredSheets = workbook.SheetNames.filter((name) => name !== scheduleSheet);
@@ -213,6 +284,7 @@ export async function parseScheduleFile(file: File): Promise<ImportResult> {
     fileName: file.name,
     days,
     teams,
+    areas,
     preventive: rows.filter((row) => row.activity === "Preventiva").length,
     corrective: rows.filter((row) => row.activity === "Corretiva").length,
     warnings,
@@ -220,10 +292,17 @@ export async function parseScheduleFile(file: File): Promise<ImportResult> {
 }
 
 export function mergeSchedules(current: ScheduledMaintenance[], incoming: ScheduledMaintenance[]) {
-  const merged = new Map(current.map((row) => [row.id, row]));
+  const hydratedCurrent = current.map((row) => ({
+    ...row,
+    area: row.area ?? inferMaintenanceArea(row.team, row.sourceFile, row.name),
+  }));
+  const merged = new Map(hydratedCurrent.map((row) => [row.id, row]));
   incoming.forEach((row) => merged.set(row.id, row));
   return Array.from(merged.values()).sort((a, b) =>
-    a.date.localeCompare(b.date) || a.team.localeCompare(b.team) || a.os.localeCompare(b.os),
+    a.date.localeCompare(b.date) ||
+    maintenanceAreaRank(a.area) - maintenanceAreaRank(b.area) ||
+    a.team.localeCompare(b.team) ||
+    a.os.localeCompare(b.os),
   );
 }
 
