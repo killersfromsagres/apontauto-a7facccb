@@ -8,22 +8,16 @@ function legalErrorMessage(error: unknown) {
   return String(error ?? "");
 }
 
-async function ensureLegalSession() {
-  const { data, error } = await supabase.auth.getSession();
-  if (error) throw error;
-  if (!data.session?.user) throw new Error("Sessão expirada. Entre novamente para carregar o Painel Legal.");
-}
-
 async function withLegalReadRetry<T>(read: () => Promise<T>): Promise<T> {
-  await ensureLegalSession();
   try {
     return await read();
   } catch (error) {
     const message = legalErrorMessage(error);
     const retryable = error instanceof TypeError || LEGAL_AUTH_RETRY_RE.test(message);
     if (!retryable) throw error;
-    const { error: refreshError } = await supabase.auth.refreshSession();
-    if (refreshError) throw error;
+
+    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError || !refreshed.session) throw error;
     return await read();
   }
 }
@@ -294,7 +288,7 @@ type AttachmentRow = {
   file_name: string;
   mime_type: string | null;
   size_bytes: number | null;
-  is_current: boolean | null;
+  is_current?: boolean | null;
   created_at: string;
 };
 
@@ -315,14 +309,34 @@ function fromAttachmentRow(r: AttachmentRow): LegalAttachment {
 
 export async function listAttachments(itemId: string): Promise<LegalAttachment[]> {
   return withLegalReadRetry(async () => {
-    const { data, error } = await supabase
+    // Prefer the modern schema, preserving the explicit current/history marker.
+    const modern = await supabase
       .from("legal_item_attachments" as any)
-      .select("*")
+      .select("id, item_id, storage_path, file_name, mime_type, size_bytes, is_current, created_at")
       .eq("item_id", itemId)
       .order("is_current", { ascending: false })
       .order("created_at", { ascending: false });
-    if (error) throw error;
-    return ((data as unknown as AttachmentRow[]) ?? []).map(fromAttachmentRow);
+
+    if (!modern.error) {
+      return ((modern.data as unknown as AttachmentRow[]) ?? []).map(fromAttachmentRow);
+    }
+
+    // Some production environments still have the older attachment schema.
+    // The attachment counter only needs item_id and continues to work there,
+    // while querying/order by is_current fails. Fall back to legacy columns and
+    // infer the newest certificate as current so existing files remain usable.
+    const legacy = await supabase
+      .from("legal_item_attachments" as any)
+      .select("id, item_id, storage_path, file_name, mime_type, size_bytes, created_at");
+    if (legacy.error) throw modern.error;
+
+    const rows = ((legacy.data as unknown as AttachmentRow[]) ?? [])
+      .filter((row) => row.item_id === itemId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    return rows.map((row, index) =>
+      fromAttachmentRow({ ...row, is_current: index === 0 }),
+    );
   });
 }
 
