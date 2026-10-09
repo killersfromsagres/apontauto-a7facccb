@@ -24,7 +24,9 @@ import { Input } from "@/components/ui/input";
 import {
   buildCompletedReportRows,
   buildReportDaySummaries,
+  consolidateCorrectiveCompletionSources,
   mapCompletedCorrectives,
+  type CorrectivePendingStatusUpdate,
   type CorrectiveReportSourceRow,
 } from "@/features/relatorio-diario/lib/corrective-report";
 import {
@@ -41,6 +43,11 @@ import {
   type ScheduledMaintenance,
 } from "@/features/relatorio-diario/lib/daily-maintenance";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  CORRETIVA_QUEUE_CHANGED_EVENT,
+  getCachedOsList,
+  outboxForCurrentUser,
+} from "@/lib/corretiva/db";
 import { equipeHex, equipeStyles } from "@/lib/corretiva/equipe";
 
 export const Route = createFileRoute("/_authenticated/relatorio-diario")({
@@ -186,6 +193,9 @@ const reportOriginLabel = (row: ScheduledMaintenance) => {
   return "Programação semanal";
 };
 
+const completionSourceLabel = (row: ScheduledMaintenance) =>
+  row.completionSource === "corretiva-novo" ? "Corretiva Novo" : "Relatório Diário";
+
 function DailyMaintenanceReport() {
   const inputRef = useRef<HTMLInputElement>(null);
   const externalInitialDateResolved = useRef(false);
@@ -211,23 +221,67 @@ function DailyMaintenanceReport() {
   const loadCorrectiveCompletions = useCallback(async (notify = false) => {
     setSyncingCorrectives(true);
     setCorrectiveSyncError("");
+
     try {
-      const { data, error } = await supabase
+      let remoteRows: CorrectiveReportSourceRow[] = [];
+      let remoteError: any = null;
+
+      const remoteResult = await supabase
         .from("corretiva_os")
         .select(
-          "id,numero_os,status,fim,data_programada,data_criacao,data_sla,equipe,nome_os,equipamento,ativo,patrimonio,predio,andar,local,observacao_conclusao",
+          "id,numero_os,status,fim,updated_at,data_programada,data_criacao,data_sla,equipe,nome_os,equipamento,ativo,patrimonio,predio,andar,local,observacao_conclusao",
         )
-        .not("fim", "is", null)
-        .order("fim", { ascending: false })
-        .limit(5000);
+        .order("updated_at", { ascending: false })
+        .limit(10000);
 
-      if (error) throw error;
-      const loaded = (data ?? []) as CorrectiveReportSourceRow[];
-      setCorrectiveRows(loaded);
-      if (notify) {
-        toast.success(`${mapCompletedCorrectives(loaded).length} corretiva(s) concluída(s) sincronizada(s).`);
+      if (remoteResult.error) {
+        remoteError = remoteResult.error;
+      } else {
+        remoteRows = (remoteResult.data ?? []) as CorrectiveReportSourceRow[];
       }
-      return loaded;
+
+      let cachedRows: CorrectiveReportSourceRow[] = [];
+      let pendingStatusUpdates: CorrectivePendingStatusUpdate[] = [];
+
+      try {
+        const [cached, queued] = await Promise.all([
+          getCachedOsList(),
+          outboxForCurrentUser(),
+        ]);
+        cachedRows = cached as CorrectiveReportSourceRow[];
+        pendingStatusUpdates = queued
+          .filter((item) => item.kind === "status" && item.payload?.status)
+          .map((item) => ({
+            osId: item.osId,
+            numeroOs: item.numeroOs,
+            status: item.payload?.status ?? null,
+            fim: item.payload?.fim ?? null,
+            observacao_conclusao: item.payload?.observacao_conclusao ?? null,
+            createdAt: item.createdAt,
+          }));
+      } catch (localError) {
+        console.warn("[RelatorioDiario] Cache local de corretivas indisponível:", localError);
+      }
+
+      if (remoteError && !cachedRows.length && !pendingStatusUpdates.length) throw remoteError;
+
+      const consolidated = consolidateCorrectiveCompletionSources({
+        remoteRows,
+        cachedRows,
+        pendingStatusUpdates,
+      });
+      setCorrectiveRows(consolidated);
+
+      const completedCount = mapCompletedCorrectives(consolidated).length;
+      if (remoteError) {
+        const warning = `Banco online indisponível. O relatório está usando o cache local do Corretiva Novo (${completedCount} concluída(s)).`;
+        setCorrectiveSyncError(warning);
+        if (notify) toast.warning(warning);
+      } else if (notify) {
+        toast.success(`${completedCount} corretiva(s) concluída(s) identificada(s) no Corretiva Novo.`);
+      }
+
+      return consolidated;
     } catch (error: any) {
       const message = error?.message || "Não foi possível sincronizar as corretivas concluídas.";
       setCorrectiveSyncError(message);
@@ -279,6 +333,12 @@ function DailyMaintenanceReport() {
     return () => {
       void supabase.removeChannel(channel);
     };
+  }, [loadCorrectiveCompletions]);
+
+  useEffect(() => {
+    const refreshFromLocalQueue = () => void loadCorrectiveCompletions(false);
+    window.addEventListener(CORRETIVA_QUEUE_CHANGED_EVENT, refreshFromLocalQueue);
+    return () => window.removeEventListener(CORRETIVA_QUEUE_CHANGED_EVENT, refreshFromLocalQueue);
   }, [loadCorrectiveCompletions]);
 
   useEffect(() => {
@@ -645,6 +705,7 @@ function DailyMaintenanceReport() {
       const pdfPreventive = pdfRows.filter((row) => row.activity === "Preventiva").length;
       const pdfCorrective = pdfRows.filter((row) => row.activity === "Corretiva").length;
       const pdfExtraCorrective = pdfRows.filter((row) => row.extraCorrective).length;
+      const pdfCorretivaNovo = pdfRows.filter((row) => row.completionSource === "corretiva-novo").length;
       const pdfCompletedScheduledOnDate = scheduledRows.filter((scheduled) => {
         const key = osKey(scheduled.os);
         const reportRow = pdfRows.find((row) => osKey(row.os) === key);
@@ -665,9 +726,9 @@ function DailyMaintenanceReport() {
       ]);
 
       doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, width, 32, "F");
+      doc.rect(0, 0, width, 29, "F");
       doc.setDrawColor(226, 232, 240);
-      doc.line(margin, 31, width - margin, 31);
+      doc.line(margin, 28, width - margin, 28);
 
       if (gpsLogo) {
         const logoHeight = 9;
@@ -690,26 +751,24 @@ function DailyMaintenanceReport() {
       doc.text(`Grupo GPS • Sherwin-Williams • Execuções concluídas em ${titleDate}`, width / 2, 19, {
         align: "center",
       });
-      doc.text("Civil/Hidráulica → Refrigeração → Outros serviços → Elétrica", width / 2, 24, {
-        align: "center",
-      });
 
       const kpis = [
         { x: margin, value: pdfRows.length, label: "CONCLUÍDAS" },
-        { x: 48, value: pdfPreventive, label: "PREVENTIVAS" },
-        { x: 82, value: pdfCorrective, label: "CORRETIVAS" },
-        { x: 116, value: pdfExtraCorrective, label: "EXTRAS DO DIA" },
-        { x: 156, value: `${pdfSameDayRate}%`, label: "PROGRAMAÇÃO CONCLUÍDA NO DIA" },
+        { x: 47, value: pdfPreventive, label: "PREVENTIVAS" },
+        { x: 78, value: pdfCorrective, label: "CORRETIVAS" },
+        { x: 111, value: pdfCorretivaNovo, label: "VIA CORRETIVA NOVO" },
+        { x: 151, value: pdfExtraCorrective, label: "EXTRAS DO DIA" },
+        { x: 188, value: `${pdfSameDayRate}%`, label: "PROGRAMAÇÃO CONCLUÍDA NO DIA" },
       ];
 
       kpis.forEach((kpi) => {
         doc.setTextColor(15, 23, 42);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(18);
-        doc.text(String(kpi.value), kpi.x, 43);
-        doc.setFontSize(7.2);
+        doc.setFontSize(17);
+        doc.text(String(kpi.value), kpi.x, 40);
+        doc.setFontSize(6.8);
         doc.setFont("helvetica", "normal");
-        doc.text(kpi.label, kpi.x, 48);
+        doc.text(kpi.label, kpi.x, 45);
       });
 
       const reportAreas = Array.from(new Set(pdfRows.map(rowArea))).sort(
@@ -717,10 +776,10 @@ function DailyMaintenanceReport() {
       );
       doc.setFontSize(8.2);
       doc.setTextColor(71, 85, 105);
-      doc.text(`Áreas: ${reportAreas.join(" • ")}`, margin, 56, { maxWidth: width - margin * 2 });
-      if (author.trim()) doc.text(`Responsável: ${author.trim()}`, margin, 61);
+      doc.text(`Áreas atendidas: ${reportAreas.join(" • ")}`, margin, 53, { maxWidth: width - margin * 2 });
+      if (author.trim()) doc.text(`Responsável: ${author.trim()}`, margin, 58);
       if (dailyNote.trim()) {
-        doc.text(`Observação: ${dailyNote.trim()}`, margin, author.trim() ? 66 : 61, {
+        doc.text(`Observação: ${dailyNote.trim()}`, margin, author.trim() ? 63 : 58, {
           maxWidth: width - margin * 2,
         });
       }
@@ -734,7 +793,7 @@ function DailyMaintenanceReport() {
       );
 
       autoTable(doc, {
-        startY: dailyNote.trim() ? 72 : author.trim() ? 67 : 63,
+        startY: dailyNote.trim() ? 69 : author.trim() ? 64 : 60,
         margin: { left: margin, right: margin, bottom: 18 },
         head: [[
           "OS",
@@ -743,7 +802,8 @@ function DailyMaintenanceReport() {
           "Equipe",
           "Programada",
           "Concluída",
-          "Origem",
+          "Programação",
+          "Fonte conclusão",
           "Local",
           "Serviço / Denominação",
           "Ativo",
@@ -756,6 +816,7 @@ function DailyMaintenanceReport() {
           row.extraCorrective ? "—" : formatDateBr(row.date),
           formatDateBr(row.completedAt || selectedDate),
           reportOriginLabel(row),
+          completionSourceLabel(row),
           maintenanceLocation(row),
           row.name || row.equipment || "—",
           row.asset || "—",
@@ -763,8 +824,8 @@ function DailyMaintenanceReport() {
         theme: "grid",
         styles: {
           font: "helvetica",
-          fontSize: 6.2,
-          cellPadding: 1.8,
+          fontSize: 5.8,
+          cellPadding: 1.6,
           lineColor: [226, 232, 240],
           lineWidth: 0.15,
           textColor: [31, 41, 55],
@@ -775,19 +836,20 @@ function DailyMaintenanceReport() {
           fillColor: [15, 23, 42],
           textColor: [255, 255, 255],
           fontStyle: "bold",
-          fontSize: 6.4,
+          fontSize: 5.9,
         },
         columnStyles: {
-          0: { cellWidth: 16, fontStyle: "bold" },
-          1: { cellWidth: 17 },
-          2: { cellWidth: 28 },
-          3: { cellWidth: 24 },
-          4: { cellWidth: 20 },
-          5: { cellWidth: 20 },
-          6: { cellWidth: 27 },
-          7: { cellWidth: 34 },
-          8: { cellWidth: 57 },
-          9: { cellWidth: 20 },
+          0: { cellWidth: 15, fontStyle: "bold" },
+          1: { cellWidth: 15 },
+          2: { cellWidth: 24 },
+          3: { cellWidth: 22 },
+          4: { cellWidth: 18 },
+          5: { cellWidth: 18 },
+          6: { cellWidth: 22 },
+          7: { cellWidth: 22 },
+          8: { cellWidth: 30 },
+          9: { cellWidth: 52 },
+          10: { cellWidth: 17 },
         },
         didParseCell: (data) => {
           if (data.section !== "body") return;
@@ -802,6 +864,10 @@ function DailyMaintenanceReport() {
           if (data.column.index === 6 && reportRow.extraCorrective) {
             data.cell.styles.fontStyle = "bold";
           }
+          if (data.column.index === 7 && reportRow.completionSource === "corretiva-novo") {
+            data.cell.styles.fontStyle = "bold";
+            data.cell.styles.textColor = [4, 120, 87];
+          }
         },
         didDrawPage: () => {
           const page = doc.getNumberOfPages();
@@ -811,7 +877,7 @@ function DailyMaintenanceReport() {
           doc.setFontSize(7);
           doc.setTextColor(100, 116, 139);
           doc.text(
-            "Programação consolidada + corretivas concluídas no Corretiva Novo; chamados extras do dia identificados automaticamente.",
+            "Relatório consolidado com programação semanal e conclusões identificadas no Corretiva Novo, inclusive pendências locais de sincronização.",
             margin,
             height - 7,
           );
@@ -826,7 +892,9 @@ function DailyMaintenanceReport() {
         creator: "ApontAuto",
       });
       doc.save(`RELATORIO_DIARIO_MANUTENCAO_${selectedDate}.pdf`);
-      toast.success(`PDF gerado com ${pdfRows.length} execução(ões), incluindo ${pdfExtraCorrective} corretiva(s) extra(s).`);
+      toast.success(
+        `PDF gerado com ${pdfRows.length} execução(ões), ${pdfCorretivaNovo} identificada(s) pelo Corretiva Novo e ${pdfExtraCorrective} corretiva(s) extra(s).`,
+      );
     } catch (error) {
       console.error(error);
       toast.error("Não foi possível gerar o PDF.");
@@ -957,7 +1025,7 @@ function DailyMaintenanceReport() {
             <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold text-foreground">Sincronização de corretivas realizadas</p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground">Usa status concluído + data real do campo “fim”.</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">Consolida banco, cache local e conclusões pendentes de sincronização.</p>
               </div>
               <Button
                 variant="ghost"
@@ -972,7 +1040,7 @@ function DailyMaintenanceReport() {
             </div>
 
             {correctiveSyncError && (
-              <p className="mt-2 text-[11px] leading-4 text-red-600 dark:text-red-400">{correctiveSyncError}</p>
+              <p className="mt-2 text-[11px] leading-4 text-amber-700 dark:text-amber-300">{correctiveSyncError}</p>
             )}
 
             {lastImport && (lastImport.warnings.length > 0 || lastImport.errors.length > 0) && (
@@ -997,7 +1065,7 @@ function DailyMaintenanceReport() {
               Estrutura do report por área
             </div>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Ordem do PDF: Civil/Hidráulica, Refrigeração, demais equipes e por último Elétrica.
+              Visão consolidada por área, equipe e status de execução.
             </p>
           </div>
           {hasReportData && (
@@ -1307,7 +1375,7 @@ function DailyMaintenanceReport() {
                                           </div>
                                           <p className="mt-2 text-[10px] text-muted-foreground">Data real de conclusão</p>
                                           <p className="mt-0.5 text-xs font-semibold text-foreground">{formatDateBr(completedAt)}</p>
-                                          <p className="mt-2 text-[10px] leading-4 text-muted-foreground">Registro sincronizado do atendimento de campo.</p>
+                                          <p className="mt-2 text-[10px] leading-4 text-muted-foreground">Registro consolidado do atendimento de campo.</p>
                                         </>
                                       ) : (
                                         <>
@@ -1357,6 +1425,7 @@ function DailyMaintenanceReport() {
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <MiniStat label="Concluídas" value={completedOnDate.length} />
+                  <MiniStat label="Via Corretiva Novo" value={correctiveNovoCount} />
                   <MiniStat label="Extras do dia" value={extraCorrectiveCount} />
                   <MiniStat label="Preventivas" value={reportPreventive} />
                   <MiniStat label="Corretivas" value={reportCorrective} />
@@ -1401,7 +1470,7 @@ function DailyMaintenanceReport() {
               <section className="rounded-2xl border border-border bg-card p-5 text-xs leading-5 text-muted-foreground">
                 <div className="flex items-center gap-2 font-semibold text-foreground"><ShieldCheck className="h-4 w-4" /> Regra de consolidação</div>
                 <p className="mt-2">
-                  A programação semanal permanece como referência. O Corretiva Novo informa a data real de conclusão e inclui automaticamente Chaveiro e demais equipes. Chamados concluídos sem programação são marcados como “Extra do dia” no PDF.
+                  A programação semanal permanece como referência. O Corretiva Novo informa a data real de conclusão e o relatório consolida banco, cache local e status ainda pendentes de sincronização. Chamados concluídos sem programação são marcados como “Extra do dia” no PDF.
                 </p>
               </section>
             </aside>

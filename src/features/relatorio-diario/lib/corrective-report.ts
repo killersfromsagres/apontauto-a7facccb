@@ -12,6 +12,7 @@ export type CorrectiveReportSourceRow = {
   numero_os?: string | null;
   status?: string | null;
   fim?: string | null;
+  updated_at?: string | null;
   data_programada?: string | null;
   data_criacao?: string | null;
   data_sla?: string | null;
@@ -24,6 +25,15 @@ export type CorrectiveReportSourceRow = {
   andar?: string | null;
   local?: string | null;
   observacao_conclusao?: string | null;
+};
+
+export type CorrectivePendingStatusUpdate = {
+  osId?: string | null;
+  numeroOs?: string | null;
+  status?: string | null;
+  fim?: string | null;
+  observacao_conclusao?: string | null;
+  createdAt?: number | null;
 };
 
 export type ReportExecutionMap = Record<string, { completedAt: string }>;
@@ -41,9 +51,19 @@ const normalize = (value: unknown) =>
     .trim()
     .toLowerCase();
 
+const COMPLETED_CORRECTIVE_STATUSES = new Set([
+  "concluida",
+  "concluido",
+  "finalizada",
+  "finalizado",
+  "fechada",
+  "fechado",
+  "encerrada",
+  "encerrado",
+]);
+
 export function isCompletedCorrectiveStatus(status: unknown) {
-  const normalized = normalize(status);
-  return normalized === "concluida" || normalized === "concluido";
+  return COMPLETED_CORRECTIVE_STATUSES.has(normalize(status));
 }
 
 export function toLocalIsoDate(value: unknown): string {
@@ -61,10 +81,113 @@ function osKey(value: unknown) {
   return normalizeOs(value).trim().toUpperCase();
 }
 
+function rowIdentity(row: CorrectiveReportSourceRow) {
+  const os = osKey(row.numero_os);
+  if (os) return `OS:${os}`;
+  const id = String(row.id ?? "").trim().toUpperCase();
+  return id ? `ID:${id}` : "";
+}
+
+function rowVersion(row: CorrectiveReportSourceRow) {
+  const candidates = [row.updated_at, row.fim, row.data_programada, row.data_criacao];
+  for (const candidate of candidates) {
+    const timestamp = new Date(String(candidate ?? "")).getTime();
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
+  return 0;
+}
+
+function mergeDefined<T extends Record<string, unknown>>(base: T, patch: Partial<T>): T {
+  const next = { ...base };
+  Object.entries(patch).forEach(([key, value]) => {
+    if (value !== undefined) (next as Record<string, unknown>)[key] = value;
+  });
+  return next;
+}
+
+/**
+ * Consolida o estado oficial do banco com o espelho local do Corretiva Novo e
+ * com alterações de status ainda pendentes de sincronização. A fila local é
+ * aplicada por último porque representa a ação mais recente feita no aparelho.
+ *
+ * Isso evita dois problemas no relatório diário:
+ * - uma conclusão feita offline não some do PDF enquanto aguarda sincronização;
+ * - uma OS reaberta localmente não continua sendo tratada como concluída apenas
+ *   porque o campo `fim` ainda existe no registro remoto/cacheado.
+ */
+export function consolidateCorrectiveCompletionSources({
+  remoteRows,
+  cachedRows = [],
+  pendingStatusUpdates = [],
+}: {
+  remoteRows: CorrectiveReportSourceRow[];
+  cachedRows?: CorrectiveReportSourceRow[];
+  pendingStatusUpdates?: CorrectivePendingStatusUpdate[];
+}) {
+  const consolidated = new Map<string, CorrectiveReportSourceRow>();
+
+  remoteRows.forEach((row) => {
+    const key = rowIdentity(row);
+    if (!key) return;
+    const current = consolidated.get(key);
+    if (!current || rowVersion(row) >= rowVersion(current)) consolidated.set(key, row);
+  });
+
+  cachedRows.forEach((row) => {
+    const key = rowIdentity(row);
+    if (!key) return;
+    const current = consolidated.get(key);
+    if (!current || rowVersion(row) >= rowVersion(current)) {
+      consolidated.set(key, current ? mergeDefined(current, row) : row);
+    }
+  });
+
+  const findPendingKey = (update: CorrectivePendingStatusUpdate) => {
+    const os = osKey(update.numeroOs);
+    if (os) return `OS:${os}`;
+
+    const id = String(update.osId ?? "").trim().toUpperCase();
+    if (!id) return "";
+    const direct = `ID:${id}`;
+    if (consolidated.has(direct)) return direct;
+
+    for (const [key, row] of consolidated.entries()) {
+      if (String(row.id ?? "").trim().toUpperCase() === id) return key;
+    }
+    return direct;
+  };
+
+  [...pendingStatusUpdates]
+    .sort((a, b) => Number(a.createdAt ?? 0) - Number(b.createdAt ?? 0))
+    .forEach((update) => {
+      const key = findPendingKey(update);
+      if (!key) return;
+      const current = consolidated.get(key) ?? {
+        id: update.osId ?? null,
+        numero_os: update.numeroOs ?? null,
+      };
+      consolidated.set(
+        key,
+        mergeDefined(current, {
+          status: update.status,
+          fim: update.fim,
+          observacao_conclusao: update.observacao_conclusao,
+          updated_at: update.createdAt
+            ? new Date(update.createdAt).toISOString()
+            : current.updated_at,
+        }),
+      );
+    });
+
+  return Array.from(consolidated.values());
+}
+
 function mappedCorrectiveRow(source: CorrectiveReportSourceRow): ScheduledMaintenance | null {
   if (!isCompletedCorrectiveStatus(source.status)) return null;
 
-  const completedAt = toLocalIsoDate(source.fim);
+  // `fim` é a fonte preferencial. `updated_at` cobre registros antigos já
+  // concluídos que não possuíam a data final persistida corretamente.
+  const completedAt = toLocalIsoDate(source.fim || source.updated_at);
   if (!completedAt) return null;
 
   const os = normalizeOs(source.numero_os);
