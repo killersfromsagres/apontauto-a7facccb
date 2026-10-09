@@ -51,6 +51,34 @@ const normalize = (value: unknown) =>
     .trim()
     .toLowerCase();
 
+export const REPORT_SUPPORT_TEAMS = ["Chaveiro", "Pintura", "Limpeza"] as const;
+
+const SUPPORT_TEAM_MATCHERS = [
+  { canonical: "Chaveiro", aliases: ["chaveiro"] },
+  { canonical: "Pintura", aliases: ["pintura", "pintor"] },
+  { canonical: "Limpeza", aliases: ["limpeza", "higienizacao", "conservacao"] },
+] as const;
+
+/**
+ * Mantém Chaveiro, Pintura e Limpeza como equipes explícitas no report.
+ * A descrição só é usada como fallback quando o cadastro da equipe veio vazio,
+ * evitando reclassificações indevidas de outras disciplinas.
+ */
+export function normalizeReportTeam(value: unknown, fallbackText = "") {
+  const explicit = String(value ?? "").trim();
+  const explicitNormalized = normalize(explicit);
+  for (const group of SUPPORT_TEAM_MATCHERS) {
+    if (group.aliases.some((alias) => explicitNormalized.includes(alias))) return group.canonical;
+  }
+  if (explicit) return explicit;
+
+  const fallbackNormalized = normalize(fallbackText);
+  for (const group of SUPPORT_TEAM_MATCHERS) {
+    if (group.aliases.some((alias) => fallbackNormalized.includes(alias))) return group.canonical;
+  }
+  return "Sem equipe";
+}
+
 const COMPLETED_CORRECTIVE_STATUSES = new Set([
   "concluida",
   "concluido",
@@ -191,7 +219,7 @@ function mappedCorrectiveRow(source: CorrectiveReportSourceRow): ScheduledMainte
   if (!completedAt) return null;
 
   const os = normalizeOs(source.numero_os);
-  const team = String(source.equipe ?? "").trim() || "Sem equipe";
+  const team = normalizeReportTeam(source.equipe, `${source.nome_os ?? ""} ${source.equipamento ?? ""}`);
   const name = String(source.nome_os ?? "").trim();
   const equipment = String(source.equipamento ?? "").trim();
   const programmedAt = toLocalIsoDate(source.data_programada);
