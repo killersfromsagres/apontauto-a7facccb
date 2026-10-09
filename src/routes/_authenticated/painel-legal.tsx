@@ -266,18 +266,38 @@ function PainelLegalPage() {
   const { marked, toggleMark, clearMarks } = useMarkedLegal();
   const [onlyMarked, setOnlyMarked] = useState(false);
 
-  const { data: items = [], isLoading } = useQuery({
+  const {
+    data: items = [],
+    isLoading,
+    isError: itemsLoadFailed,
+    error: itemsLoadError,
+    refetch: refetchItems,
+  } = useQuery({
     queryKey: ["legal-items"],
     queryFn: listLegalItems,
+    retry: 2,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
-  const { data: execs = [] } = useQuery({
+  const { data: execs = [], refetch: refetchExecutions } = useQuery({
     queryKey: ["legal-executions"],
     queryFn: listExecutions,
+    retry: 2,
+    refetchOnMount: "always",
   });
-  const { data: attCounts = {} } = useQuery({
+  const { data: attCounts = {}, refetch: refetchAttachmentCounts } = useQuery({
     queryKey: ["legal-attachments-counts"],
     queryFn: countAttachments,
+    retry: 2,
+    refetchOnMount: "always",
   });
+
+  const reloadLegalData = async () => {
+    const results = await Promise.allSettled([refetchItems(), refetchExecutions(), refetchAttachmentCounts()]);
+    const failed = results.some((result) => result.status === "rejected");
+    if (failed) toast.error("Ainda não foi possível sincronizar o Painel Legal.");
+    else toast.success("Painel Legal sincronizado.");
+  };
 
   const empresas = useMemo(() => {
     const s = new Set<string>();
@@ -363,6 +383,20 @@ function PainelLegalPage() {
       description="Controle de tarefas legais e recorrentes, execução mensal e certificados."
     >
       {dialogo}
+      {itemsLoadFailed && (
+        <div className="mb-3 flex flex-col gap-3 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-amber-200">Falha temporária ao sincronizar o Painel Legal</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Os itens e certificados continuam salvos na base. Tente reconectar a leitura sem sair da página.
+              {itemsLoadError instanceof Error && itemsLoadError.message ? ` (${itemsLoadError.message})` : ""}
+            </p>
+          </div>
+          <Button size="sm" variant="outline" className="shrink-0" onClick={() => void reloadLegalData()}>
+            Recarregar dados
+          </Button>
+        </div>
+      )}
       {/* Cabeçalho de ações — mais compacto */}
       <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-center gap-2">

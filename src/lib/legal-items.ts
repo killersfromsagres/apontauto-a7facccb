@@ -1,5 +1,33 @@
 import { supabase } from "@/integrations/supabase/client";
 
+const LEGAL_AUTH_RETRY_RE = /(jwt|token|auth|session|401|403|not authenticated|failed to fetch|network)/i;
+
+function legalErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error) return String((error as { message?: unknown }).message ?? "");
+  return String(error ?? "");
+}
+
+async function ensureLegalSession() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  if (!data.session?.user) throw new Error("Sessão expirada. Entre novamente para carregar o Painel Legal.");
+}
+
+async function withLegalReadRetry<T>(read: () => Promise<T>): Promise<T> {
+  await ensureLegalSession();
+  try {
+    return await read();
+  } catch (error) {
+    const message = legalErrorMessage(error);
+    const retryable = error instanceof TypeError || LEGAL_AUTH_RETRY_RE.test(message);
+    if (!retryable) throw error;
+    const { error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError) throw error;
+    return await read();
+  }
+}
+
 export type Periodicidade = "bimestral" | "trimestral" | "quadrimestral" | "semestral" | "anual";
 export type LegalStatus = "em_dia" | "proximo" | "vencido" | "concluido" | "sem_agenda";
 
@@ -149,12 +177,14 @@ export const statusMeta: Record<
 };
 
 export async function listLegalItems(): Promise<LegalItem[]> {
-  const { data, error } = await supabase
-    .from("legal_items" as any)
-    .select("*")
-    .order("proxima_execucao", { ascending: true });
-  if (error) throw error;
-  return (data as unknown as Row[]).map(fromRow);
+  return withLegalReadRetry(async () => {
+    const { data, error } = await supabase
+      .from("legal_items" as any)
+      .select("*")
+      .order("proxima_execucao", { ascending: true });
+    if (error) throw error;
+    return ((data as unknown as Row[]) ?? []).map(fromRow);
+  });
 }
 
 export async function createLegalItem(
@@ -234,23 +264,25 @@ export async function completeLegalItem(item: LegalItem, date = todayISO()): Pro
 
 // ---------- Executions (para preencher mapa mensal) ----------
 export async function listExecutions(): Promise<LegalExecution[]> {
-  const { data, error } = await supabase
-    .from("legal_item_executions" as any)
-    .select("id, item_id, data_execucao, observacao");
-  if (error) throw error;
-  return (
-    data as unknown as Array<{
-      id: string;
-      item_id: string;
-      data_execucao: string;
-      observacao: string | null;
-    }>
-  ).map((r) => ({
-    id: r.id,
-    itemId: r.item_id,
-    data: r.data_execucao,
-    observacao: r.observacao,
-  }));
+  return withLegalReadRetry(async () => {
+    const { data, error } = await supabase
+      .from("legal_item_executions" as any)
+      .select("id, item_id, data_execucao, observacao");
+    if (error) throw error;
+    return (
+      (data as unknown as Array<{
+        id: string;
+        item_id: string;
+        data_execucao: string;
+        observacao: string | null;
+      }>) ?? []
+    ).map((r) => ({
+      id: r.id,
+      itemId: r.item_id,
+      data: r.data_execucao,
+      observacao: r.observacao,
+    }));
+  });
 }
 
 // ---------- Attachments ----------
@@ -282,24 +314,28 @@ function fromAttachmentRow(r: AttachmentRow): LegalAttachment {
 }
 
 export async function listAttachments(itemId: string): Promise<LegalAttachment[]> {
-  const { data, error } = await supabase
-    .from("legal_item_attachments" as any)
-    .select("*")
-    .eq("item_id", itemId)
-    .order("is_current", { ascending: false })
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return ((data as unknown as AttachmentRow[]) ?? []).map(fromAttachmentRow);
+  return withLegalReadRetry(async () => {
+    const { data, error } = await supabase
+      .from("legal_item_attachments" as any)
+      .select("*")
+      .eq("item_id", itemId)
+      .order("is_current", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return ((data as unknown as AttachmentRow[]) ?? []).map(fromAttachmentRow);
+  });
 }
 
 export async function countAttachments(): Promise<Record<string, number>> {
-  const { data, error } = await supabase.from("legal_item_attachments" as any).select("item_id");
-  if (error) throw error;
-  const map: Record<string, number> = {};
-  for (const row of (data as unknown as Array<{ item_id: string }>) ?? []) {
-    map[row.item_id] = (map[row.item_id] ?? 0) + 1;
-  }
-  return map;
+  return withLegalReadRetry(async () => {
+    const { data, error } = await supabase.from("legal_item_attachments" as any).select("item_id");
+    if (error) throw error;
+    const map: Record<string, number> = {};
+    for (const row of (data as unknown as Array<{ item_id: string }>) ?? []) {
+      map[row.item_id] = (map[row.item_id] ?? 0) + 1;
+    }
+    return map;
+  });
 }
 
 function safeSegment(s: string): string {
@@ -378,11 +414,13 @@ export async function uploadAttachment(
 }
 
 export async function signedUrl(path: string, expiresInSec = 3600): Promise<string> {
-  const { data, error } = await supabase.storage
-    .from("legal-certificates")
-    .createSignedUrl(path, expiresInSec);
-  if (error) throw error;
-  return data.signedUrl;
+  return withLegalReadRetry(async () => {
+    const { data, error } = await supabase.storage
+      .from("legal-certificates")
+      .createSignedUrl(path, expiresInSec);
+    if (error) throw error;
+    return data.signedUrl;
+  });
 }
 
 export async function deleteAttachment(att: LegalAttachment): Promise<void> {
