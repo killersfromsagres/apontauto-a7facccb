@@ -1076,20 +1076,6 @@ function CorretivaNovoPage() {
                         </div>
                       )}
 
-                      {pendingReprogramming && !programReservation && !completed && (
-                        <div className="mb-4 rounded-xl border border-amber-400/25 bg-amber-400/[0.07] p-2.5">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge className="gap-1.5 border border-amber-300/30 bg-amber-500/15 text-[9px] font-extrabold uppercase text-amber-100">
-                              <RotateCcw className="h-3 w-3" />
-                              REPROGRAMAR
-                            </Badge>
-                            <span className="text-[9px] text-amber-100/70">
-                              Voltou para a fila após não realização
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
                       <div className="min-w-0">
                         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
                           Descrição do chamado
