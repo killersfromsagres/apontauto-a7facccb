@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  inferMaintenanceArea,
   mergeSchedules,
   normalizeOs,
   parseScheduleMatrix,
@@ -27,6 +28,7 @@ describe("daily maintenance schedule parser", () => {
     expect(rows[2].date).toBe("2026-10-06");
     expect(rows[2].os).toBe("1770533");
     expect(rows.map((row) => row.activity)).toEqual(["Preventiva", "Corretiva", "Preventiva"]);
+    expect(rows.every((row) => row.area === "Elétrica")).toBe(true);
   });
 
   it("supports Denominação and SLA header variants", () => {
@@ -36,10 +38,25 @@ describe("daily maintenance schedule parser", () => {
         ["OS", "Denominação", "Prédio", "Andar", "Espaço", "Atividade", "SLA", "Equipe", "Ativo", "Equipamento", "Observação"],
         ["7009417", "REPARO", "P01", "TÉRREO", "SALA", "Corretiva", "09/10/2026", "CIVIL", "34516", "OUTROS", "Prioridade"],
       ],
-      "CIVIL SEMANA 41.xlsx",
+      "CIVIL E HIDRÁULICA SEMANA 41.xlsx",
     );
 
-    expect(rows[0]).toMatchObject({ os: "7009417", name: "REPARO", sla: "09/10/2026", observation: "Prioridade" });
+    expect(rows[0]).toMatchObject({
+      os: "7009417",
+      name: "REPARO",
+      sla: "09/10/2026",
+      observation: "Prioridade",
+      area: "Civil / Hidráulica",
+    });
+  });
+
+  it("classifies Civil/Hidráulica, Elétrica and refrigeration groups from team or file name", () => {
+    expect(inferMaintenanceArea("CIVIL", "programacao.xlsx")).toBe("Civil / Hidráulica");
+    expect(inferMaintenanceArea("HIDRÁULICA", "programacao.xlsx")).toBe("Civil / Hidráulica");
+    expect(inferMaintenanceArea("ELÉTRICA", "programacao.xlsx")).toBe("Elétrica");
+    expect(inferMaintenanceArea("", "REFRIGERAÇÃO 1 - SEMANA 41.xlsx")).toBe("Refrigeração 1");
+    expect(inferMaintenanceArea("REFRIGERAÇÃO 2", "arquivo.xlsx")).toBe("Refrigeração 2");
+    expect(inferMaintenanceArea("HVAC 3", "arquivo.xlsx")).toBe("Refrigeração 3");
   });
 
   it("recognizes a Monday-to-Friday sheet with Civil and Hydraulic blocks like the real weekly programming", () => {
@@ -79,6 +96,22 @@ describe("daily maintenance schedule parser", () => {
     expect(summary.every((day) => day.preventive === 16)).toBe(true);
     expect(summary.every((day) => day.corrective === 3)).toBe(true);
     expect(summary[0].teams).toEqual(["CIVIL", "HIDRÁULICA"]);
+    expect(summary[0].areas).toEqual(["Civil / Hidráulica"]);
+  });
+
+  it("keeps preventive and corrective rows organized inside each refrigeration group", () => {
+    const rows = parseScheduleMatrix(
+      [
+        ["SEGUNDA-FEIRA • 05/10/2026 • REFRIGERAÇÃO 2"],
+        ["OS", "Nome", "Atividade", "Equipe"],
+        ["9001", "PM FAN COIL", "Preventiva", "REFRIGERAÇÃO 2"],
+        ["9002", "VAZAMENTO", "Corretiva", "REFRIGERAÇÃO 2"],
+      ],
+      "REFRIGERAÇÃO 2.xlsx",
+    );
+
+    expect(rows.map((row) => row.area)).toEqual(["Refrigeração 2", "Refrigeração 2"]);
+    expect(rows.map((row) => row.activity)).toEqual(["Preventiva", "Corretiva"]);
   });
 
   it("deduplicates the same programmed OS and team when files are reimported", () => {
