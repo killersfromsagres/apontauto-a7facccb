@@ -131,9 +131,16 @@ export function buildCompletedReportRows({
     scheduledByOs.set(key, current);
   });
 
+  const mappedCorrectives = mapCompletedCorrectives(correctiveRows);
+  const officialCompletionByOs = new Map<string, ScheduledMaintenance>();
+  mappedCorrectives.forEach((row) => {
+    const key = osKey(row.os) || row.id;
+    if (!officialCompletionByOs.has(key)) officialCompletionByOs.set(key, row);
+  });
+
   const completed = new Map<string, ScheduledMaintenance>();
 
-  mapCompletedCorrectives(correctiveRows)
+  mappedCorrectives
     .filter((row) => row.completedAt === selectedDate)
     .forEach((corrective) => {
       const key = osKey(corrective.os) || corrective.id;
@@ -171,7 +178,7 @@ export function buildCompletedReportRows({
     const completedAt = executions[row.id]?.completedAt;
     if (completedAt !== selectedDate) return;
     const key = osKey(row.os) || row.id;
-    if (completed.has(key)) return;
+    if (officialCompletionByOs.has(key) || completed.has(key)) return;
     completed.set(key, {
       ...row,
       completedAt,
