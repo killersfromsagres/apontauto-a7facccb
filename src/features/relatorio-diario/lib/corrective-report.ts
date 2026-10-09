@@ -71,7 +71,8 @@ function mappedCorrectiveRow(source: CorrectiveReportSourceRow): ScheduledMainte
   const team = String(source.equipe ?? "").trim() || "Sem equipe";
   const name = String(source.nome_os ?? "").trim();
   const equipment = String(source.equipamento ?? "").trim();
-  const date = toLocalIsoDate(source.data_programada) || completedAt;
+  const programmedAt = toLocalIsoDate(source.data_programada);
+  const date = programmedAt || completedAt;
   const sourceId = String(source.id ?? "").trim() || os || `${completedAt}:${team}:${name}`;
 
   return {
@@ -92,7 +93,8 @@ function mappedCorrectiveRow(source: CorrectiveReportSourceRow): ScheduledMainte
     sourceFile: "Corretiva Novo • realizada em campo",
     completedAt,
     completionSource: "corretiva-novo",
-    extraCorrective: true,
+    programmingSource: programmedAt ? "corretiva-novo" : "extra-dia",
+    extraCorrective: !programmedAt,
   };
 }
 
@@ -153,6 +155,7 @@ export function buildCompletedReportRows({
         observation: corrective.observation || scheduled.observation,
         completedAt: corrective.completedAt,
         completionSource: "corretiva-novo",
+        programmingSource: "programacao-semanal",
         extraCorrective: false,
       });
     });
@@ -166,6 +169,7 @@ export function buildCompletedReportRows({
       ...row,
       completedAt,
       completionSource: "relatorio-diario",
+      programmingSource: "programacao-semanal",
       extraCorrective: false,
     });
   });
