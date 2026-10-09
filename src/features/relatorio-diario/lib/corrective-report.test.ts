@@ -4,6 +4,7 @@ import { maintenanceAreaRank, type ScheduledMaintenance } from "./daily-maintena
 import {
   buildCompletedReportRows,
   buildReportDaySummaries,
+  consolidateCorrectiveCompletionSources,
   mapCompletedCorrectives,
   type CorrectiveReportSourceRow,
 } from "./corrective-report";
@@ -34,6 +35,7 @@ const correctiveRows: CorrectiveReportSourceRow[] = [
     numero_os: "100",
     status: "concluida",
     fim: "2026-10-09T14:00:00.000Z",
+    updated_at: "2026-10-09T14:00:00.000Z",
     data_programada: "2026-10-09",
     equipe: "Civil",
     nome_os: "Ajuste de porta concluído",
@@ -44,6 +46,7 @@ const correctiveRows: CorrectiveReportSourceRow[] = [
     numero_os: "200",
     status: "concluida",
     fim: "2026-10-09T15:00:00.000Z",
+    updated_at: "2026-10-09T15:00:00.000Z",
     equipe: "Chaveiro",
     nome_os: "Troca de segredo da fechadura",
     predio: "Prédio B",
@@ -95,6 +98,88 @@ describe("relatório diário + Corretiva Novo", () => {
   it("ignora OS reaberta mesmo que ainda possua fim preenchido", () => {
     const mapped = mapCompletedCorrectives(correctiveRows);
     expect(mapped.some((row) => row.os === "500")).toBe(false);
+  });
+
+  it("reconhece variações legítimas de status finalizado", () => {
+    const mapped = mapCompletedCorrectives([
+      {
+        id: "legacy",
+        numero_os: "600",
+        status: "Finalizada",
+        updated_at: "2026-10-09T18:30:00.000Z",
+        equipe: "Civil",
+        nome_os: "Registro legado concluído",
+      },
+    ]);
+
+    expect(mapped).toHaveLength(1);
+    expect(mapped[0].os).toBe("600");
+    expect(mapped[0].completedAt).toBe("2026-10-09");
+  });
+
+  it("inclui imediatamente uma conclusão offline ainda pendente de sincronização", () => {
+    const consolidated = consolidateCorrectiveCompletionSources({
+      remoteRows: [
+        {
+          id: "offline-1",
+          numero_os: "700",
+          status: "aberta",
+          updated_at: "2026-10-09T10:00:00.000Z",
+          equipe: "Chaveiro",
+          nome_os: "Ajuste de fechadura",
+        },
+      ],
+      cachedRows: [
+        {
+          id: "offline-1",
+          numero_os: "700",
+          status: "concluida",
+          fim: "2026-10-09T19:00:00.000Z",
+          updated_at: "2026-10-09T19:00:00.000Z",
+          equipe: "Chaveiro",
+          nome_os: "Ajuste de fechadura",
+        },
+      ],
+      pendingStatusUpdates: [
+        {
+          osId: "offline-1",
+          numeroOs: "700",
+          status: "concluida",
+          fim: "2026-10-09T19:00:00.000Z",
+          createdAt: new Date("2026-10-09T19:00:00.000Z").getTime(),
+        },
+      ],
+    });
+
+    const mapped = mapCompletedCorrectives(consolidated);
+    expect(mapped).toHaveLength(1);
+    expect(mapped[0].os).toBe("700");
+    expect(mapped[0].completionSource).toBe("corretiva-novo");
+  });
+
+  it("uma reabertura local mais recente remove a OS das concluídas", () => {
+    const consolidated = consolidateCorrectiveCompletionSources({
+      remoteRows: [
+        {
+          id: "reopen-1",
+          numero_os: "800",
+          status: "concluida",
+          fim: "2026-10-09T17:00:00.000Z",
+          updated_at: "2026-10-09T17:00:00.000Z",
+          equipe: "Elétrica",
+        },
+      ],
+      pendingStatusUpdates: [
+        {
+          osId: "reopen-1",
+          numeroOs: "800",
+          status: "aberta",
+          createdAt: new Date("2026-10-09T18:00:00.000Z").getTime(),
+        },
+      ],
+    });
+
+    expect(mapCompletedCorrectives(consolidated)).toHaveLength(0);
   });
 
   it("mantém Civil/Hidráulica primeiro, refrigeração em seguida e Elétrica por último", () => {
