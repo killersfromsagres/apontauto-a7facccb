@@ -103,12 +103,13 @@ export function LegalAttachmentsModal({
     data: attachments = [],
     isLoading,
     isError,
+    error: attachmentsError,
     refetch,
   } = useQuery({
     queryKey: ["legal-attachments", item?.id],
     queryFn: () => (item ? listAttachments(item.id) : Promise.resolve([])),
     enabled: Boolean(item && open),
-    retry: 2,
+    retry: 1,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });
@@ -311,6 +312,13 @@ export function LegalAttachmentsModal({
               <div>
                 <p className="text-sm font-medium">Não foi possível carregar os certificados.</p>
                 <p className="mt-1 text-xs text-muted-foreground">Tente novamente sem sair deste item.</p>
+                {attachmentsError && (
+                  <p className="mt-2 max-w-xl break-words text-[11px] text-destructive/80">
+                    {attachmentsError instanceof Error
+                      ? attachmentsError.message
+                      : String(attachmentsError)}
+                  </p>
+                )}
               </div>
               <Button size="sm" variant="outline" onClick={() => void refetch()}>Tentar novamente</Button>
             </div>
