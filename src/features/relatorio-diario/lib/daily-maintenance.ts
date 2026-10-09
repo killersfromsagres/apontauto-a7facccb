@@ -46,6 +46,7 @@ export type ScheduledMaintenance = {
   sourceFile: string;
   completedAt?: string;
   completionSource?: "relatorio-diario" | "corretiva-novo";
+  programmingSource?: "programacao-semanal" | "corretiva-novo" | "extra-dia";
   extraCorrective?: boolean;
 };
 
