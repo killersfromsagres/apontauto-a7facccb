@@ -187,15 +187,6 @@ const darkTeamText = (hex: string): [number, number, number] => {
   return [Math.round(r * 0.62), Math.round(g * 0.62), Math.round(b * 0.62)];
 };
 
-const reportOriginLabel = (row: ScheduledMaintenance) => {
-  if (row.programmingSource === "extra-dia") return "Extra do dia";
-  if (row.programmingSource === "corretiva-novo") return "Programada no Corretiva Novo";
-  return "Programação semanal";
-};
-
-const completionSourceLabel = (row: ScheduledMaintenance) =>
-  row.completionSource === "corretiva-novo" ? "Corretiva Novo" : "Relatório Diário";
-
 function DailyMaintenanceReport() {
   const inputRef = useRef<HTMLInputElement>(null);
   const externalInitialDateResolved = useRef(false);
@@ -704,16 +695,6 @@ function DailyMaintenanceReport() {
 
       const pdfPreventive = pdfRows.filter((row) => row.activity === "Preventiva").length;
       const pdfCorrective = pdfRows.filter((row) => row.activity === "Corretiva").length;
-      const pdfExtraCorrective = pdfRows.filter((row) => row.extraCorrective).length;
-      const pdfCorretivaNovo = pdfRows.filter((row) => row.completionSource === "corretiva-novo").length;
-      const pdfCompletedScheduledOnDate = scheduledRows.filter((scheduled) => {
-        const key = osKey(scheduled.os);
-        const reportRow = pdfRows.find((row) => osKey(row.os) === key);
-        return Boolean(reportRow && !reportRow.extraCorrective && reportRow.completedAt === selectedDate);
-      }).length;
-      const pdfSameDayRate = scheduledRows.length
-        ? Math.round((pdfCompletedScheduledOnDate / scheduledRows.length) * 100)
-        : 0;
 
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       const width = doc.internal.pageSize.getWidth();
@@ -756,9 +737,6 @@ function DailyMaintenanceReport() {
         { x: margin, value: pdfRows.length, label: "CONCLUÍDAS" },
         { x: 47, value: pdfPreventive, label: "PREVENTIVAS" },
         { x: 78, value: pdfCorrective, label: "CORRETIVAS" },
-        { x: 111, value: pdfCorretivaNovo, label: "VIA CORRETIVA NOVO" },
-        { x: 151, value: pdfExtraCorrective, label: "EXTRAS DO DIA" },
-        { x: 188, value: `${pdfSameDayRate}%`, label: "PROGRAMAÇÃO CONCLUÍDA NO DIA" },
       ];
 
       kpis.forEach((kpi) => {
@@ -802,8 +780,6 @@ function DailyMaintenanceReport() {
           "Equipe",
           "Programada",
           "Concluída",
-          "Programação",
-          "Fonte conclusão",
           "Local",
           "Serviço / Denominação",
           "Ativo",
@@ -815,8 +791,6 @@ function DailyMaintenanceReport() {
           row.team || "—",
           row.extraCorrective ? "—" : formatDateBr(row.date),
           formatDateBr(row.completedAt || selectedDate),
-          reportOriginLabel(row),
-          completionSourceLabel(row),
           maintenanceLocation(row),
           row.name || row.equipment || "—",
           row.asset || "—",
@@ -824,7 +798,7 @@ function DailyMaintenanceReport() {
         theme: "grid",
         styles: {
           font: "helvetica",
-          fontSize: 5.8,
+          fontSize: 7,
           cellPadding: 1.6,
           lineColor: [226, 232, 240],
           lineWidth: 0.15,
@@ -836,20 +810,18 @@ function DailyMaintenanceReport() {
           fillColor: [15, 23, 42],
           textColor: [255, 255, 255],
           fontStyle: "bold",
-          fontSize: 5.9,
+          fontSize: 7,
         },
         columnStyles: {
-          0: { cellWidth: 15, fontStyle: "bold" },
-          1: { cellWidth: 15 },
-          2: { cellWidth: 24 },
-          3: { cellWidth: 22 },
+          0: { cellWidth: 16, fontStyle: "bold" },
+          1: { cellWidth: 17 },
+          2: { cellWidth: 27 },
+          3: { cellWidth: 28 },
           4: { cellWidth: 18 },
           5: { cellWidth: 18 },
-          6: { cellWidth: 22 },
-          7: { cellWidth: 22 },
-          8: { cellWidth: 30 },
-          9: { cellWidth: 52 },
-          10: { cellWidth: 17 },
+          6: { cellWidth: 42 },
+          7: { cellWidth: width - margin * 2 - 184 },
+          8: { cellWidth: 18 },
         },
         didParseCell: (data) => {
           if (data.section !== "body") return;
@@ -861,13 +833,6 @@ function DailyMaintenanceReport() {
             data.cell.styles.fontStyle = "bold";
             data.cell.styles.textColor = darkTeamText(color);
           }
-          if (data.column.index === 6 && reportRow.extraCorrective) {
-            data.cell.styles.fontStyle = "bold";
-          }
-          if (data.column.index === 7 && reportRow.completionSource === "corretiva-novo") {
-            data.cell.styles.fontStyle = "bold";
-            data.cell.styles.textColor = [4, 120, 87];
-          }
         },
         didDrawPage: () => {
           const page = doc.getNumberOfPages();
@@ -877,7 +842,7 @@ function DailyMaintenanceReport() {
           doc.setFontSize(7);
           doc.setTextColor(100, 116, 139);
           doc.text(
-            "Relatório consolidado com programação semanal e conclusões identificadas no Corretiva Novo, inclusive pendências locais de sincronização.",
+            "Relatório diário de execuções concluídas.",
             margin,
             height - 7,
           );
@@ -887,13 +852,13 @@ function DailyMaintenanceReport() {
 
       doc.setProperties({
         title: `Relatório Diário de Manutenção - ${titleDate}`,
-        subject: "Preventivas e corretivas concluídas, incluindo chamados extras realizados no dia",
+        subject: "Execuções de manutenção concluídas no dia",
         author: author.trim() || "Grupo GPS / Sherwin-Williams",
         creator: "ApontAuto",
       });
       doc.save(`RELATORIO_DIARIO_MANUTENCAO_${selectedDate}.pdf`);
       toast.success(
-        `PDF gerado com ${pdfRows.length} execução(ões), ${pdfCorretivaNovo} identificada(s) pelo Corretiva Novo e ${pdfExtraCorrective} corretiva(s) extra(s).`,
+        `PDF gerado com ${pdfRows.length} execução(ões).`,
       );
     } catch (error) {
       console.error(error);
