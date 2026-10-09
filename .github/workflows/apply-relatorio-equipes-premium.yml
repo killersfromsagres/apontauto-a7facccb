@@ -22,7 +22,9 @@ jobs:
           bun-version: latest
 
       - name: Fix patch script compatibility
-        run: sed -i 's/text = pattern.sub(new_function +/text = pattern.sub(lambda _: new_function +/' .github/scripts/apply_relatorio_equipes_premium.py
+        shell: bash
+        run: |
+          sed -i 's/text = pattern.sub(new_function +/text = pattern.sub(lambda _: new_function +/' .github/scripts/apply_relatorio_equipes_premium.py
 
       - name: Apply report fixes
         run: python3 .github/scripts/apply_relatorio_equipes_premium.py
