@@ -86,6 +86,7 @@ describe("relatório diário + Corretiva Novo", () => {
 
     expect(reportRows.map((row) => row.os)).toEqual(["100", "300", "200", "400"]);
     expect(reportRows.find((row) => row.os === "100")?.extraCorrective).toBe(false);
+    expect(reportRows.find((row) => row.os === "100")?.programmingSource).toBe("programacao-semanal");
     expect(reportRows.find((row) => row.os === "200")?.extraCorrective).toBe(true);
     expect(reportRows.find((row) => row.os === "200")?.team).toBe("Chaveiro");
     expect(reportRows.find((row) => row.os === "200")?.completionSource).toBe("corretiva-novo");
@@ -118,8 +119,8 @@ describe("relatório diário + Corretiva Novo", () => {
     });
 
     const day = summaries.find((item) => item.date === "2026-10-09");
-    expect(day?.completed).toBe(3);
-    expect(day?.completedCorrective).toBe(3);
+    expect(day?.completed).toBe(4);
+    expect(day?.completedCorrective).toBe(4);
     expect(day?.extraCorrective).toBe(3);
   });
 });
