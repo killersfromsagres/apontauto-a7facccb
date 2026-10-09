@@ -1234,9 +1234,10 @@ function DailyMaintenanceReport() {
                           <div className="divide-y divide-border">
                             {areaRows.map((row) => {
                               const completion = resolveCompletion(row);
-                              const completed = Boolean(completion);
+                              const completedAt = completion?.completedAt ?? "";
+                              const completed = Boolean(completedAt);
                               const official = completion?.source === "corretiva-novo";
-                              const movedDay = completed && completion?.completedAt !== row.date;
+                              const movedDay = completed && completedAt !== row.date;
                               const teamStyle = equipeStyles(row.team);
                               const sourceLabel = row.extraCorrective
                                 ? "Chamado extra do dia"
@@ -1305,7 +1306,7 @@ function DailyMaintenanceReport() {
                                             <CheckCircle2 className="h-3.5 w-3.5" /> Concluída no Corretiva Novo
                                           </div>
                                           <p className="mt-2 text-[10px] text-muted-foreground">Data real de conclusão</p>
-                                          <p className="mt-0.5 text-xs font-semibold text-foreground">{formatDateBr(completion.completedAt)}</p>
+                                          <p className="mt-0.5 text-xs font-semibold text-foreground">{formatDateBr(completedAt)}</p>
                                           <p className="mt-2 text-[10px] leading-4 text-muted-foreground">Registro sincronizado do atendimento de campo.</p>
                                         </>
                                       ) : (
@@ -1314,7 +1315,7 @@ function DailyMaintenanceReport() {
                                             <CheckCircle2 className="h-3.5 w-3.5" /> Concluída localmente
                                           </div>
                                           <label className="mt-2 block text-[10px] font-medium text-muted-foreground">Data real de conclusão</label>
-                                          <Input type="date" value={completion.completedAt} onChange={(event) => updateCompletionDate(row.id, event.target.value)} className="mt-1 h-8 text-xs" />
+                                          <Input type="date" value={completedAt} onChange={(event) => updateCompletionDate(row.id, event.target.value)} className="mt-1 h-8 text-xs" />
                                           <button type="button" onClick={() => reopenRow(row.id)} className="mt-2 text-[10px] font-medium text-muted-foreground hover:text-foreground">Reabrir confirmação local</button>
                                         </>
                                       )
