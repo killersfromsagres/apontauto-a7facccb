@@ -12,25 +12,26 @@ export type ProgramacaoExportRow = OsCacheRow & {
 const argb = (hex: string) => `FF${hex.replace("#", "").toUpperCase()}`;
 
 const C = {
-  ink: argb("#07111F"),
-  navySoft: argb("#173B5C"),
-  backorderInk: argb("#3366CC"),
-  backorderHeader: argb("#3399FF"),
-  backorderAccent: argb("#3366CC"),
+  graphite: argb("#0B1724"),
+  navy: argb("#17324A"),
+  navySoft: argb("#EAF0F5"),
   white: argb("#FFFFFF"),
-  slate900: argb("#0F172A"),
-  slate700: argb("#334155"),
-  slate500: argb("#64748B"),
-  slate200: argb("#E2E8F0"),
-  printLine: argb("#94A3B8"),
-  slate50: argb("#F8FAFC"),
-  amber: argb("#D97706"),
-  amberSoft: argb("#FEF3C7"),
+  ink: argb("#152536"),
+  slate: argb("#425466"),
+  muted: argb("#6B7B8C"),
+  border: argb("#D9E2E8"),
+  surface: argb("#F7F9FB"),
+  surfaceAlt: argb("#F1F5F8"),
+  teal: argb("#147C73"),
+  tealSoft: argb("#E8F5F3"),
+  amber: argb("#B07014"),
+  amberSoft: argb("#FCF5E5"),
+  backorder: argb("#245B9E"),
+  backorderSoft: argb("#EAF2FB"),
 };
 
 const FONT = "Aptos";
 const FONT_DISPLAY = "Aptos Display";
-const FONT_DESCRIPTION = "Aptos SemiBold";
 
 const BACKORDER_BRAND_ASSETS = {
   gps: "/__l5e/assets-v1/d386a336-b420-4782-9d48-85d30cbb6fee/grupo-gps.png",
@@ -38,55 +39,24 @@ const BACKORDER_BRAND_ASSETS = {
     "/__l5e/assets-v1/76b6660e-a690-4ff2-8943-c6f831b5ded6/sherwin-williams.png",
 } as const;
 
-/**
- * Larguras copiadas do arquivo de referência corrigido pelo usuário.
- * O modo de impressão abaixo força A:I em uma única página A4 horizontal,
- * preservando estas proporções e evitando cortes nas colunas finais.
- */
-const PRINT_COLUMN_WIDTHS = [
-  16,
-  18,
-  25.85546875,
-  13.140625,
-  16,
-  22.7109375,
-  57.42578125,
-  18,
-  22,
-] as const;
-
-/**
- * O Montador de Backorders usa a largura exata da coluna Equipe do modelo
- * corporativo enviado pelo usuário. As demais larguras permanecem idênticas.
- */
-const BACKORDER_COLUMN_WIDTHS = [
-  16,
-  19.7109375,
-  25.85546875,
-  13.140625,
-  16,
-  22.7109375,
-  57.42578125,
-  18,
-  22,
-] as const;
+const COLUMN_WIDTHS = [15, 20, 24, 14, 14, 24, 58, 17, 21] as const;
 
 const TEAM_STYLE: Record<string, { bg: string; fg: string; accent: string }> = {
-  ELETRICA: { bg: "#FDECC8", fg: "#92400E", accent: "#F59E0B" },
-  HIDRAULICA: { bg: "#DBEAFE", fg: "#1D4ED8", accent: "#3B82F6" },
-  CIVIL: { bg: "#D1FAE5", fg: "#047857", accent: "#10B981" },
-  CHAVEIRO: { bg: "#EDE9FE", fg: "#6D28D9", accent: "#8B5CF6" },
-  PINTURA: { bg: "#FCE7F3", fg: "#BE185D", accent: "#EC4899" },
-  REFRIGERACAO: { bg: "#CFFAFE", fg: "#0E7490", accent: "#06B6D4" },
-  LIMPEZA: { bg: "#DCFCE7", fg: "#15803D", accent: "#22C55E" },
-  OUTROS: { bg: "#E2E8F0", fg: "#475569", accent: "#94A3B8" },
+  ELETRICA: { bg: "#FEF3C7", fg: "#92400E", accent: "#D97706" },
+  HIDRAULICA: { bg: "#E6F0FC", fg: "#1D4ED8", accent: "#3B82F6" },
+  CIVIL: { bg: "#E7F7F0", fg: "#047857", accent: "#10B981" },
+  CHAVEIRO: { bg: "#F0ECFC", fg: "#6D28D9", accent: "#8B5CF6" },
+  PINTURA: { bg: "#FBEAF2", fg: "#BE185D", accent: "#DB4B86" },
+  REFRIGERACAO: { bg: "#E4F6F9", fg: "#0E7490", accent: "#0891B2" },
+  LIMPEZA: { bg: "#EAF7ED", fg: "#15803D", accent: "#22C55E" },
+  OUTROS: { bg: "#EEF2F5", fg: "#475569", accent: "#94A3B8" },
 };
 
 const thinBorder = {
-  top: { style: "thin" as const, color: { argb: C.printLine } },
-  bottom: { style: "thin" as const, color: { argb: C.printLine } },
-  left: { style: "thin" as const, color: { argb: C.printLine } },
-  right: { style: "thin" as const, color: { argb: C.printLine } },
+  top: { style: "thin" as const, color: { argb: C.border } },
+  bottom: { style: "thin" as const, color: { argb: C.border } },
+  left: { style: "thin" as const, color: { argb: C.border } },
+  right: { style: "thin" as const, color: { argb: C.border } },
 };
 
 const normalize = (value: unknown) =>
@@ -105,6 +75,8 @@ function isCompletedStatus(status: unknown) {
     "FINALIZADO",
     "FECHADA",
     "FECHADO",
+    "ENCERRADA",
+    "ENCERRADO",
   ].includes(normalize(status));
 }
 
@@ -160,19 +132,19 @@ function safeSheetName(value: string, used: Set<string>) {
 }
 
 function setWorkbookMetadata(workbook: ExcelJS.Workbook, title: string, generatedAt: Date) {
-  workbook.creator = "Apont Auto";
+  workbook.creator = "Apont Auto · Grupo GPS";
   workbook.lastModifiedBy = "Apont Auto";
-  workbook.company = "Apont Auto";
+  workbook.company = "Grupo GPS";
   workbook.title = title;
   workbook.subject = "Programação de chamados corretivos";
   workbook.description =
-    "Planilha operacional de corretivas abertas por equipe, localização, descrição, abertura e material solicitado.";
+    "Planilha operacional de manutenção corretiva organizada por equipe, localização e status de materiais.";
   workbook.created = generatedAt;
   workbook.modified = generatedAt;
   workbook.calcProperties.fullCalcOnLoad = true;
 }
 
-function estimateWrappedLines(value: unknown, charsPerLine = 42) {
+function estimateWrappedLines(value: unknown, charsPerLine = 54) {
   const text = String(value ?? "").replace(/\r/g, "").trim();
   if (!text) return 1;
 
@@ -183,7 +155,6 @@ function estimateWrappedLines(value: unknown, charsPerLine = 42) {
     const words = normalizedParagraph.split(" ");
     let lines = 1;
     let currentLength = 0;
-
     for (const word of words) {
       const required = currentLength === 0 ? word.length : word.length + 1;
       if (currentLength > 0 && currentLength + required > charsPerLine) {
@@ -193,29 +164,16 @@ function estimateWrappedLines(value: unknown, charsPerLine = 42) {
         currentLength += required;
       }
     }
-
     return total + lines;
   }, 0);
 }
 
-/**
- * A coluna G do modelo corrigido ficou com largura ~57,43. Como a descrição usa
- * Aptos SemiBold 20, calculamos a altura por quantidade estimada de linhas nessa
- * largura. Mantemos um piso visual próximo ao modelo e aumentamos a linha sempre
- * que necessário, evitando que descrições longas sejam cortadas na tela ou na
- * impressão. Excel limita a altura a aproximadamente 409 pt.
- */
-function descriptionDrivenRowHeight(description: unknown) {
-  const lines = estimateWrappedLines(description, 42);
-  const points = 42 + lines * 25;
-  return Math.min(405, Math.max(150, points));
+function compactRowHeight(description: unknown) {
+  const lines = estimateWrappedLines(description);
+  return Math.min(118, Math.max(42, 25 + lines * 14));
 }
 
-function configurePrint(
-  sheet: ExcelJS.Worksheet,
-  lastRow: number,
-  generatedAt: Date,
-) {
+function configurePrint(sheet: ExcelJS.Worksheet, lastRow: number, generatedAt: Date) {
   sheet.pageSetup = {
     orientation: "landscape",
     paperSize: 9,
@@ -227,20 +185,16 @@ function configurePrint(
     blackAndWhite: false,
     draft: false,
     margins: {
-      left: 0.1,
-      right: 0.1,
-      top: 0.18,
-      bottom: 0.28,
-      header: 0,
-      footer: 0.1,
+      left: 0.18,
+      right: 0.18,
+      top: 0.28,
+      bottom: 0.42,
+      header: 0.08,
+      footer: 0.18,
     },
     printArea: `A1:I${lastRow}`,
+    printTitlesRow: "2:2",
   };
-
-  // A4 horizontal: todas as colunas A:I são reduzidas proporcionalmente para
-  // caber em uma única página de largura. A altura pode continuar em várias páginas.
-  // Repete somente o cabeçalho da tabela; o título fica apenas na primeira página.
-  sheet.pageSetup.printTitlesRow = "2:2";
 
   const emitted = generatedAt.toLocaleString("pt-BR", {
     day: "2-digit",
@@ -252,7 +206,39 @@ function configurePrint(
   sheet.headerFooter.oddHeader = "";
   sheet.headerFooter.evenHeader = "";
   sheet.headerFooter.oddFooter =
-    `&L&9Apont Auto · PCM · Corretivas&C&9Página &P de &N&R&9Emitido em ${emitted}`;
+    `&L&8Grupo GPS · Facilities&C&8Apont Auto · Corretivas&R&8Página &P de &N · ${emitted}`;
+}
+
+function applyTitleBand(
+  sheet: ExcelJS.Worksheet,
+  reportTitle: string,
+  teamLabel: string,
+  itemCount: number,
+  backorderTheme: boolean,
+) {
+  sheet.mergeCells("A1:I1");
+  const cell = sheet.getCell("A1");
+  cell.value = `${reportTitle.toUpperCase()}  ·  ${teamLabel.toUpperCase()}  ·  ${itemCount} OS`;
+  cell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: backorderTheme ? C.backorder : C.graphite },
+  };
+  cell.font = {
+    name: FONT_DISPLAY,
+    size: 18,
+    bold: true,
+    color: { argb: C.white },
+  };
+  cell.alignment = {
+    vertical: "middle",
+    horizontal: backorderTheme ? "center" : "left",
+    indent: backorderTheme ? 0 : 1,
+  };
+  cell.border = {
+    bottom: { style: "medium", color: { argb: backorderTheme ? C.white : C.teal } },
+  };
+  sheet.getRow(1).height = 36;
 }
 
 function buildOperationsSheet(
@@ -270,9 +256,7 @@ function buildOperationsSheet(
     properties: { tabColor: { argb: tabColor }, defaultRowHeight: 20 },
   });
 
-  // Replica as larguras do arquivo corrigido para todas as equipes e Programação Geral.
-  const columnWidths = backorderTheme ? BACKORDER_COLUMN_WIDTHS : PRINT_COLUMN_WIDTHS;
-  columnWidths.forEach((width, index) => {
+  COLUMN_WIDTHS.forEach((width, index) => {
     sheet.getColumn(index + 1).width = width;
   });
 
@@ -281,36 +265,12 @@ function buildOperationsSheet(
       state: "frozen",
       ySplit: 2,
       showGridLines: false,
-      zoomScale: 85,
-      zoomScaleNormal: 85,
+      zoomScale: 90,
+      zoomScaleNormal: 90,
     },
   ];
 
-  sheet.mergeCells("A1:I1");
-  const titleCell = sheet.getCell("A1");
-  titleCell.value = `${reportTitle.toUpperCase()} · ${teamLabel.toUpperCase()}`;
-  titleCell.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: backorderTheme ? C.backorderInk : C.ink },
-  };
-  titleCell.font = {
-    name: FONT_DISPLAY,
-    size: 26,
-    bold: true,
-    color: { argb: C.white },
-  };
-  titleCell.alignment = backorderTheme
-    ? {
-        vertical: "middle",
-        horizontal: "center",
-      }
-    : {
-        vertical: "middle",
-        horizontal: "left",
-        indent: 1,
-      };
-  sheet.getRow(1).height = 51.95;
+  applyTitleBand(sheet, reportTitle, teamLabel, items.length, backorderTheme);
 
   const headers = [
     "OS",
@@ -321,7 +281,7 @@ function buildOperationsSheet(
     "Local",
     "Descrição do Serviço",
     "Abertura",
-    "Material Solicitado",
+    "Material",
   ];
 
   const headerRow = sheet.getRow(2);
@@ -331,31 +291,35 @@ function buildOperationsSheet(
     cell.fill = {
       type: "pattern",
       pattern: "solid",
-      fgColor: { argb: backorderTheme ? C.backorderHeader : C.navySoft },
+      fgColor: { argb: backorderTheme ? C.backorder : C.navy },
     };
     cell.font = {
       name: FONT_DISPLAY,
-      size: 12,
+      size: 9.5,
       bold: true,
       color: { argb: C.white },
     };
     cell.alignment = {
       vertical: "middle",
-      horizontal: "center",
+      horizontal: index === 6 ? "left" : "center",
       wrapText: true,
     };
-    cell.border = thinBorder;
+    cell.border = {
+      top: thinBorder.top,
+      right: thinBorder.right,
+      bottom: { style: "medium", color: { argb: backorderTheme ? C.backorder : C.teal } },
+      left: thinBorder.left,
+    };
   });
-  headerRow.height = 38.1;
+  headerRow.height = 30;
 
   let rowNumber = 3;
 
   items.forEach((item, itemIndex) => {
     const row = sheet.getRow(rowNumber++);
-    const team = teamStyle(item.equipe);
-    const zebra = itemIndex % 2 === 0 ? C.white : C.slate50;
+    const palette = teamStyle(item.equipe);
+    const zebra = itemIndex % 2 === 0 ? C.white : C.surface;
     const material = materialRequested(item);
-
     const values = [
       item.numero_os || "—",
       item.equipe || "Sem equipe",
@@ -365,7 +329,7 @@ function buildOperationsSheet(
       item.local || "—",
       item.nome_os || "Sem descrição informada",
       formatDate(item.data_criacao),
-      material ? "SIM · SOLICITADO" : "NÃO",
+      material ? "SOLICITADO" : "NÃO",
     ];
 
     values.forEach((value, index) => {
@@ -374,98 +338,80 @@ function buildOperationsSheet(
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: zebra } };
       cell.border = thinBorder;
       cell.alignment = {
-        vertical: "middle",
+        vertical: index === 6 ? "top" : "middle",
         horizontal: index === 6 ? "left" : "center",
         wrapText: true,
       };
       cell.font = {
         name: FONT,
-        size: 12,
-        color: { argb: C.slate900 },
+        size: index === 6 ? 10.5 : 9.5,
+        color: { argb: C.ink },
       };
     });
 
-    // Coluna A — mesma identidade visual da equipe da coluna B, fonte 16.
     const osCell = row.getCell(1);
-    osCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(team.bg) } };
+    osCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(palette.bg) } };
     osCell.font = {
       name: FONT_DISPLAY,
-      size: 16,
+      size: 11,
       bold: true,
-      color: { argb: argb(team.fg) },
+      color: { argb: argb(palette.fg) },
     };
 
-    // Coluna B — referência visual principal da equipe, fonte 18.
     const teamCell = row.getCell(2);
-    teamCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(team.bg) } };
+    teamCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(palette.bg) } };
     teamCell.font = {
       name: FONT_DISPLAY,
-      size: 18,
+      size: 10,
       bold: true,
-      color: { argb: argb(team.fg) },
+      color: { argb: argb(palette.fg) },
     };
 
-    // Colunas C, D, E e F — centralizadas, negrito, tamanho 16.
     [3, 4, 5, 6].forEach((column) => {
-      const cell = row.getCell(column);
-      cell.font = {
-        name: FONT_DISPLAY,
-        size: 16,
-        bold: true,
-        color: { argb: C.slate900 },
-      };
-      cell.alignment = {
-        vertical: "middle",
-        horizontal: "center",
-        wrapText: true,
+      row.getCell(column).font = {
+        name: FONT,
+        size: 9.5,
+        bold: column === 3,
+        color: { argb: C.ink },
       };
     });
 
-    // Coluna G — Aptos SemiBold 20, em negrito, com altura dinâmica pelo conteúdo.
     const descriptionCell = row.getCell(7);
     descriptionCell.font = {
-      name: FONT_DESCRIPTION,
-      size: 20,
+      name: FONT,
+      size: 10.5,
       bold: true,
-      color: { argb: C.slate900 },
+      color: { argb: C.ink },
     };
     descriptionCell.alignment = {
       vertical: "top",
       horizontal: "left",
       wrapText: true,
+      indent: 1,
     };
 
-    // Coluna H — abertura em negrito.
     const openingCell = row.getCell(8);
     openingCell.font = {
       name: FONT,
-      size: 12,
+      size: 9,
       bold: true,
-      color: { argb: C.slate900 },
+      color: { argb: C.slate },
     };
 
     const materialCell = row.getCell(9);
-    if (material) {
-      materialCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: C.amberSoft },
-      };
-      materialCell.font = {
-        name: FONT_DISPLAY,
-        size: 12,
-        bold: true,
-        color: { argb: C.amber },
-      };
-    } else {
-      materialCell.font = {
-        name: FONT,
-        size: 11,
-        color: { argb: C.slate500 },
-      };
-    }
+    materialCell.font = {
+      name: FONT_DISPLAY,
+      size: 9,
+      bold: true,
+      color: { argb: material ? C.amber : C.muted },
+    };
+    materialCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: material ? C.amberSoft : zebra },
+    };
 
-    row.height = descriptionDrivenRowHeight(item.nome_os);
+    row.height = compactRowHeight(item.nome_os);
   });
 
   if (!items.length) {
@@ -474,18 +420,19 @@ function buildOperationsSheet(
     empty.value = "Nenhum chamado aberto disponível para esta planilha.";
     empty.font = {
       name: FONT_DISPLAY,
-      size: 16,
+      size: 13,
       bold: true,
-      color: { argb: C.slate500 },
+      color: { argb: C.muted },
     };
+    empty.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.surface } };
     empty.alignment = { vertical: "middle", horizontal: "center" };
+    empty.border = thinBorder;
     rowNumber = 6;
   }
 
   const lastRow = Math.max(2, rowNumber - 1);
   sheet.autoFilter = "A2:I2";
   configurePrint(sheet, lastRow, generatedAt);
-
   return sheet;
 }
 
@@ -506,14 +453,13 @@ export function buildProgramacaoWorkbook(
 
   setWorkbookMetadata(workbook, title, generatedAt);
 
-  // A primeira aba já segue o mesmo padrão visual das abas de equipe.
   buildOperationsSheet(
     workbook,
     "Programação Geral",
     openItems,
     equipeFiltro || "Todas as equipes",
     generatedAt,
-    aba === "backorder" ? C.backorderAccent : C.navySoft,
+    aba === "backorder" ? C.backorder : C.teal,
     title,
     aba === "backorder",
   );
@@ -574,24 +520,17 @@ async function applyBackorderBranding(workbook: ExcelJS.Workbook) {
     imageUrlToDataUrl(BACKORDER_BRAND_ASSETS.sherwin),
   ]);
 
-  const gpsImageId = workbook.addImage({
-    base64: gpsBase64,
-    extension: "png",
-  });
-  const sherwinImageId = workbook.addImage({
-    base64: sherwinBase64,
-    extension: "png",
-  });
+  const gpsImageId = workbook.addImage({ base64: gpsBase64, extension: "png" });
+  const sherwinImageId = workbook.addImage({ base64: sherwinBase64, extension: "png" });
 
   workbook.worksheets.forEach((sheet) => {
-    // Posicionamento e proporções reproduzem a planilha de referência enviada.
     sheet.addImage(gpsImageId, {
-      tl: { col: 0.06, row: 0 },
-      ext: { width: 134, height: 89 },
+      tl: { col: 0.08, row: 0.04 },
+      ext: { width: 86, height: 54 },
     });
     sheet.addImage(sherwinImageId, {
-      tl: { col: 8.15, row: 0.15 },
-      ext: { width: 66, height: 33 },
+      tl: { col: 8.22, row: 0.12 },
+      ext: { width: 58, height: 28 },
     });
   });
 }
@@ -605,9 +544,7 @@ export async function generateProgramacaoExcel(
   const openItems = onlyOpenItems(osList);
   const workbook = buildProgramacaoWorkbook(openItems, equipeFiltro, aba, generatedAt);
 
-  if (aba === "backorder") {
-    await applyBackorderBranding(workbook);
-  }
+  if (aba === "backorder") await applyBackorderBranding(workbook);
 
   const buffer = await workbook.xlsx.writeBuffer();
   const { saveAs } = await import("file-saver");
