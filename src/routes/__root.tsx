@@ -9,6 +9,7 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
@@ -185,6 +186,7 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const isDailyReport = pathname === "/relatorio-diario";
 
   useEffect(() => {
     registerServiceWorker();
@@ -198,7 +200,34 @@ function RootComponent() {
         <OfflineBanner />
         <CorretivaOfflineSyncBridge />
         {pathname === "/auth" && <AuthLocationMapPortal />}
-        <div className="app-premium-root flex min-h-dvh flex-col transition-opacity duration-300"><Outlet /></div>
+
+        {isDailyReport && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center overflow-hidden"
+          >
+            <div
+              className="select-none whitespace-nowrap font-black uppercase tracking-[0.18em] text-foreground opacity-[0.035] -rotate-[24deg]"
+              style={{ fontSize: "clamp(2.5rem, 8vw, 8rem)" }}
+            >
+              SHERWIN WILLIAMS DEMARCHI
+            </div>
+          </div>
+        )}
+
+        {isDailyReport && (
+          <div className="relative z-30 mx-auto w-full max-w-[1540px] px-3 pt-3 sm:px-5 lg:px-7 lg:pt-4">
+            <Link
+              to="/"
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-card/95 px-3 text-xs font-semibold text-foreground shadow-sm backdrop-blur transition-colors hover:bg-muted"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Voltar ao menu inicial
+            </Link>
+          </div>
+        )}
+
+        <div className="app-premium-root relative z-10 flex min-h-dvh flex-col transition-opacity duration-300"><Outlet /></div>
         <Toaster richColors position="top-right" closeButton />
       </ThemeProvider>
     </QueryClientProvider>
