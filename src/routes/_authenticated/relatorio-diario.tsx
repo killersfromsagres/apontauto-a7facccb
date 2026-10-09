@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import {
   buildCompletedReportRows,
   buildReportDaySummaries,
+  shouldReplaceSchedule,
   consolidateCorrectiveCompletionSources,
   mapCompletedCorrectives,
   type CorrectivePendingStatusUpdate,
@@ -574,7 +575,9 @@ function DailyMaintenanceReport() {
           ? selectedDate
           : importedDates[0];
 
-      setRows((current) => mergeSchedules(current, imported));
+      setRows((current) =>
+        shouldReplaceSchedule(current, imported) ? mergeSchedules([], imported) : mergeSchedules(current, imported),
+      );
       if (nextDate) setSelectedDate(nextDate);
       externalInitialDateResolved.current = true;
       setDayView("programadas");
@@ -1134,7 +1137,7 @@ function DailyMaintenanceReport() {
               </label>
 
               <div className="min-w-0">
-                <span className="text-xs font-medium text-muted-foreground">Dias programados ou apontados como concluídos</span>
+                <span className="text-xs font-medium text-muted-foreground">Dias do período da programação importada (corretivas do Corretiva Novo entram como extras desse período)</span>
                 <div className="mt-1.5 flex gap-2 overflow-x-auto pb-1">
                   {daySummaries.map((day) => {
                     const active = day.date === selectedDate;

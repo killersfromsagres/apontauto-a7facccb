@@ -333,13 +333,17 @@ export function buildReportDaySummaries({
     summarizeScheduleRows(scheduledRows).map((summary) => [summary.date, summary]),
   );
   const dates = new Set<string>(scheduledSummary.keys());
+  // Com programação importada, o período ativo é o das próprias planilhas;
+  // histórico antigo do Corretiva Novo não cria cards de dia.
+  const period = schedulePeriod(scheduledRows);
+  const inPeriod = (date: string) => !period || (date >= period.start && date <= period.end);
 
   Object.values(executions).forEach((execution) => {
-    if (execution.completedAt) dates.add(execution.completedAt);
+    if (execution.completedAt && inPeriod(execution.completedAt)) dates.add(execution.completedAt);
   });
 
   mapCompletedCorrectives(correctiveRows).forEach((row) => {
-    if (row.completedAt) dates.add(row.completedAt);
+    if (row.completedAt && inPeriod(row.completedAt)) dates.add(row.completedAt);
   });
 
   return Array.from(dates)
@@ -371,4 +375,25 @@ export function buildReportDaySummaries({
         extraCorrective: completedRows.filter((row) => row.extraCorrective).length,
       };
     });
+}
+
+export type SchedulePeriod = { start: string; end: string };
+
+/** Período (primeira e última data) coberto pelos blocos da programação importada. */
+export function schedulePeriod(rows: ScheduledMaintenance[]): SchedulePeriod | null {
+  const dates = rows.map((row) => row.date).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  if (!dates.length) return null;
+  return { start: dates[0], end: dates[dates.length - 1] };
+}
+
+/**
+ * Decide se uma nova importação mescla com a programação atual (mesmo período,
+ * ex.: Civil/Hidráulica, Refrigeração e Elétrica em etapas) ou a substitui
+ * (nova semana sem sobreposição de datas).
+ */
+export function shouldReplaceSchedule(current: ScheduledMaintenance[], incoming: ScheduledMaintenance[]): boolean {
+  const a = schedulePeriod(current);
+  const b = schedulePeriod(incoming);
+  if (!a || !b) return false;
+  return b.start > a.end || b.end < a.start;
 }
