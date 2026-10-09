@@ -363,12 +363,95 @@ function safeSegment(s: string): string {
   );
 }
 
+function attachmentErrorText(error: unknown): string {
+  if (!error || typeof error !== "object") return String(error ?? "").toLowerCase();
+  const record = error as Record<string, unknown>;
+  return [record.code, record.message, record.details, record.hint]
+    .filter(Boolean)
+    .map(String)
+    .join(" ")
+    .toLowerCase();
+}
+
+function isLegacyAttachmentWriteError(error: unknown): boolean {
+  const text = attachmentErrorText(error);
+  const mentionsModernColumn = text.includes("is_current") || text.includes("uploaded_by");
+  const schemaProblem =
+    text.includes("schema cache") ||
+    text.includes("column") ||
+    text.includes("does not exist") ||
+    text.includes("could not find") ||
+    text.includes("not found") ||
+    text.includes("42703") ||
+    text.includes("pgrst204");
+  return mentionsModernColumn && schemaProblem;
+}
+
+function isMissingCurrentAttachmentRpc(error: unknown): boolean {
+  const text = attachmentErrorText(error);
+  return (
+    text.includes("set_legal_attachment_current") &&
+    (text.includes("schema cache") ||
+      text.includes("function") ||
+      text.includes("does not exist") ||
+      text.includes("could not find") ||
+      text.includes("not found") ||
+      text.includes("pgrst202"))
+  );
+}
+
+function isMissingCurrentColumn(error: unknown): boolean {
+  const text = attachmentErrorText(error);
+  return (
+    text.includes("is_current") &&
+    (text.includes("schema cache") ||
+      text.includes("column") ||
+      text.includes("does not exist") ||
+      text.includes("could not find") ||
+      text.includes("not found") ||
+      text.includes("42703") ||
+      text.includes("pgrst204"))
+  );
+}
+
+export function legalAttachmentMime(file: Pick<File, "name" | "type">): string | null {
+  const browserType = file.type?.trim().toLowerCase();
+  if (browserType === "application/pdf" || browserType === "image/jpeg" || browserType === "image/png") {
+    return browserType;
+  }
+
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  if (extension === "pdf") return "application/pdf";
+  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
+  if (extension === "png") return "image/png";
+  return null;
+}
+
 async function setCurrentAttachment(itemId: string, attachmentId: string): Promise<void> {
   const { error } = await (supabase as any).rpc("set_legal_attachment_current", {
     p_item_id: itemId,
     p_attachment_id: attachmentId,
   });
-  if (error) throw error;
+  if (!error) return;
+  if (!isMissingCurrentAttachmentRpc(error)) throw error;
+
+  const reset = await supabase
+    .from("legal_item_attachments" as any)
+    .update({ is_current: false } as any)
+    .eq("item_id", itemId);
+  if (reset.error) {
+    if (isMissingCurrentColumn(reset.error)) return;
+    throw reset.error;
+  }
+
+  const promote = await supabase
+    .from("legal_item_attachments" as any)
+    .update({ is_current: true } as any)
+    .eq("id", attachmentId);
+  if (promote.error) {
+    if (isMissingCurrentColumn(promote.error)) return;
+    throw promote.error;
+  }
 }
 
 export async function promoteAttachment(attachment: LegalAttachment): Promise<void> {
@@ -380,7 +463,13 @@ export async function uploadAttachment(
   file: File,
   mode: LegalAttachmentMode = "current",
 ): Promise<LegalAttachment> {
-  const { data: userRes } = await supabase.auth.getUser();
+  const { data: userRes, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!userRes.user) throw new Error("Sessão expirada. Entre novamente para adicionar certificados.");
+
+  const mimeType = legalAttachmentMime(file);
+  if (!mimeType) throw new Error("Formato não permitido. Envie um arquivo PDF, JPG ou PNG.");
+
   const empresa = safeSegment(item.empresa || "sem-empresa");
   const tarefa = safeSegment(item.titulo);
   const stamp = Date.now();
@@ -390,29 +479,41 @@ export async function uploadAttachment(
 
   const { error: upErr } = await supabase.storage
     .from("legal-certificates")
-    .upload(path, file, { contentType: file.type, upsert: false });
+    .upload(path, file, { contentType: mimeType, upsert: false });
   if (upErr) throw upErr;
 
-  const { data, error } = await supabase
+  const basePayload = {
+    item_id: item.id,
+    storage_path: path,
+    file_name: file.name,
+    mime_type: mimeType,
+    size_bytes: file.size,
+  };
+
+  let insertResult = await supabase
     .from("legal_item_attachments" as any)
     .insert({
-      item_id: item.id,
-      storage_path: path,
-      file_name: file.name,
-      mime_type: file.type || null,
-      size_bytes: file.size,
+      ...basePayload,
       is_current: false,
-      uploaded_by: userRes.user?.id ?? null,
+      uploaded_by: userRes.user.id,
     } as any)
     .select("*")
     .single();
 
-  if (error) {
-    await supabase.storage.from("legal-certificates").remove([path]);
-    throw error;
+  if (insertResult.error && isLegacyAttachmentWriteError(insertResult.error)) {
+    insertResult = await supabase
+      .from("legal_item_attachments" as any)
+      .insert(basePayload as any)
+      .select("*")
+      .single();
   }
 
-  const row = data as unknown as AttachmentRow;
+  if (insertResult.error || !insertResult.data) {
+    await supabase.storage.from("legal-certificates").remove([path]);
+    throw insertResult.error ?? new Error("Não foi possível registrar o certificado enviado.");
+  }
+
+  const row = insertResult.data as unknown as AttachmentRow;
   if (mode === "current") {
     try {
       await setCurrentAttachment(item.id, row.id);
@@ -422,6 +523,8 @@ export async function uploadAttachment(
       await supabase.storage.from("legal-certificates").remove([path]);
       throw promotionError;
     }
+  } else {
+    row.is_current = false;
   }
 
   return fromAttachmentRow(row);
