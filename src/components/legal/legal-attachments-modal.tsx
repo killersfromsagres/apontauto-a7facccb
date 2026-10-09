@@ -27,14 +27,14 @@ import {
   promoteAttachment,
   signedUrl,
   uploadAttachment,
+  legalAttachmentMime,
   type LegalAttachment,
   type LegalAttachmentMode,
   type LegalItem,
 } from "@/lib/legal-items";
 import { cn } from "@/lib/utils";
 
-const ACCEPT = "application/pdf,image/png,image/jpeg";
-const ALLOWED_TYPES = new Set(["application/pdf", "image/png", "image/jpeg"]);
+const ACCEPT = ".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg";
 const MAX_PDF_MB = 25;
 const MAX_IMAGE_MB = 10;
 
@@ -70,10 +70,11 @@ function validateFiles(files: File[], mode: UploadMode): string | null {
     return "Para o certificado atual, selecione apenas um arquivo por vez.";
   }
   for (const file of files) {
-    if (!ALLOWED_TYPES.has(file.type)) {
+    const mimeType = legalAttachmentMime(file);
+    if (!mimeType) {
       return `Formato não permitido em “${file.name}”. Envie PDF, JPG ou PNG.`;
     }
-    const maxMb = file.type === "application/pdf" ? MAX_PDF_MB : MAX_IMAGE_MB;
+    const maxMb = mimeType === "application/pdf" ? MAX_PDF_MB : MAX_IMAGE_MB;
     if (file.size > maxMb * 1024 * 1024) {
       return `“${file.name}” ultrapassa o limite de ${maxMb} MB.`;
     }
