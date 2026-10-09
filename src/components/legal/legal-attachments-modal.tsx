@@ -108,6 +108,9 @@ export function LegalAttachmentsModal({
     queryKey: ["legal-attachments", item?.id],
     queryFn: () => (item ? listAttachments(item.id) : Promise.resolve([])),
     enabled: Boolean(item && open),
+    retry: 2,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   const currentAttachment = useMemo(
