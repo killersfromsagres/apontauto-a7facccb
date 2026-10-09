@@ -155,6 +155,38 @@ function formatReservationPeriod(reservation: CorrectiveProgramReservation) {
   return `${start} a ${end}`;
 }
 
+function normalizeSearchValue(value: unknown) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function matchesCorrectiveSearch(os: any, rawQuery: string) {
+  const query = normalizeSearchValue(rawQuery);
+  if (!query) return true;
+
+  const searchableText = [
+    os.numero_os,
+    os.solicitante,
+    os.nome_os,
+    os.ativo,
+    os.patrimonio,
+    os.local,
+    os.predio,
+    os.andar,
+    os.equipe,
+    os.status,
+  ]
+    .map(normalizeSearchValue)
+    .filter(Boolean)
+    .join(" ");
+
+  return query.split(" ").every((term) => searchableText.includes(term));
+}
+
 function CorretivaNovoPage() {
   const { isAdmin } = useIsAdmin();
   const { access } = useMyAccess();
@@ -283,13 +315,7 @@ function CorretivaNovoPage() {
   const filtered = useMemo(() => {
     return osList
       .filter((o) => {
-        const query = search.toLowerCase();
-        const matchesSearch =
-          !search ||
-          o.numero_os?.toLowerCase().includes(query) ||
-          o.ativo?.toLowerCase().includes(query) ||
-          o.local?.toLowerCase().includes(query) ||
-          o.nome_os?.toLowerCase().includes(query);
+        const matchesSearch = matchesCorrectiveSearch(o, search);
 
         const matchesEquipe = matchEquipe(o.equipe, equipe);
         const matchesProgram =
@@ -717,7 +743,7 @@ function CorretivaNovoPage() {
             <div className="relative w-full xl:w-[320px] xl:flex-none">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar OS, Ativo, Local..."
+                placeholder="Buscar OS, solicitante, ativo, local..."
                 className="h-11 rounded-xl border-white/10 bg-white/5 pl-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
