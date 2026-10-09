@@ -231,6 +231,46 @@ describe("relatório diário + Corretiva Novo", () => {
     expect(summaries.find((item) => item.date === "2026-10-09")?.extraCorrective).toBe(3);
   });
 
+  it("mantém Chaveiro, Pintura e Limpeza como equipes próprias nas conclusões do dia", () => {
+    const supportRows: CorrectiveReportSourceRow[] = [
+      { id: "ch", numero_os: "901", status: "concluida", fim: "2026-10-06T12:00:00.000Z", equipe: "CHAVEIRO - APOIO", nome_os: "Troca de miolo" },
+      { id: "pi", numero_os: "902", status: "concluida", fim: "2026-10-06T13:00:00.000Z", equipe: "PINTURA", nome_os: "Retoque de parede" },
+      { id: "li", numero_os: "903", status: "concluida", fim: "2026-10-06T14:00:00.000Z", equipe: "Limpeza / Conservação", nome_os: "Limpeza técnica" },
+    ];
+
+    const reportRows = buildCompletedReportRows({
+      scheduledRows: [],
+      executions: {},
+      correctiveRows: supportRows,
+      selectedDate: "2026-10-06",
+    });
+
+    expect(reportRows.map((row) => row.os).sort()).toEqual(["901", "902", "903"]);
+    expect(reportRows.map((row) => row.team).sort()).toEqual(["Chaveiro", "Limpeza", "Pintura"]);
+    expect(reportRows.every((row) => row.activity === "Corretiva")).toBe(true);
+  });
+
+  it("não cria dias antigos para equipes de apoio fora do período importado", () => {
+    const week = ["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09"].map((date, i) => ({
+      ...scheduled[0],
+      id: `support-${date}-${i}`,
+      date,
+      os: `S${i}`,
+    }));
+    const summaries = buildReportDaySummaries({
+      scheduledRows: week,
+      executions: {},
+      correctiveRows: [
+        { id: "old-paint", numero_os: "904", status: "concluida", fim: "2026-09-29T12:00:00.000Z", equipe: "Pintura" },
+        { id: "old-clean", numero_os: "905", status: "concluida", fim: "2026-09-29T13:00:00.000Z", equipe: "Limpeza" },
+        { id: "current-key", numero_os: "906", status: "concluida", fim: "2026-10-05T14:00:00.000Z", equipe: "Chaveiro" },
+      ],
+    });
+
+    expect(summaries.some((item) => item.date === "2026-09-29")).toBe(false);
+    expect(summaries.find((item) => item.date === "2026-10-05")?.completedCorrective).toBe(1);
+  });
+
   it("nova semana sem sobreposição substitui; mesmo período mescla", () => {
     const w40 = [{ ...scheduled[0], date: "2026-09-28" }, { ...scheduled[0], date: "2026-10-02" }];
     const w41 = [{ ...scheduled[0], date: "2026-10-05" }];
