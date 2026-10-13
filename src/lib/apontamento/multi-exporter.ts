@@ -5,7 +5,20 @@ export interface SheetInput {
   rows: ApontamentoRow[];
 }
 
-export async function generateApontamentosMultiSheetWorkbook(sheets: SheetInput[]): Promise<Blob> {
+export interface AusenciaExportRow {
+  matricula: string;
+  colaborador: string;
+  especialidade: string;
+  tipo: "Falta" | "Férias";
+  inicio: string;
+  fim: string;
+  observacao?: string;
+}
+
+export async function generateApontamentosMultiSheetWorkbook(
+  sheets: SheetInput[],
+  ausencias: AusenciaExportRow[] = [],
+): Promise<Blob> {
   const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   wb.creator = "Sistema de Apontamento";
@@ -62,8 +75,73 @@ export async function generateApontamentosMultiSheetWorkbook(sheets: SheetInput[
     }
   }
 
+  if (ausencias.length > 0) {
+    const ws = wb.addWorksheet("FALTAS_FERIAS", {
+      views: [{ state: "frozen", ySplit: 1 }],
+    });
+
+    ws.columns = [
+      { key: "matricula", width: 16 },
+      { key: "colaborador", width: 38 },
+      { key: "especialidade", width: 20 },
+      { key: "tipo", width: 14 },
+      { key: "inicio", width: 16 },
+      { key: "fim", width: 16 },
+      { key: "observacao", width: 42 },
+    ];
+
+    const absenceHeaders = [
+      "Matrícula",
+      "Colaborador",
+      "Especialidade",
+      "Tipo",
+      "Início",
+      "Fim",
+      "Observação",
+    ];
+    const headerRow = ws.addRow(absenceHeaders);
+    headerRow.height = 30;
+    headerRow.font = { bold: true, size: 12 };
+    headerRow.alignment = { vertical: "middle", horizontal: "center" };
+
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFE2E8F0" },
+      };
+      cell.border = {
+        top: { style: "thin", color: { argb: "FF94A3B8" } },
+        bottom: { style: "thin", color: { argb: "FF94A3B8" } },
+        left: { style: "thin", color: { argb: "FF94A3B8" } },
+        right: { style: "thin", color: { argb: "FF94A3B8" } },
+      };
+    });
+
+    for (const ausencia of ausencias) {
+      const row = ws.addRow([
+        ausencia.matricula,
+        ausencia.colaborador,
+        ausencia.especialidade,
+        ausencia.tipo,
+        toBrDate(ausencia.inicio),
+        toBrDate(ausencia.fim),
+        ausencia.observacao ?? "",
+      ]);
+      row.height = 20;
+      row.alignment = { vertical: "middle" };
+    }
+
+    ws.autoFilter = "A1:G1";
+  }
+
   const buf = await wb.xlsx.writeBuffer();
   return new Blob([buf], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
+}
+
+function toBrDate(value: string) {
+  const [year, month, day] = value.split("-");
+  return `${day}/${month}/${year}`;
 }
