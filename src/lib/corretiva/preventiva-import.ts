@@ -11,6 +11,7 @@ import {
   equipeReconhecida,
 } from "@/lib/corretiva/auto-equipe";
 import { analyzeCorrectiveOrder } from "@/lib/corretiva/designation-agent";
+import { classifyAmbiguousCorrectiveOrdersWithAi } from "@/lib/corretiva/designation-ai.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 export const TIPO_PREVENTIVA = "Preventiva";
@@ -85,6 +86,86 @@ export async function lerPreventivaFile(file: File): Promise<PreventivaRow[]> {
 
 export const TIPO_CORRETIVA = "Corretiva";
 export type CorretivaRow = CorretivaOsImport & { tipo: string; equipe: string };
+
+const IMPORT_AI_BATCH_SIZE = 24;
+
+/**
+ * Refina apenas os casos que o motor técnico local considerou ambíguos ou de
+ * baixa confiança. A descrição completa continua sendo lida localmente; a IA
+ * funciona como segunda opinião e nunca substitui uma evidência técnica decisiva.
+ */
+export async function refineImportedCorrectiveRowsWithAi(
+  rows: CorretivaRow[],
+): Promise<CorretivaRow[]> {
+  const candidates = rows
+    .map((row, index) => ({
+      index,
+      row,
+      analysis: analyzeCorrectiveOrder({
+        nome_os: row.nome_os,
+        equipamento: row.equipamento,
+        ativo: row.ativo,
+        local: row.local,
+        predio: row.predio,
+        andar: row.andar,
+        solicitante: row.solicitante,
+        equipe: row.equipe,
+      }),
+    }))
+    .filter(
+      ({ analysis }) =>
+        !analysis.hasSignal || analysis.ambiguo || analysis.confianca === "baixa",
+    );
+
+  if (candidates.length === 0) return rows;
+
+  const decisions = new Map<number, string>();
+
+  for (let start = 0; start < candidates.length; start += IMPORT_AI_BATCH_SIZE) {
+    const batch = candidates.slice(start, start + IMPORT_AI_BATCH_SIZE);
+    try {
+      const response = await classifyAmbiguousCorrectiveOrdersWithAi({
+        data: {
+          rows: batch.map(({ index, row }) => ({
+            id: String(index),
+            numero_os: row.numero_os,
+            nome_os: row.nome_os,
+            equipamento: row.equipamento,
+            ativo: row.ativo,
+            local: row.local,
+            predio: row.predio,
+            andar: row.andar,
+            solicitante: row.solicitante,
+            equipe: row.equipe,
+          })),
+        },
+      });
+
+      for (const decision of response.decisions) {
+        const index = Number(decision.id);
+        if (
+          Number.isInteger(index) &&
+          decision.equipe &&
+          decision.confianca !== "baixa"
+        ) {
+          decisions.set(index, decision.equipe);
+        }
+      }
+    } catch (error) {
+      console.warn(
+        "[Import] Segunda leitura por IA indisponível; mantendo classificação técnica local:",
+        error,
+      );
+      break;
+    }
+  }
+
+  if (decisions.size === 0) return rows;
+  return rows.map((row, index) => {
+    const equipe = decisions.get(index);
+    return equipe ? { ...row, equipe } : row;
+  });
+}
 
 /**
  * Resolve a equipe de uma Corretiva importada usando TODOS os campos disponíveis.

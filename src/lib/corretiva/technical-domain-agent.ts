@@ -75,6 +75,12 @@ const ELECTRICAL_FAILURE =
 const ELECTRICAL_WIRING_REQUEST =
   /\b(organizacao|organizar|adequacao|adequar|arrumacao|arrumar|fixacao|fixar|canalizar|passagem)(?:\s+[a-z0-9]+){0,6}\s+(fios?|cabos?|fiacao|cabeamento)\b|\b(fios?|cabos?|fiacao|cabeamento)(?:\s+[a-z0-9]+){0,5}\s+(tomadas?|energia|eletric[oa]s?|impressoras?|computadores?)\b/;
 
+// Em chamados operacionais, "AR" costuma ser abreviação de ar-condicionado.
+// A abreviação isolada só é considerada HVAC quando aparece ligada a uma ação
+// de manutenção ou a um sintoma típico, evitando falsos positivos por texto genérico.
+const HVAC_SHORT_REQUEST =
+  /\b(verificar|verificacao|avaliar|avaliacao|checar|inspecionar|inspecao|manutencao|reparar|reparo|consertar|ajustar|ajuste|regular|limpar|limpeza|higienizar|higienizacao)(?:\s+(?:o|a|do|da|no|na))?(?:\s+[a-z0-9]+){0,4}\s+(?:ar|a c)\b|\b(?:ar|a c)\b(?:\s+[a-z0-9]+){0,5}\s+(?:nao gela|nao esta gelando|sem gelar|quente|fraco|barulho|ruido|vazando|pingando|nao liga|nao funciona|sem funcionar|parou|desligando|defeito|problema)\b/;
+
 const SHOWER_HYDRAULIC =
   /\bchuveiros?\b(?:\s+[a-z0-9]+){0,5}\s+(vazando|pingando|vazamento|registro|canopla|manopla)\b|\b(vazamento|vazando|pingando|registro|canopla|manopla)(?:\s+[a-z0-9]+){0,5}\s+chuveiros?\b/;
 const SHOWER_ELECTRICAL =
@@ -163,12 +169,20 @@ export function analyzeCorrectiveTechnicalDomain(
   // Localização auxilia, mas nunca deve decidir sozinha uma especialidade.
   addRuleMatches(scores, evidence, locationText, 0.12);
 
-  const hasHvac = HVAC_OBJECT.test(primaryText);
+  const hasHvac = HVAC_OBJECT.test(primaryText) || HVAC_SHORT_REQUEST.test(primaryText);
   const hasElectrical = ELECTRICAL_OBJECT.test(primaryText);
   const hasHydraulic = HYDRAULIC_OBJECT.test(primaryText);
   const hasWiringRequest = ELECTRICAL_WIRING_REQUEST.test(primaryText);
   const hasLockHardware = LOCK_OBJECT.test(primaryText) || LOCK_HARDWARE_REQUEST.test(primaryText);
   const hasElectricalHardRequest = ELECTRICAL_HARD_REQUEST.test(primaryText);
+
+  if (HVAC_SHORT_REQUEST.test(primaryText)) {
+    scores.Refrigeração += 220;
+    scores.Civil = Math.min(scores.Civil, 24);
+    scores.Hidráulica = Math.min(scores.Hidráulica, 30);
+    scores.Elétrica = Math.min(scores.Elétrica, 35);
+    evidence.unshift("agente técnico: abreviação AR com contexto de climatização");
+  }
 
   // Regras de domínio "donas" do chamado. Elas existem para impedir que palavras
   // de contexto (ex.: banheiro, hidráulica da mola de porta, piso/parede) desviem

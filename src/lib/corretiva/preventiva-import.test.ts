@@ -36,6 +36,17 @@ describe("resolveImportedCorrectiveTeam", () => {
     ).toBe("Elétrica");
   });
 
+  it('corrige Civil quando a descrição operacional pede "verificar o AR"', () => {
+    expect(
+      resolveImportedCorrectiveTeam(
+        row({
+          equipe: "Civil",
+          nome_os: "Verificar o AR da sala de reunião",
+        }),
+      ),
+    ).toBe("Refrigeração");
+  });
+
   it("corrige equipe Civil da planilha quando a OS é de Refrigeração", () => {
     expect(
       resolveImportedCorrectiveTeam(

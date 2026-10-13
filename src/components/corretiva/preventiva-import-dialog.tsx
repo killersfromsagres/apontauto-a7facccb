@@ -31,6 +31,7 @@ import {
   lerPreventivaFile,
   lerCorretivaFile,
   EQUIPES_PREVENTIVA,
+  refineImportedCorrectiveRowsWithAi,
   type PreventivaRow,
   type CorretivaRow,
 } from "@/lib/corretiva/preventiva-import";
@@ -112,12 +113,19 @@ export function PreventivaImportDialog({
     if (!f) return;
     setParsing(true);
     try {
-      const parsed =
+      const parsedBase =
         mode === "corretiva" || mode === "backorder-mensal"
           ? await lerCorretivaFile(f)
           : await lerPreventivaFile(f);
+      const parsed =
+        mode === "corretiva"
+          ? await refineImportedCorrectiveRowsWithAi(parsedBase as CorretivaRow[])
+          : parsedBase;
       if (parsed.length === 0) toast.warning("Nenhuma linha válida encontrada.");
-      else toast.success(`${parsed.length} ${label} separadas automaticamente por equipe.`);
+      else
+        toast.success(
+          `${parsed.length} ${label} classificadas por descrição, equipamento e contexto.`,
+        );
       setRows(parsed);
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao ler planilha");
@@ -310,9 +318,10 @@ export function PreventivaImportDialog({
             <p className="text-xs text-muted-foreground">
               {mode === "corretiva" ? (
                 <>
-                  Novas OS são separadas automaticamente por equipe. Ao atualizar uma planilha já
-                  importada, a equipe atualmente designada no sistema é preservada para cada OS,
-                  evitando perder correções e realocações feitas anteriormente.
+                  Novas OS são classificadas lendo a descrição completa, equipamento, ativo e
+                  contexto do chamado; casos ambíguos recebem uma segunda leitura automática. Ao
+                  atualizar uma planilha já importada, a equipe atualmente designada no sistema é
+                  preservada para cada OS, evitando perder correções e realocações feitas anteriormente.
                 </>
               ) : (
                 <>

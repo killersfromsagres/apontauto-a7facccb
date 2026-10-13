@@ -387,6 +387,25 @@ function CorretivaNovoPage() {
     setSelectedOs(filtered[nextIndex]);
   };
 
+  const handleSelectedOsUpdate = (patch?: Record<string, unknown>) => {
+    if (!patch) {
+      void loadData();
+      return;
+    }
+
+    const selectedId = selectedOs?.id;
+    if (!selectedId) return;
+
+    setOsList((current) =>
+      current.map((item) =>
+        item.id === selectedId ? { ...item, ...patch } : item,
+      ),
+    );
+    setSelectedOs((current: any) =>
+      current?.id === selectedId ? { ...current, ...patch } : current,
+    );
+  };
+
   const handleReturnToProgrammingQueue = async (
     os: any,
     reservation: CorrectiveProgramReservation,
@@ -1259,7 +1278,7 @@ function CorretivaNovoPage() {
           os={{ ...selectedOs, isAdmin, allowedMenus: access.allowed || [] }}
           isOpen={!!selectedOs}
           onClose={() => setSelectedOs(null)}
-          onUpdate={loadData}
+          onUpdate={handleSelectedOsUpdate}
         />
       )}
     </PageShell>
