@@ -39,7 +39,7 @@ interface OsDetailsDialogProps {
   os: any;
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: () => void;
+  onUpdate: (patch?: Record<string, unknown>) => void;
 }
 
 type MaterialPhoto = {
@@ -53,6 +53,17 @@ type EvidenceSource = "camera" | "galeria";
 
 const MAX_MATERIAL_PHOTOS = 8;
 const MAX_MATERIAL_PHOTO_SIZE = 10 * 1024 * 1024;
+
+function isTransientConnectionError(error: unknown) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : String((error as { message?: unknown } | null)?.message ?? error ?? "");
+  return (
+    error instanceof TypeError ||
+    /(failed to fetch|network|fetch error|timeout|timed out|connection|offline)/i.test(message)
+  );
+}
 
 const TEAM_OPTIONS = [
   { name: "Elétrica", icon: Zap, color: "text-yellow-500" },
@@ -73,6 +84,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
   const [materialPhotos, setMaterialPhotos] = useState<MaterialPhoto[]>([]);
   const [observacao, setObservacao] = useState(os.observacao_conclusao || "");
   const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
+  const [reclassifyingTeam, setReclassifyingTeam] = useState<string | null>(null);
   const evidenceObjectUrls = useRef<Set<string>>(new Set());
   const hasMaterialDraft = pecas.trim().length > 0;
   const isCompleted = ["concluida", "concluido"].includes(String(os.status || "").toLowerCase());
@@ -435,43 +447,68 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
   };
 
   const handleReclassificar = async (novaEquipe: string) => {
-    if (loading) return;
+    if (loading || reclassifyingTeam || novaEquipe === os.equipe) return;
 
-    setLoading(true);
+    setReclassifyingTeam(novaEquipe);
     const toastId = toast.loading(`Reclassificando para ${novaEquipe}...`);
+    const updatedAt = new Date().toISOString();
 
     try {
       const { outboxAdd, updateCachedOs } = await import("@/lib/corretiva/db");
-      await outboxAdd({
-        id: `status:${os.id}:equipe:${crypto.randomUUID()}`,
-        kind: "status",
-        osId: os.id,
-        numeroOs: os.numero_os,
-        payload: { equipe: novaEquipe },
-        createdAt: Date.now(),
-        attempts: 0,
-      });
-      await updateCachedOs(os.id, {
-        equipe: novaEquipe,
-        updated_at: new Date().toISOString(),
-      });
+      let queuedForSync = !navigator.onLine;
 
-      const syncResult = await syncBestEffort();
-      if (syncResult && syncResult.failed === 0) {
-        toast.success(`OS reclassificada para ${novaEquipe}`, { id: toastId });
-      } else {
-        toast.success(`Reclassificação para ${novaEquipe} protegida e aguardando sincronização.`, {
-          id: toastId,
+      if (!queuedForSync) {
+        const { data: persisted, error } = await supabase
+          .from("corretiva_os")
+          .update({ equipe: novaEquipe, updated_at: updatedAt } as any)
+          .eq("id", os.id)
+          .select("id, equipe")
+          .maybeSingle();
+
+        if (error) {
+          if (isTransientConnectionError(error)) queuedForSync = true;
+          else throw error;
+        } else if (!persisted) {
+          throw new Error(
+            "O banco não confirmou a reclassificação. Verifique sua permissão para alterar a equipe.",
+          );
+        } else if (String((persisted as any).equipe ?? "") !== novaEquipe) {
+          throw new Error("O banco retornou uma equipe diferente da selecionada.");
+        }
+      }
+
+      if (queuedForSync) {
+        await outboxAdd({
+          id: `status:${os.id}:equipe:${crypto.randomUUID()}`,
+          kind: "status",
+          osId: os.id,
+          numeroOs: os.numero_os,
+          payload: { equipe: novaEquipe },
+          createdAt: Date.now(),
+          attempts: 0,
         });
       }
 
-      if (onUpdate) onUpdate();
-      setTimeout(() => onClose(), 350);
+      await updateCachedOs(os.id, {
+        equipe: novaEquipe,
+        updated_at: updatedAt,
+      });
+
+      // Atualiza somente a OS aberta no estado da página. Não chama loadData(),
+      // não move o usuário para o primeiro chamado e não fecha o modal.
+      onUpdate({ equipe: novaEquipe, updated_at: updatedAt });
+
+      toast.success(
+        queuedForSync
+          ? `Reclassificação para ${novaEquipe} salva neste aparelho e aguardando sincronização.`
+          : `OS reclassificada para ${novaEquipe}.`,
+        { id: toastId },
+      );
     } catch (error: any) {
-      console.error("[CorretivaReclassificar] Erro ao salvar localmente:", error);
+      console.error("[CorretivaReclassificar] Erro ao persistir equipe:", error);
       toast.error(`Erro ao reclassificar: ${error.message || "Tente novamente"}`, { id: toastId });
     } finally {
-      setLoading(false);
+      setReclassifyingTeam(null);
     }
   };
 
@@ -694,7 +731,10 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                   <DropdownMenu modal={false}>
                     <DropdownMenuTrigger
                       asChild
-                      disabled={!os?.isAdmin && !os?.allowedMenus?.includes("reclassificar-equipe")}
+                      disabled={
+                        Boolean(reclassifyingTeam) ||
+                        (!os?.isAdmin && !os?.allowedMenus?.includes("reclassificar-equipe"))
+                      }
                     >
                       <Button
                         variant="outline"
@@ -704,8 +744,12 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                           equipeStyles(os.equipe).badge,
                         )}
                       >
-                        <LayoutGrid className="mr-1.5 h-3.5 w-3.5 sm:mr-2" />
-                        {os.equipe || "Não definida"}
+                        {reclassifyingTeam ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2" />
+                        ) : (
+                          <LayoutGrid className="mr-1.5 h-3.5 w-3.5 sm:mr-2" />
+                        )}
+                        {reclassifyingTeam ? "Salvando..." : os.equipe || "Não definida"}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
@@ -722,7 +766,8 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                       {TEAM_OPTIONS.map((team) => (
                         <DropdownMenuItem
                           key={team.name}
-                          onClick={() => handleReclassificar(team.name)}
+                          onSelect={() => void handleReclassificar(team.name)}
+                          disabled={Boolean(reclassifyingTeam) || os.equipe === team.name}
                           className={cn(
                             "flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm",
                             os.equipe === team.name && "bg-accent text-accent-foreground",

@@ -2,6 +2,18 @@ import { describe, expect, it } from "vitest";
 import { analyzeCorrectiveTechnicalDomain } from "@/lib/corretiva/technical-domain-agent";
 
 describe("agente técnico de domínio das corretivas", () => {
+  it('interpreta "verificar o AR" como Refrigeração mesmo se vier como Civil', () => {
+    const result = analyzeCorrectiveTechnicalDomain({
+      nome_os: "Favor verificar o AR da sala administrativa",
+      local: "Sala administrativa",
+      equipe: "Civil",
+    });
+
+    expect(result.equipe).toBe("Refrigeração");
+    expect(result.decisive).toBe(true);
+    expect(result.scores.Refrigeração).toBeGreaterThan(result.scores.Civil);
+  });
+
   it("identifica troca de iluminação como Elétrica mesmo se a equipe atual for Civil", () => {
     const result = analyzeCorrectiveTechnicalDomain({
       nome_os: "Solicito troca de iluminação do corredor, com luminárias queimadas",
