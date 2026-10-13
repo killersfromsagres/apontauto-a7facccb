@@ -1,0 +1,57 @@
+name: Apply Corretiva Designacao Contextual
+
+on:
+  push:
+    branches:
+      - fix/corretiva-designacao-contextual
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '[corretiva-designacao-contextual-done]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply fix
+        run: python .github/scripts/apply_corretiva_designacao_contextual.py
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Targeted tests
+        run: npx vitest run src/lib/corretiva/technical-domain-agent.test.ts src/lib/corretiva/preventiva-import.test.ts src/lib/corretiva/designation-agent.test.ts
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Production build
+        run: npm run build
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            src/lib/corretiva/technical-domain-agent.ts \
+            src/lib/corretiva/preventiva-import.ts \
+            src/components/corretiva/preventiva-import-dialog.tsx \
+            src/components/corretiva/os-details-dialog.tsx \
+            src/routes/_authenticated/corretiva-novo.tsx \
+            src/lib/corretiva/technical-domain-agent.test.ts \
+            src/lib/corretiva/preventiva-import.test.ts
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "fix: melhora designação contextual das corretivas [corretiva-designacao-contextual-done]"
+            git push
+          fi
