@@ -46,6 +46,13 @@ type ExistingCorrectiveState = {
 
 const EXISTING_ASSIGNMENT_BATCH_SIZE = 200;
 
+/**
+ * Estados finais do enum `corretiva_os_status` que a limpeza nunca apaga.
+ * Remover um chamado concluído ou cancelado eliminaria em cascata as linhas de
+ * `public.corretiva_historico_verificacoes`, destruindo a trilha de conferência.
+ */
+const CLEANUP_PROTECTED_STATUSES = "(concluida,cancelada)";
+
 function contar(rows: Row[]): Array<[string, number]> {
   const map = new Map<string, number>();
   for (const r of rows) map.set(r.equipe, (map.get(r.equipe) ?? 0) + 1);
@@ -258,10 +265,13 @@ export function PreventivaImportDialog({
 
     setClearing(true);
     try {
+      // A limpeza alcança somente chamados ainda abertos ou em andamento.
+      // Conclusões e cancelamentos permanecem no banco para proteger o histórico.
       const { data, error } = await supabase
         .from("corretiva_os")
         .delete()
         .or("tipo_importacao.is.null,tipo_importacao.neq.backorder_mensal")
+        .not("status", "in", CLEANUP_PROTECTED_STATUSES)
         .select("id");
 
       if (error) throw error;
@@ -295,8 +305,8 @@ export function PreventivaImportDialog({
       onDone();
       toast.success(
         deletedCount === 1
-          ? "1 corretiva foi apagada permanentemente."
-          : `${deletedCount} corretivas foram apagadas permanentemente.`,
+          ? "1 corretiva aberta foi apagada. Chamados concluídos, cancelados e suas verificações foram preservados."
+          : `${deletedCount} corretivas abertas foram apagadas. Chamados concluídos, cancelados e suas verificações foram preservados.`,
       );
     } catch (error: any) {
       console.error("[CorretivaNovo] Erro ao limpar corretivas:", error);
