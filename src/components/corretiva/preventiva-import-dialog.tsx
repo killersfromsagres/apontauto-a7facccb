@@ -46,6 +46,13 @@ type ExistingCorrectiveState = {
 
 const EXISTING_ASSIGNMENT_BATCH_SIZE = 200;
 
+/**
+ * Estados finais do enum `corretiva_os_status` que a limpeza nunca apaga.
+ * Remover um chamado concluído ou cancelado eliminaria em cascata as linhas de
+ * `public.corretiva_historico_verificacoes`, destruindo a trilha de conferência.
+ */
+const CLEANUP_PROTECTED_STATUSES = "(concluida,cancelada)";
+
 function contar(rows: Row[]): Array<[string, number]> {
   const map = new Map<string, number>();
   for (const r of rows) map.set(r.equipe, (map.get(r.equipe) ?? 0) + 1);
@@ -258,10 +265,13 @@ export function PreventivaImportDialog({
 
     setClearing(true);
     try {
+      // A limpeza alcança somente chamados ainda abertos ou em andamento.
+      // Conclusões e cancelamentos permanecem no banco para proteger o histórico.
       const { data, error } = await supabase
         .from("corretiva_os")
         .delete()
         .or("tipo_importacao.is.null,tipo_importacao.neq.backorder_mensal")
+        .not("status", "in", CLEANUP_PROTECTED_STATUSES)
         .select("id");
 
       if (error) throw error;
@@ -295,8 +305,8 @@ export function PreventivaImportDialog({
       onDone();
       toast.success(
         deletedCount === 1
-          ? "1 corretiva foi apagada permanentemente."
-          : `${deletedCount} corretivas foram apagadas permanentemente.`,
+          ? "1 corretiva aberta foi apagada. Chamados concluídos, cancelados e suas verificações foram preservados."
+          : `${deletedCount} corretivas abertas foram apagadas. Chamados concluídos, cancelados e suas verificações foram preservados.`,
       );
     } catch (error: any) {
       console.error("[CorretivaNovo] Erro ao limpar corretivas:", error);
@@ -446,22 +456,27 @@ export function PreventivaImportDialog({
               variant="outline"
               size="sm"
               className="h-9 gap-2 border-red-500/35 bg-red-500/[0.07] px-3 text-red-300 hover:border-red-400/55 hover:bg-red-500/15 hover:text-red-200"
-              title="Apagar todas as corretivas do módulo Corretiva Novo"
+              title="Apagar somente corretivas abertas ou em andamento; concluídas, canceladas e suas verificações permanecem no histórico"
             >
               <Trash2 className="h-4 w-4" />
-              Limpar corretivas
+              Limpar abertas
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent className="border-red-500/20 bg-background/95 shadow-2xl backdrop-blur-xl">
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2 text-red-200">
                 <Trash2 className="h-5 w-5" />
-                Limpar todas as corretivas?
+                Limpar somente as corretivas abertas?
               </AlertDialogTitle>
               <AlertDialogDescription className="space-y-2 text-left leading-6">
                 <span className="block">
-                  Esta ação apaga permanentemente todas as OS do módulo Corretiva Novo e os
-                  registros vinculados a elas, incluindo fotos, peças, verificações e problemas.
+                  Esta ação apaga permanentemente apenas as OS ainda abertas ou em andamento do
+                  módulo Corretiva Novo e os registros vinculados a elas, incluindo fotos, peças,
+                  verificações e problemas.
+                </span>
+                <span className="block font-medium text-foreground/80">
+                  Chamados concluídos ou cancelados não são apagados, e as verificações já
+                  registradas neles continuam preservadas.
                 </span>
                 <span className="block font-medium text-foreground/80">
                   Os registros do Backorder Mensal serão preservados.
@@ -501,7 +516,7 @@ export function PreventivaImportDialog({
                 ) : (
                   <Trash2 className="h-4 w-4" />
                 )}
-                {clearing ? "Limpando..." : "Apagar todas"}
+                {clearing ? "Limpando..." : "Apagar abertas"}
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
