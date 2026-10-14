@@ -39,6 +39,11 @@ import {
 type Row = PreventivaRow | CorretivaRow;
 type Mode = "backorder" | "corretiva" | "backorder-mensal";
 
+type ExistingCorrectiveState = {
+  equipe: string;
+  status: string;
+};
+
 const EXISTING_ASSIGNMENT_BATCH_SIZE = 200;
 
 function contar(rows: Row[]): Array<[string, number]> {
@@ -55,27 +60,40 @@ function normalizeTeam(value: string | null | undefined) {
     .trim();
 }
 
-async function loadExistingAssignments(rows: Row[]) {
+function normalizeStatus(value: unknown) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function isTerminalCorrectiveStatus(value: unknown) {
+  const status = normalizeStatus(value);
+  return status === "concluida" || status === "concluido" || status === "cancelada" || status === "cancelado";
+}
+
+async function loadExistingCorrectiveState(rows: Row[]) {
   const numeroOs = Array.from(new Set(rows.map((row) => row.numero_os).filter(Boolean)));
-  const assignments = new Map<string, string>();
+  const existing = new Map<string, ExistingCorrectiveState>();
 
   for (let index = 0; index < numeroOs.length; index += EXISTING_ASSIGNMENT_BATCH_SIZE) {
     const batch = numeroOs.slice(index, index + EXISTING_ASSIGNMENT_BATCH_SIZE);
     const { data, error } = await supabase
       .from("corretiva_os")
-      .select("numero_os, equipe")
+      .select("numero_os, equipe, status")
       .in("numero_os", batch);
 
     if (error) throw error;
 
     for (const item of data ?? []) {
       const numero = String(item.numero_os ?? "").trim();
-      const equipe = String(item.equipe ?? "").trim();
-      if (numero && equipe) assignments.set(numero, equipe);
+      if (!numero) continue;
+
+      existing.set(numero, {
+        equipe: String(item.equipe ?? "").trim(),
+        status: String(item.status ?? "").trim(),
+      });
     }
   }
 
-  return assignments;
+  return existing;
 }
 
 export function PreventivaImportDialog({
@@ -139,18 +157,23 @@ export function PreventivaImportDialog({
     setSaving(true);
 
     try {
-      // Em Corretivas, a equipe atual do banco é a fonte da verdade durante reimportações.
-      // Se a consulta falhar, a importação é interrompida para não correr o risco de
-      // sobrescrever uma correção manual já realizada pelo usuário.
-      const existingAssignments =
-        mode === "corretiva" ? await loadExistingAssignments(rows) : new Map<string, string>();
+      // Em Corretivas, o estado atual do banco é a fonte da verdade durante reimportações.
+      // Além da equipe, estados finais (concluída/cancelada) são preservados para impedir
+      // que uma nova planilha reabra chamados já encerrados.
+      const existingState =
+        mode === "corretiva"
+          ? await loadExistingCorrectiveState(rows)
+          : new Map<string, ExistingCorrectiveState>();
 
       let protectedAssignments = 0;
       let preventedOverwrites = 0;
+      let protectedFinalStatuses = 0;
 
       const payload = rows.map((row) => {
-        const existingTeam = existingAssignments.get(row.numero_os);
+        const current = existingState.get(row.numero_os);
+        const existingTeam = current?.equipe ?? "";
         const incomingTeam = String(row.equipe ?? "").trim();
+        const terminalStatus = isTerminalCorrectiveStatus(current?.status) ? current?.status : null;
 
         if (existingTeam) {
           protectedAssignments++;
@@ -159,9 +182,12 @@ export function PreventivaImportDialog({
           }
         }
 
+        if (terminalStatus) protectedFinalStatuses++;
+
         return {
           ...row,
           equipe: existingTeam || row.equipe,
+          ...(terminalStatus ? { status: terminalStatus } : {}),
           updated_at: new Date().toISOString(),
           tipo_importacao: mode === "backorder-mensal" ? "backorder_mensal" : "padrao",
           data_criacao: row.data_criacao || null,
@@ -175,6 +201,7 @@ export function PreventivaImportDialog({
       console.log("[Import] Payload para upsert:", payload.length, "linhas", {
         protectedAssignments,
         preventedOverwrites,
+        protectedFinalStatuses,
       });
 
       const { error, count } = await supabase.from("corretiva_os").upsert(payload as any, {
@@ -189,13 +216,24 @@ export function PreventivaImportDialog({
         );
       }
 
+      const protectionParts: string[] = [];
+      if (protectedAssignments > 0) {
+        protectionParts.push(
+          `${protectedAssignments} designação(ões) existente(s) preservada(s)${
+            preventedOverwrites > 0
+              ? `, evitando ${preventedOverwrites} sobrescrita(s) de equipe`
+              : ""
+          }`,
+        );
+      }
+      if (protectedFinalStatuses > 0) {
+        protectionParts.push(
+          `${protectedFinalStatuses} chamado(s) concluído(s)/cancelado(s) mantido(s) no histórico`,
+        );
+      }
       const protectionMessage =
-        mode === "corretiva" && protectedAssignments > 0
-          ? ` ${protectedAssignments} designação(ões) existente(s) foram preservadas${
-              preventedOverwrites > 0
-                ? ` e ${preventedOverwrites} sobrescrita(s) incorreta(s) foram evitadas`
-                : ""
-            }.`
+        mode === "corretiva" && protectionParts.length > 0
+          ? ` ${protectionParts.join("; ")}.`
           : "";
 
       toast.success(
@@ -206,9 +244,9 @@ export function PreventivaImportDialog({
       setFileName("");
       onDone();
     } catch (error) {
-      console.error("[Import] Falha ao proteger designações existentes:", error);
+      console.error("[Import] Falha ao proteger dados existentes:", error);
       toast.error(
-        "Atualização cancelada por segurança: não foi possível confirmar as equipes já designadas. Nenhuma designação foi sobrescrita.",
+        "Atualização cancelada por segurança: não foi possível confirmar equipes e estados já registrados. Nenhum status final foi sobrescrito.",
       );
     } finally {
       setSaving(false);
@@ -305,7 +343,7 @@ export function PreventivaImportDialog({
                 className="h-6 text-[10px] opacity-70 hover:opacity-100 border-white/10 bg-white/5 px-2"
               >
                 <FileSpreadsheet className="h-3 w-3 mr-1" />
-                Atualizar preservando equipes
+                Atualizar preservando histórico
               </Button>
             )}
           </div>
@@ -320,8 +358,9 @@ export function PreventivaImportDialog({
                 <>
                   Novas OS são classificadas lendo a descrição completa, equipamento, ativo e
                   contexto do chamado; casos ambíguos recebem uma segunda leitura automática. Ao
-                  atualizar uma planilha já importada, a equipe atualmente designada no sistema é
-                  preservada para cada OS, evitando perder correções e realocações feitas anteriormente.
+                  atualizar uma planilha já importada, a equipe atualmente designada e os chamados
+                  já concluídos ou cancelados são preservados, evitando perder correções, realocações
+                  e o histórico de encerramento.
                 </>
               ) : (
                 <>
