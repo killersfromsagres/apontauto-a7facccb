@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ApontamentosConsolidated } from "@/components/apontamentos-consolidated";
+import { ApontamentosConsolidatedV2 } from "@/components/apontamentos-consolidated-v2";
 
 const APONTAMENTOS_STORAGE_KEY = "apontauto:apontamentos-manual:v1";
 
@@ -26,13 +26,11 @@ function clearApontamentosDraftOnlyOnReload() {
 
 function ApontamentosRoute() {
   useState(() => {
-    // Limpa apenas quando houve atualização/reload da página.
-    // Navegar entre abas/rotas no mesmo carregamento preserva os dados.
     clearApontamentosDraftOnlyOnReload();
     return true;
   });
 
-  return <ApontamentosConsolidated />;
+  return <ApontamentosConsolidatedV2 />;
 }
 
 export const Route = createFileRoute("/_authenticated/apontamentos")({
