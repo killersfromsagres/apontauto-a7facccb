@@ -206,6 +206,7 @@ function CorretivaNovoPage() {
   const [onlyProgrammed, setOnlyProgrammed] = useState(false);
   const [onlyBackorder, setOnlyBackorder] = useState(false);
   const [onlyReprogramming, setOnlyReprogramming] = useState(false);
+  const [onlyCompleted, setOnlyCompleted] = useState(false);
   const [reprogrammingId, setReprogrammingId] = useState<string | null>(null);
 
   const applyLoadedList = async (list: any[], cache = false) => {
@@ -288,7 +289,9 @@ function CorretivaNovoPage() {
   const availableExportRows = useMemo(
     () =>
       exportBaseRows.filter(
-        (os) => !findProgramReservation(os, programReservations),
+        (os) =>
+          !isCompletedStatus(os.status) &&
+          !findProgramReservation(os, programReservations),
       ),
     [exportBaseRows, programReservations],
   );
@@ -315,19 +318,21 @@ function CorretivaNovoPage() {
   const filtered = useMemo(() => {
     return osList
       .filter((o) => {
+        const completed = isCompletedStatus(o.status);
+        const matchesCompletionView = onlyCompleted ? completed : !completed;
         const matchesSearch = matchesCorrectiveSearch(o, search);
-
         const matchesEquipe = matchEquipe(o.equipe, equipe);
         const matchesProgram =
           !onlyProgrammed || Boolean(findProgramReservation(o, programReservations));
         const backorder =
           backorderMap.get(String(o.id ?? o.numero_os ?? "")) ?? getBackorderInfo(o);
         const matchesBackorder =
-          !onlyBackorder || (backorder.isBackorder && !isCompletedStatus(o.status));
+          !onlyBackorder || (backorder.isBackorder && !completed);
         const matchesReprogramming =
           !onlyReprogramming || isPendingReprogramming(o);
 
         return (
+          matchesCompletionView &&
           matchesSearch &&
           matchesEquipe &&
           matchesProgram &&
@@ -352,11 +357,16 @@ function CorretivaNovoPage() {
     onlyProgrammed,
     onlyBackorder,
     onlyReprogramming,
+    onlyCompleted,
     programReservations,
     backorderMap,
   ]);
 
   const programmedVisibleCount = programmedExportRows.length;
+  const completedVisibleCount = useMemo(
+    () => exportBaseRows.filter((os) => isCompletedStatus(os.status)).length,
+    [exportBaseRows],
+  );
   const reprogrammingVisibleCount = useMemo(
     () => exportBaseRows.filter((os) => isPendingReprogramming(os)).length,
     [exportBaseRows],
@@ -663,7 +673,7 @@ function CorretivaNovoPage() {
   return (
     <PageShell
       title="Programação de Corretivas"
-      description="Gerencie, programe e exporte os chamados corretivos por equipe, localização e data de abertura."
+      description="Gerencie os chamados ativos. Use o filtro Concluídas para fazer varredura e conferir chamados já enviados ao Histórico."
       actions={
         <div className="flex items-center gap-2">
           {isAdmin && (
@@ -772,13 +782,43 @@ function CorretivaNovoPage() {
             <div className="flex flex-1 flex-wrap items-center gap-2 xl:justify-end">
               <Button
                 type="button"
+                variant={onlyCompleted ? "secondary" : "glass"}
+                className={cn(
+                  "h-11 gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.045] px-4 text-emerald-100 transition-all hover:border-emerald-400/35 hover:bg-emerald-500/[0.09]",
+                  onlyCompleted &&
+                    "border-emerald-300/50 bg-emerald-500/15 text-white shadow-[0_0_0_1px_rgba(52,211,153,0.10)]",
+                )}
+                onClick={() => {
+                  const next = !onlyCompleted;
+                  setOnlyCompleted(next);
+                  if (next) {
+                    setOnlyProgrammed(false);
+                    setOnlyReprogramming(false);
+                    setOnlyBackorder(false);
+                  }
+                }}
+                aria-pressed={onlyCompleted}
+                title="Alternar entre a fila ativa e as OS concluídas para varredura de consistência"
+              >
+                <Check className="h-4 w-4" />
+                <span className="font-semibold">Concluídas</span>
+                <span className="inline-flex min-w-6 items-center justify-center rounded-md bg-black/20 px-1.5 py-0.5 text-[10px] font-bold">
+                  {completedVisibleCount}
+                </span>
+              </Button>
+
+              <Button
+                type="button"
                 variant={onlyProgrammed ? "secondary" : "glass"}
                 className={cn(
                   "h-11 gap-2 rounded-xl border-white/10 px-4",
                   onlyProgrammed &&
                     "border-sky-400/40 bg-sky-500/15 text-sky-100 shadow-[0_0_0_1px_rgba(56,189,248,0.08)]",
                 )}
-                onClick={() => setOnlyProgrammed((current) => !current)}
+                onClick={() => {
+                  setOnlyCompleted(false);
+                  setOnlyProgrammed((current) => !current);
+                }}
                 aria-pressed={onlyProgrammed}
                 title="Mostrar somente chamados já incorporados à Programação"
               >
@@ -797,7 +837,10 @@ function CorretivaNovoPage() {
                   onlyReprogramming &&
                     "border-amber-300/50 bg-amber-400/15 text-white shadow-[0_0_0_1px_rgba(251,191,36,0.10)]",
                 )}
-                onClick={() => setOnlyReprogramming((current) => !current)}
+                onClick={() => {
+                  setOnlyCompleted(false);
+                  setOnlyReprogramming((current) => !current);
+                }}
                 aria-pressed={onlyReprogramming}
                 title="Mostrar somente chamados que voltaram para a fila por não realização"
               >
@@ -816,7 +859,10 @@ function CorretivaNovoPage() {
                   onlyBackorder &&
                     "border-red-400/50 bg-red-500/20 text-white shadow-[0_0_0_1px_rgba(248,113,113,0.10),0_12px_32px_rgba(127,29,29,0.16)]",
                 )}
-                onClick={() => setOnlyBackorder((current) => !current)}
+                onClick={() => {
+                  setOnlyCompleted(false);
+                  setOnlyBackorder((current) => !current);
+                }}
                 aria-pressed={onlyBackorder}
                 title="Mostrar somente chamados identificados como Backorder"
               >
@@ -982,7 +1028,9 @@ function CorretivaNovoPage() {
         ) : filtered.length === 0 ? (
           <div className="rounded-3xl border-2 border-dashed border-white/5 bg-white/2 py-20 text-center">
             <p className="text-muted-foreground">
-              Nenhuma OS corresponde aos filtros aplicados.
+              {onlyCompleted
+                ? "Nenhuma OS concluída corresponde aos filtros aplicados."
+                : "Nenhuma OS ativa corresponde aos filtros aplicados."}
             </p>
           </div>
         ) : (
@@ -1008,6 +1056,8 @@ function CorretivaNovoPage() {
                   key={os.id}
                   className={cn(
                     "group cursor-pointer border-white/[0.08] bg-background/45 p-0 transition-all duration-300 hover:border-white/15 hover:bg-white/[0.05]",
+                    completed &&
+                      "border-emerald-400/20 shadow-[0_0_0_1px_rgba(52,211,153,0.05)]",
                     programReservation &&
                       "border-sky-400/25 shadow-[0_0_0_1px_rgba(56,189,248,0.07)]",
                     pendingReprogramming &&
@@ -1207,7 +1257,10 @@ function CorretivaNovoPage() {
                       )}
 
                       {completed && (
-                        <div className="mt-4 border-t border-white/[0.06] pt-3">
+                        <div className="mt-4 space-y-2 border-t border-white/[0.06] pt-3">
+                          <p className="text-center text-[9px] leading-4 text-emerald-200/70">
+                            Abra o chamado para conferir a conclusão no Histórico e eliminar tentativas repetidas.
+                          </p>
                           <Button
                             type="button"
                             variant="outline"
@@ -1224,9 +1277,6 @@ function CorretivaNovoPage() {
                             <RotateCcw className="h-4 w-4" />
                             {isReopening ? "Reabrindo..." : "Reabrir chamado"}
                           </Button>
-                          <p className="mt-2 text-center text-[9px] leading-4 text-muted-foreground/65">
-                            Volta para Aberta e fica elegível para uma nova programação.
-                          </p>
                         </div>
                       )}
                     </div>
