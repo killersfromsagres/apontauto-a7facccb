@@ -65,6 +65,37 @@ function isTransientConnectionError(error: unknown) {
   );
 }
 
+function normalizeOsStatus(value: unknown) {
+  return String(value ?? "").trim().toLocaleLowerCase("pt-BR");
+}
+
+function isCompletedOsStatus(value: unknown) {
+  return ["concluida", "concluido", "concluída", "concluído"].includes(
+    normalizeOsStatus(value),
+  );
+}
+
+function isCanceledOsStatus(value: unknown) {
+  return ["cancelada", "cancelado"].includes(normalizeOsStatus(value));
+}
+
+async function discardQueuedCompletionAttempts(osId: string) {
+  const { outboxForCurrentUser, outboxRemove } = await import("@/lib/corretiva/db");
+  const queued = await outboxForCurrentUser();
+  const redundant = queued.filter(
+    (item) =>
+      item.osId === osId &&
+      item.kind === "status" &&
+      isCompletedOsStatus(item.payload?.status),
+  );
+
+  for (const item of redundant) {
+    await outboxRemove(item.id);
+  }
+
+  return redundant.length;
+}
+
 const TEAM_OPTIONS = [
   { name: "Elétrica", icon: Zap, color: "text-yellow-500" },
   { name: "Hidráulica", icon: Droplets, color: "text-blue-500" },
@@ -87,7 +118,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
   const [reclassifyingTeam, setReclassifyingTeam] = useState<string | null>(null);
   const evidenceObjectUrls = useRef<Set<string>>(new Set());
   const hasMaterialDraft = pecas.trim().length > 0;
-  const isCompleted = ["concluida", "concluido"].includes(String(os.status || "").toLowerCase());
+  const isCompleted = isCompletedOsStatus(os.status);
 
   const rememberEvidenceUrl = (url: string) => {
     if (url.startsWith("blob:")) evidenceObjectUrls.current.add(url);
@@ -267,46 +298,134 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
   };
 
   const handleFinish = async (withPhoto: boolean) => {
-    const hasSpecialPermission = os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial");
-    const isAdmin = os?.isAdmin;
-    const canBypass = isAdmin || hasSpecialPermission;
-
-    if (!withPhoto && !canBypass) {
-      toast.error("Você não tem permissão para concluir sem foto.");
-      return;
-    }
-
-    if (withPhoto && !canBypass && (!photoBefore || !photoAfter)) {
-      toast.error("Por favor, adicione as fotos de 'Antes' e 'Depois' para concluir.");
-      return;
-    }
+    if (loading) return;
 
     setLoading(true);
     try {
-      const finishedAt = new Date().toISOString();
       const { outboxAdd, updateCachedOs } = await import("@/lib/corretiva/db");
+      const clearProgramming = {
+        programacao_status: "disponivel",
+        programacao_periodo_inicio: null,
+        programacao_periodo_fim: null,
+        programacao_dia_indice: null,
+        programacao_equipe: null,
+        programacao_reservada_em: null,
+      };
+
+      // Antes de concluir, o banco é consultado. Isso transforma um segundo clique
+      // em uma conferência idempotente: não duplica a conclusão e não troca a data de fim.
+      if (navigator.onLine) {
+        const { data: persisted, error: readError } = await supabase
+          .from("corretiva_os")
+          .select(
+            "id, status, fim, updated_at, observacao_conclusao, programacao_status, programacao_periodo_inicio, programacao_periodo_fim, programacao_dia_indice, programacao_equipe, programacao_reservada_em",
+          )
+          .eq("id", os.id)
+          .maybeSingle();
+
+        if (readError && !isTransientConnectionError(readError)) throw readError;
+
+        if (!readError && persisted && isCompletedOsStatus((persisted as any).status)) {
+          const canonicalPatch = {
+            status: "concluida",
+            fim: (persisted as any).fim,
+            updated_at: (persisted as any).updated_at,
+            observacao_conclusao: (persisted as any).observacao_conclusao,
+            programacao_status: (persisted as any).programacao_status,
+            programacao_periodo_inicio: (persisted as any).programacao_periodo_inicio,
+            programacao_periodo_fim: (persisted as any).programacao_periodo_fim,
+            programacao_dia_indice: (persisted as any).programacao_dia_indice,
+            programacao_equipe: (persisted as any).programacao_equipe,
+            programacao_reservada_em: (persisted as any).programacao_reservada_em,
+          };
+
+          const removed = await discardQueuedCompletionAttempts(String(os.id));
+          await updateCachedOs(os.id, canonicalPatch as any);
+          onUpdate(canonicalPatch);
+          toast.success(
+            removed > 0
+              ? `OS ${os.numero_os} já estava concluída. ${removed} tentativa(s) repetida(s) foram descartadas e o Histórico foi preservado.`
+              : `OS ${os.numero_os} já estava concluída. Estado confirmado no Histórico sem duplicar a conclusão.`,
+          );
+          onClose();
+          return;
+        }
+
+        if (!readError && persisted && isCanceledOsStatus((persisted as any).status)) {
+          const canonicalPatch = {
+            status: (persisted as any).status,
+            fim: (persisted as any).fim,
+            updated_at: (persisted as any).updated_at,
+          };
+          await discardQueuedCompletionAttempts(String(os.id));
+          await updateCachedOs(os.id, canonicalPatch as any);
+          onUpdate(canonicalPatch);
+          toast.warning(
+            `A OS ${os.numero_os} está cancelada no servidor. A conclusão repetida foi ignorada para não alterar o histórico.`,
+          );
+          onClose();
+          return;
+        }
+      }
+
+      const repairingKnownCompletion = isCompleted;
+      const hasSpecialPermission = os?.allowedMenus?.includes(
+        "corretiva-concluir-sem-foto-especial",
+      );
+      const isAdmin = os?.isAdmin;
+      const canBypass = isAdmin || hasSpecialPermission;
+
+      // Se o card local já dizia "Concluída", este clique funciona como varredura:
+      // uma eventual divergência no servidor é reparada sem exigir novas evidências.
+      if (!repairingKnownCompletion) {
+        if (!withPhoto && !canBypass) {
+          toast.error("Você não tem permissão para concluir sem foto.");
+          return;
+        }
+
+        if (withPhoto && !canBypass && (!photoBefore || !photoAfter)) {
+          toast.error("Por favor, adicione as fotos de 'Antes' e 'Depois' para concluir.");
+          return;
+        }
+      }
+
+      const finishedAt = repairingKnownCompletion
+        ? String(os.fim || os.updated_at || new Date().toISOString())
+        : new Date().toISOString();
+      const completionPatch = {
+        status: "concluida",
+        fim: finishedAt,
+        ...clearProgramming,
+        ...(observacao.trim() ? { observacao_conclusao: observacao.trim() } : {}),
+      };
+
+      // ID estável: enquanto estiver offline, novos cliques substituem a mesma ação
+      // em vez de criar várias conclusões na fila local.
       await outboxAdd({
-        id: `status:${os.id}:conclusao:${crypto.randomUUID()}`,
+        id: `status:${os.id}:conclusao`,
         kind: "status",
         osId: os.id,
         numeroOs: os.numero_os,
-        payload: {
-          status: "concluida",
-          fim: finishedAt,
-          ...(observacao.trim() ? { observacao_conclusao: observacao.trim() } : {}),
-        },
+        payload: completionPatch,
         createdAt: Date.now(),
         attempts: 0,
       });
-      await updateCachedOs(os.id, {
-        status: "concluida",
-        fim: finishedAt,
-        ...(observacao.trim() ? { observacao_conclusao: observacao.trim() } : {}),
-        updated_at: finishedAt,
-      });
+      await updateCachedOs(
+        os.id,
+        {
+          ...completionPatch,
+          updated_at: finishedAt,
+        } as any,
+      );
 
       const syncResult = await syncBestEffort();
-      if (syncResult && syncResult.failed === 0) {
+      if (repairingKnownCompletion) {
+        toast.success(
+          syncResult && syncResult.failed === 0
+            ? `Varredura concluída: a OS ${os.numero_os} foi confirmada como concluída no Histórico.`
+            : `A OS ${os.numero_os} continua marcada como concluída. A conferência será finalizada na próxima sincronização.`,
+        );
+      } else if (syncResult && syncResult.failed === 0) {
         toast.success("Chamado concluído e sincronizado com sucesso.");
       } else {
         toast.success(
@@ -315,11 +434,14 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
             : "Modo offline: conclusão protegida neste aparelho e pronta para sincronizar.",
         );
       }
+
+      // Recarrega a fonte canônica. Se outro dispositivo concluiu a OS no mesmo
+      // instante, o trigger do banco mantém a primeira data de fim e esta tela a recebe.
       onUpdate();
       onClose();
     } catch (error: any) {
-      console.error("[CorretivaAudit] Erro ao proteger conclusão local:", error);
-      toast.error(error?.message || "Não foi possível salvar a conclusão neste aparelho.");
+      console.error("[CorretivaAudit] Erro ao reconciliar conclusão:", error);
+      toast.error(error?.message || "Não foi possível conferir a conclusão deste chamado.");
     } finally {
       setLoading(false);
     }
@@ -800,6 +922,12 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
               </div>
             </div>
 
+            {isCompleted && (
+              <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] px-3 py-2.5 text-[10px] leading-relaxed text-emerald-100/85 sm:text-xs">
+                Este chamado já está marcado como concluído. O botão de conferência abaixo consulta o servidor, descarta tentativas repetidas e mantém a data original da conclusão no Histórico.
+              </div>
+            )}
+
             <section className="space-y-2.5 border-t border-border pt-3 sm:space-y-3 sm:pt-5">
               <div>
                 <Label className="text-xs font-semibold text-foreground sm:text-sm">Solicitar peças / materiais</Label>
@@ -975,32 +1103,50 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
           </div>
 
           <div className="grid grid-cols-2 gap-2 border-t border-border bg-background p-3 sm:gap-3 sm:p-6">
-            {canFinishWithoutPhoto && (
+            {isCompleted ? (
               <Button
-                variant="outline"
-                className="col-span-1 h-10 rounded-lg px-2 text-[10px] font-semibold sm:h-11 sm:px-4 sm:text-xs"
+                variant="default"
+                className="col-span-2 h-10 gap-2 rounded-lg px-3 text-[10px] font-semibold sm:h-11 sm:px-4 sm:text-xs"
                 disabled={loading}
-                onClick={() => handleFinish(false)}
+                onClick={() => void handleFinish(false)}
               >
-                Concluir s/ foto {os?.isAdmin ? "(Admin)" : ""}
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                Conferir conclusão no Histórico
               </Button>
+            ) : (
+              <>
+                {canFinishWithoutPhoto && (
+                  <Button
+                    variant="outline"
+                    className="col-span-1 h-10 rounded-lg px-2 text-[10px] font-semibold sm:h-11 sm:px-4 sm:text-xs"
+                    disabled={loading}
+                    onClick={() => void handleFinish(false)}
+                  >
+                    Concluir s/ foto {os?.isAdmin ? "(Admin)" : ""}
+                  </Button>
+                )}
+                <Button
+                  variant="default"
+                  className={cn(
+                    "h-10 rounded-lg px-2 text-[10px] font-semibold sm:h-11 sm:px-4 sm:text-xs",
+                    canFinishWithoutPhoto ? "col-span-1" : "col-span-2",
+                  )}
+                  disabled={loading || !canFinishWithPhoto}
+                  onClick={() => void handleFinish(true)}
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
+                  Finalizar c/ foto
+                </Button>
+              </>
             )}
-            <Button
-              variant="default"
-              className={cn(
-                "h-10 rounded-lg px-2 text-[10px] font-semibold sm:h-11 sm:px-4 sm:text-xs",
-                canFinishWithoutPhoto ? "col-span-1" : "col-span-2",
-              )}
-              disabled={loading || !canFinishWithPhoto}
-              onClick={() => handleFinish(true)}
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4" />
-              )}
-              Finalizar c/ foto
-            </Button>
           </div>
         </div>
       </DialogContent>
