@@ -16,10 +16,12 @@
     "test:coverage": "vitest run --coverage"
   },
   "overrides": {
-    "@ai-sdk/provider": "4.0.29"
+    "@ai-sdk/provider": "4.0.3",
+    "@ai-sdk/provider-utils": "5.0.11",
+    "@ai-sdk/gateway": "4.0.23"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "^3.0.12",
+    "@ai-sdk/openai-compatible": "3.0.12",
     "@hookform/resolvers": "^5.2.2",
     "@lovable.dev/cloud-auth-js": "^1.1.2",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -56,7 +58,7 @@
     "@tanstack/react-virtual": "^3.14.9",
     "@tanstack/router-plugin": "1.168.42",
     "ag-psd": "^31.0.2",
-    "ai": "^7.0.31",
+    "ai": "7.0.31",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
