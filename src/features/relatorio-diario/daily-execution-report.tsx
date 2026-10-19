@@ -24,10 +24,14 @@ import {
   formatWeekdayBr,
   maintenanceAreaRank,
   mergeSchedules,
+  normalizeOs,
   parseScheduleFile,
   type ScheduledMaintenance,
 } from "@/features/relatorio-diario/lib/daily-maintenance";
-import { shouldReplaceSchedule } from "@/features/relatorio-diario/lib/corrective-report";
+import {
+  isCompletedCorrectiveStatus,
+  shouldReplaceSchedule,
+} from "@/features/relatorio-diario/lib/corrective-report";
 import {
   buildWeeklyPlanning,
   type WeeklyCorrectiveSourceRow,
@@ -42,6 +46,14 @@ const TARGET_KEY = "apontauto:relatorio-diario:meta-equipe:v2";
 const AUTHOR_KEY = "apontauto:relatorio-diario:responsavel:v1";
 const NOTE_KEY = "apontauto:relatorio-diario:observacao-programacao:v1";
 
+// Mesmas artes de marca já carregadas no projeto. O PDF usa os pixels desses
+// arquivos e recorta apenas margens transparentes em memória para manter a
+// proporção correta, sem redesenhar ou gerar novas logos.
+const SHERWIN_WILLIAMS_LOGO_URL =
+  "/__l5e/assets-v1/76b6660e-a690-4ff2-8943-c6f831b5ded6/sherwin-williams.png";
+const GRUPO_GPS_LOGO_URL =
+  "/__l5e/assets-v1/d386a336-b420-4782-9d48-85d30cbb6fee/grupo-gps.png";
+
 type CompletionFilter = "todos" | "concluidas" | "pendentes";
 
 type CompletionRecord = {
@@ -53,6 +65,11 @@ type CompletionRecord = {
   descricao: string | null;
   concluida_em: string;
   concluida_por?: string | null;
+};
+
+type PdfLogo = {
+  dataUrl: string;
+  ratio: number;
 };
 
 const todayIso = () => {
@@ -96,6 +113,151 @@ const sortDailyRows = (rows: WeeklyPlanningRow[]) =>
       a.os.localeCompare(b.os, "pt-BR"),
   );
 
+const correctiveOsKey = (value: unknown) => normalizeOs(value).trim().toUpperCase();
+
+const isCorrectiveActivity = (row: WeeklyPlanningRow) =>
+  String(row.activity ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase() === "corretiva";
+
+const rowTimestamp = (row?: WeeklyCorrectiveSourceRow) => {
+  const value = new Date(String(row?.updated_at ?? "")).getTime();
+  return Number.isFinite(value) ? value : 0;
+};
+
+const buildCorrectiveByOs = (rows: WeeklyCorrectiveSourceRow[]) => {
+  const map = new Map<string, WeeklyCorrectiveSourceRow>();
+  rows.forEach((row) => {
+    const key = correctiveOsKey(row.numero_os);
+    if (!key) return;
+    const current = map.get(key);
+    if (!current || rowTimestamp(row) >= rowTimestamp(current)) map.set(key, row);
+  });
+  return map;
+};
+
+const rowIsCompleted = (
+  row: WeeklyPlanningRow,
+  executionMap: Map<string, CompletionRecord>,
+  correctiveByOs: Map<string, WeeklyCorrectiveSourceRow>,
+) => {
+  if (isCorrectiveActivity(row)) {
+    const canonical = correctiveByOs.get(correctiveOsKey(row.os));
+    if (canonical) return isCompletedCorrectiveStatus(canonical.status);
+  }
+  return executionMap.has(row.id);
+};
+
+const blobToDataUrl = (blob: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("Não foi possível ler a logo."));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Não foi possível ler a logo."));
+    reader.readAsDataURL(blob);
+  });
+
+const loadHtmlImage = (src: string) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Não foi possível carregar a logo."));
+    image.src = src;
+  });
+
+async function loadPdfLogo(url: string): Promise<PdfLogo> {
+  const response = await fetch(url, { cache: "force-cache" });
+  if (!response.ok) throw new Error("Não foi possível carregar as logos do relatório.");
+
+  const sourceDataUrl = await blobToDataUrl(await response.blob());
+  const image = await loadHtmlImage(sourceDataUrl);
+  const sourceCanvas = document.createElement("canvas");
+  sourceCanvas.width = image.naturalWidth || image.width;
+  sourceCanvas.height = image.naturalHeight || image.height;
+  const context = sourceCanvas.getContext("2d", { willReadFrequently: true });
+
+  if (!context || !sourceCanvas.width || !sourceCanvas.height) {
+    return {
+      dataUrl: sourceDataUrl,
+      ratio: (image.naturalWidth || image.width || 1) / (image.naturalHeight || image.height || 1),
+    };
+  }
+
+  context.drawImage(image, 0, 0);
+  const pixels = context.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height).data;
+  let minX = sourceCanvas.width;
+  let minY = sourceCanvas.height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < sourceCanvas.height; y += 1) {
+    for (let x = 0; x < sourceCanvas.width; x += 1) {
+      const alpha = pixels[(y * sourceCanvas.width + x) * 4 + 3];
+      if (alpha < 12) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+
+  if (maxX < minX || maxY < minY) {
+    return { dataUrl: sourceDataUrl, ratio: sourceCanvas.width / sourceCanvas.height };
+  }
+
+  const cropWidth = maxX - minX + 1;
+  const cropHeight = maxY - minY + 1;
+  const targetCanvas = document.createElement("canvas");
+  targetCanvas.width = cropWidth;
+  targetCanvas.height = cropHeight;
+  const targetContext = targetCanvas.getContext("2d");
+  if (!targetContext) return { dataUrl: sourceDataUrl, ratio: sourceCanvas.width / sourceCanvas.height };
+
+  targetContext.drawImage(
+    sourceCanvas,
+    minX,
+    minY,
+    cropWidth,
+    cropHeight,
+    0,
+    0,
+    cropWidth,
+    cropHeight,
+  );
+
+  return {
+    dataUrl: targetCanvas.toDataURL("image/png"),
+    ratio: cropWidth / cropHeight,
+  };
+}
+
+function drawContainedLogo(
+  doc: jsPDF,
+  logo: PdfLogo,
+  x: number,
+  y: number,
+  boxWidth: number,
+  boxHeight: number,
+) {
+  const boxRatio = boxWidth / boxHeight;
+  const width = logo.ratio >= boxRatio ? boxWidth : boxHeight * logo.ratio;
+  const height = logo.ratio >= boxRatio ? boxWidth / logo.ratio : boxHeight;
+  doc.addImage(
+    logo.dataUrl,
+    "PNG",
+    x + (boxWidth - width) / 2,
+    y + (boxHeight - height) / 2,
+    width,
+    height,
+    undefined,
+    "FAST",
+  );
+}
+
 export function DailyExecutionReport() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ScheduledMaintenance[]>([]);
@@ -124,15 +286,17 @@ export function DailyExecutionReport() {
         .select(
           "id,numero_os,status,data_programada,data_criacao,data_sla,equipe,nome_os,equipamento,ativo,patrimonio,predio,andar,local,programacao_status,programacao_periodo_inicio,programacao_periodo_fim,programacao_dia_indice,programacao_equipe,programacao_tentativas,tipo_importacao,updated_at",
         )
-        .in("status", ["aberta", "em_andamento"])
         .order("updated_at", { ascending: false })
         .limit(10000);
 
       if (error) throw error;
-      setPortfolio((data ?? []) as WeeklyCorrectiveSourceRow[]);
-      if (notify) toast.success(`${data?.length ?? 0} corretiva(s) abertas sincronizadas.`);
+      const next = (data ?? []) as WeeklyCorrectiveSourceRow[];
+      setPortfolio(next);
+      if (notify) toast.success(`${next.length} corretiva(s) sincronizadas com o status atual.`);
+      return next;
     } catch (error: any) {
-      toast.error(error?.message || "Não foi possível carregar as corretivas abertas.");
+      toast.error(error?.message || "Não foi possível carregar o status atual das corretivas.");
+      return null;
     } finally {
       setLoadingPortfolio(false);
     }
@@ -152,8 +316,10 @@ export function DailyExecutionReport() {
       ((data ?? []) as CompletionRecord[]).forEach((record) => next.set(record.item_key, record));
       setCompletions(next);
       if (notify) toast.success("Status de execução atualizado.");
+      return next;
     } catch (error: any) {
       toast.error(error?.message || "Não foi possível carregar as atividades concluídas.");
+      return null;
     } finally {
       setLoadingExecutions(false);
     }
@@ -214,6 +380,7 @@ export function DailyExecutionReport() {
     [portfolio, rows, targetPerTeam],
   );
 
+  const correctiveByOs = useMemo(() => buildCorrectiveByOs(portfolio), [portfolio]);
   const dates = planning.days.map((day) => day.date);
 
   useEffect(() => {
@@ -235,7 +402,7 @@ export function DailyExecutionReport() {
   const visibleRows = useMemo(() => {
     const q = search.trim().toLocaleLowerCase("pt-BR");
     return dayRows.filter((row) => {
-      const completed = completions.has(row.id);
+      const completed = rowIsCompleted(row, completions, correctiveByOs);
       if (teamFilter !== "todos" && (row.team || "Sem equipe") !== teamFilter) return false;
       if (completionFilter === "concluidas" && !completed) return false;
       if (completionFilter === "pendentes" && completed) return false;
@@ -245,7 +412,7 @@ export function DailyExecutionReport() {
         .toLocaleLowerCase("pt-BR")
         .includes(q);
     });
-  }, [completionFilter, completions, dayRows, search, teamFilter]);
+  }, [completionFilter, completions, correctiveByOs, dayRows, search, teamFilter]);
 
   const suggestedRows = useMemo(
     () => planning.rows.filter((row) => row.supplementalCorrective && !row.programmedCorrective),
@@ -253,8 +420,8 @@ export function DailyExecutionReport() {
   );
 
   const selectedCompleted = useMemo(
-    () => dayRows.filter((row) => completions.has(row.id)).length,
-    [completions, dayRows],
+    () => dayRows.filter((row) => rowIsCompleted(row, completions, correctiveByOs)).length,
+    [completions, correctiveByOs, dayRows],
   );
   const selectedPending = Math.max(0, dayRows.length - selectedCompleted);
   const completionRate = dayRows.length ? Math.round((selectedCompleted / dayRows.length) * 100) : 0;
@@ -328,6 +495,14 @@ export function DailyExecutionReport() {
       return;
     }
 
+    const canonicalCorrective = isCorrectiveActivity(row)
+      ? correctiveByOs.get(correctiveOsKey(row.os))
+      : undefined;
+    if (canonicalCorrective) {
+      toast.info(`A OS ${row.os} é sincronizada automaticamente com o status do Corretiva Novo.`);
+      return;
+    }
+
     const current = completions.get(row.id);
     setCompletingId(row.id);
     try {
@@ -387,153 +562,238 @@ export function DailyExecutionReport() {
 
   async function generatePdf() {
     if (!selectedDate) return;
-    if (suggestedRows.length) {
-      toast.warning("Confirme os encaixes como Programado antes de gerar o relatório diário.");
-      return;
-    }
-
-    const pdfRows = sortDailyRows(planning.rows.filter((row) => row.date === selectedDate));
-    if (!pdfRows.length) return toast.error("Não há atividades para este dia.");
 
     setGenerating(true);
     try {
+      // O PDF nunca depende apenas do estado em memória: antes de emitir,
+      // valida novamente corretivas e execuções no servidor para evitar status
+      // antigo, OS reaberta tratada como concluída ou contadores divergentes.
+      const [freshPortfolio, freshCompletions] = await Promise.all([
+        loadPortfolio(false),
+        loadExecutions(false),
+      ]);
+
+      if (!freshPortfolio || !freshCompletions) {
+        throw new Error("Não foi possível validar o status atual das OS antes de gerar o PDF.");
+      }
+
+      const freshPlanning = buildWeeklyPlanning({
+        scheduledRows: rows,
+        correctiveRows: freshPortfolio,
+        targetCorrectivesPerTeamPerDay: targetPerTeam,
+      });
+      const freshSuggestedRows = freshPlanning.rows.filter(
+        (row) => row.supplementalCorrective && !row.programmedCorrective,
+      );
+      if (freshSuggestedRows.length) {
+        toast.warning("Confirme os encaixes como Programado antes de gerar o relatório diário.");
+        return;
+      }
+
+      const pdfRows = sortDailyRows(freshPlanning.rows.filter((row) => row.date === selectedDate));
+      if (!pdfRows.length) return toast.error("Não há atividades para este dia.");
+
+      const [sherwinLogo, gpsLogo] = await Promise.all([
+        loadPdfLogo(SHERWIN_WILLIAMS_LOGO_URL),
+        loadPdfLogo(GRUPO_GPS_LOGO_URL),
+      ]);
+
+      const freshCorrectiveByOs = buildCorrectiveByOs(freshPortfolio);
+      const isDone = (row: WeeklyPlanningRow) =>
+        rowIsCompleted(row, freshCompletions, freshCorrectiveByOs);
+
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       const width = doc.internal.pageSize.getWidth();
       const height = doc.internal.pageSize.getHeight();
       const margin = 10;
-      const completed = pdfRows.filter((row) => completions.has(row.id)).length;
+      const completed = pdfRows.filter(isDone).length;
       const pending = pdfRows.length - completed;
       const rate = pdfRows.length ? Math.round((completed / pdfRows.length) * 100) : 0;
+      const generatedAt = new Date().toLocaleString("pt-BR");
 
-      doc.setFillColor(15, 23, 42);
-      doc.rect(0, 0, width, 24, "F");
-      doc.setFillColor(16, 185, 129);
-      doc.rect(0, 24, width, 1.5, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(15);
-      doc.text("RELATÓRIO DIÁRIO DE ATIVIDADES EXECUTADAS", margin, 10.5);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.text(`${formatWeekdayBr(selectedDate)} • ${formatDateBr(selectedDate)}`, margin, 17.5);
-      doc.text("ApontAuto • acompanhamento de execução", width - margin, 17.5, { align: "right" });
+      const drawHeader = () => {
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, width, 25, "F");
+        doc.setFillColor(20, 184, 166);
+        doc.rect(0, 25, width, 1, "F");
 
-      const metricY = 30;
-      const metricW = 43;
-      const metricH = 14;
+        drawContainedLogo(doc, sherwinLogo, margin, 2.4, 38, 19.5);
+        drawContainedLogo(doc, gpsLogo, width - margin - 48, 4.2, 48, 15.5);
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13.5);
+        doc.text("RELATÓRIO DIÁRIO DE ATIVIDADES EXECUTADAS", width / 2, 9.5, {
+          align: "center",
+        });
+        doc.setTextColor(203, 213, 225);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.5);
+        doc.text(`${formatDateBr(selectedDate)}  •  Acompanhamento de execução`, width / 2, 16.5, {
+          align: "center",
+        });
+      };
+
+      const metricY = 31.5;
+      const metricGap = 3.5;
+      const metricW = (width - margin * 2 - metricGap * 3) / 4;
+      const metricH = 13.5;
       const metrics = [
-        { label: "ATIVIDADES", value: String(pdfRows.length), fill: [241, 245, 249] as [number, number, number], text: [15, 23, 42] as [number, number, number] },
-        { label: "CONCLUÍDAS", value: String(completed), fill: [220, 252, 231] as [number, number, number], text: [21, 128, 61] as [number, number, number] },
-        { label: "PENDENTES", value: String(pending), fill: [254, 249, 195] as [number, number, number], text: [161, 98, 7] as [number, number, number] },
-        { label: "EXECUÇÃO", value: `${rate}%`, fill: [224, 242, 254] as [number, number, number], text: [3, 105, 161] as [number, number, number] },
+        {
+          label: "ATIVIDADES",
+          value: String(pdfRows.length),
+          fill: [241, 245, 249] as [number, number, number],
+          border: [226, 232, 240] as [number, number, number],
+          text: [15, 23, 42] as [number, number, number],
+        },
+        {
+          label: "CONCLUÍDAS",
+          value: String(completed),
+          fill: [236, 253, 245] as [number, number, number],
+          border: [209, 250, 229] as [number, number, number],
+          text: [5, 150, 105] as [number, number, number],
+        },
+        {
+          label: "PENDENTES",
+          value: String(pending),
+          fill: [255, 251, 235] as [number, number, number],
+          border: [254, 243, 199] as [number, number, number],
+          text: [180, 83, 9] as [number, number, number],
+        },
+        {
+          label: "EXECUÇÃO",
+          value: `${rate}%`,
+          fill: [239, 246, 255] as [number, number, number],
+          border: [219, 234, 254] as [number, number, number],
+          text: [3, 105, 161] as [number, number, number],
+        },
       ];
 
       metrics.forEach((metric, index) => {
-        const x = margin + index * (metricW + 3);
+        const x = margin + index * (metricW + metricGap);
         doc.setFillColor(...metric.fill);
-        doc.roundedRect(x, metricY, metricW, metricH, 1.8, 1.8, "F");
-        doc.setTextColor(...metric.text);
+        doc.setDrawColor(...metric.border);
+        doc.roundedRect(x, metricY, metricW, metricH, 1, 1, "FD");
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(6.5);
-        doc.text(metric.label, x + 3, metricY + 4.5);
-        doc.setFontSize(12);
-        doc.text(metric.value, x + 3, metricY + 11.2);
+        doc.setFontSize(6.2);
+        doc.setTextColor(100, 116, 139);
+        doc.text(metric.label, x + 3.2, metricY + 4.2);
+        doc.setTextColor(...metric.text);
+        doc.setFontSize(12.5);
+        doc.text(metric.value, x + 3.2, metricY + 11.1);
       });
 
-      doc.setTextColor(15, 23, 42);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7.5);
-      let infoY = 49;
-      if (author.trim()) {
-        doc.setFont("helvetica", "bold");
-        doc.text("Responsável:", margin, infoY);
-        doc.setFont("helvetica", "normal");
-        doc.text(author.trim(), margin + 18, infoY);
-        infoY += 4;
-      }
-      if (note.trim()) {
-        doc.setFont("helvetica", "bold");
-        doc.text("Observação:", margin, infoY);
-        doc.setFont("helvetica", "normal");
-        doc.text(note.trim(), margin + 17, infoY, { maxWidth: width - margin * 2 - 17 });
-        infoY += Math.max(4, doc.getTextDimensions(note.trim(), { maxWidth: width - margin * 2 - 17 }).h + 1);
-      }
+      const infoY = 48.5;
+      const infoH = 13.5;
+      const infoW = width - margin * 2;
+      const ownerW = infoW * 0.31;
+      const noteW = infoW * 0.34;
+      const legendW = infoW - ownerW - noteW;
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(margin, infoY, infoW, infoH, 0.8, 0.8, "FD");
+      doc.line(margin + ownerW, infoY, margin + ownerW, infoY + infoH);
+      doc.line(margin + ownerW + noteW, infoY, margin + ownerW + noteW, infoY + infoH);
 
-      doc.setFillColor(220, 252, 231);
-      doc.rect(width - margin - 55, metricY, 4, 4, "F");
-      doc.setTextColor(22, 101, 52);
-      doc.setFontSize(7);
-      doc.text("Linha verde = atividade concluída", width - margin - 49, metricY + 3.2);
+      const infoLabelY = infoY + 4.1;
+      const infoValueY = infoY + 8.7;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.2);
+      doc.setTextColor(100, 116, 139);
+      doc.text("Responsável", margin + 3, infoLabelY);
+      doc.text("Observação", margin + ownerW + 3, infoLabelY);
+      doc.text("Legenda", margin + ownerW + noteW + 3, infoLabelY);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.2);
+      doc.setTextColor(30, 41, 59);
+      doc.text(author.trim() || "—", margin + 3, infoValueY, { maxWidth: ownerW - 6 });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.8);
+      const noteLines = doc.splitTextToSize(note.trim() || "—", noteW - 6).slice(0, 2);
+      doc.text(noteLines, margin + ownerW + 3, infoValueY, { maxWidth: noteW - 6 });
+
+      const legendX = margin + ownerW + noteW + 4;
+      doc.setFillColor(5, 150, 105);
+      doc.circle(legendX, infoValueY - 0.8, 1, "F");
+      doc.setTextColor(71, 85, 105);
+      doc.text("Concluído", legendX + 2.3, infoValueY);
+      doc.setFillColor(180, 83, 9);
+      doc.circle(legendX + 19, infoValueY - 0.8, 1, "F");
+      doc.text("Pendente", legendX + 21.3, infoValueY);
 
       autoTable(doc, {
-        startY: Math.max(55, infoY + 2),
-        margin: { left: margin, right: margin, bottom: 12 },
+        startY: infoY + infoH + 3,
+        margin: { left: margin, right: margin, top: 31.5, bottom: 12 },
         head: [["Status", "OS", "Tipo", "Equipe", "Local", "Atividade executada / programada", "Ativo", "SLA"]],
-        body: pdfRows.map((row) => {
-          const record = completions.get(row.id);
-          const status = record ? `CONCLUÍDA${completionTime(record) ? `\n${completionTime(record)}` : ""}` : "PENDENTE";
-          return [
-            status,
-            row.os,
-            row.activity,
-            row.team || "—",
-            locationLabel(row),
-            row.name || row.equipment || "—",
-            row.asset || "—",
-            row.sla ? formatDateBr(row.sla) : "—",
-          ];
-        }),
+        body: pdfRows.map((row) => [
+          isDone(row) ? "CONCLUÍDO" : "PENDENTE",
+          row.os,
+          row.activity,
+          row.team || "—",
+          locationLabel(row),
+          row.name || row.equipment || "—",
+          row.asset || "—",
+          row.sla ? formatDateBr(row.sla) : "—",
+        ]),
         theme: "grid",
         styles: {
-          fontSize: 6.8,
-          cellPadding: 1.25,
+          fontSize: 5.8,
+          cellPadding: 1.05,
           valign: "middle",
           lineColor: [226, 232, 240],
-          lineWidth: 0.15,
+          lineWidth: 0.12,
           textColor: [30, 41, 59],
+          overflow: "linebreak",
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252],
         },
         headStyles: {
           fillColor: [15, 23, 42],
           textColor: [255, 255, 255],
           fontStyle: "bold",
-          fontSize: 7,
-          cellPadding: 1.5,
+          fontSize: 6.2,
+          cellPadding: 1.35,
+          lineColor: [203, 213, 225],
         },
         columnStyles: {
           0: { cellWidth: 22, fontStyle: "bold" },
-          1: { cellWidth: 24, fontStyle: "bold" },
-          2: { cellWidth: 19 },
-          3: { cellWidth: 29 },
-          4: { cellWidth: 48 },
-          5: { cellWidth: 72 },
-          6: { cellWidth: 24 },
-          7: { cellWidth: 21 },
+          1: { cellWidth: 20, fontStyle: "bold" },
+          2: { cellWidth: 22 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 50 },
+          5: { cellWidth: 82 },
+          6: { cellWidth: 31 },
+          7: { cellWidth: 20 },
         },
         didParseCell: (cell) => {
           if (cell.section !== "body") return;
           const row = pdfRows[cell.row.index];
           if (!row) return;
-          const isDone = completions.has(row.id);
-          if (isDone) {
-            cell.cell.styles.fillColor = [220, 252, 231];
-            cell.cell.styles.textColor = [20, 83, 45];
+          if (isDone(row)) {
+            cell.cell.styles.fillColor = [236, 253, 245];
+            cell.cell.styles.textColor = [30, 41, 59];
             if (cell.column.index === 0) {
-              cell.cell.styles.fillColor = [187, 247, 208];
-              cell.cell.styles.textColor = [21, 128, 61];
+              cell.cell.styles.fillColor = [209, 250, 229];
+              cell.cell.styles.textColor = [5, 150, 105];
             }
           } else if (cell.column.index === 0) {
             cell.cell.styles.fillColor = [254, 249, 195];
-            cell.cell.styles.textColor = [161, 98, 7];
+            cell.cell.styles.textColor = [180, 83, 9];
           }
+        },
+        willDrawPage: () => {
+          drawHeader();
         },
         didDrawPage: () => {
           const page = doc.getCurrentPageInfo().pageNumber;
           doc.setDrawColor(226, 232, 240);
           doc.line(margin, height - 8, width - margin, height - 8);
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(6.5);
+          doc.setFontSize(6.2);
           doc.setTextColor(100, 116, 139);
-          doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, margin, height - 4.5);
+          doc.text(`Gerado em ${generatedAt}`, margin, height - 4.5);
           doc.text(`Página ${page}`, width - margin, height - 4.5, { align: "right" });
         },
       });
@@ -544,10 +804,10 @@ export function DailyExecutionReport() {
         author: author.trim() || "ApontAuto",
       });
       doc.save(`RELATORIO_DIARIO_ATIVIDADES_${selectedDate}.pdf`);
-      toast.success("Relatório diário gerado com o status das atividades.");
+      toast.success("Relatório diário gerado após validar o status atual das corretivas.");
     } catch (error) {
       console.error(error);
-      toast.error("Não foi possível gerar o PDF.");
+      toast.error(error instanceof Error ? error.message : "Não foi possível gerar o PDF.");
     } finally {
       setGenerating(false);
     }
@@ -670,7 +930,10 @@ export function DailyExecutionReport() {
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {planning.days.map((day) => {
-                  const done = planning.rows.filter((row) => row.date === day.date && completions.has(row.id)).length;
+                  const done = planning.rows.filter(
+                    (row) =>
+                      row.date === day.date && rowIsCompleted(row, completions, correctiveByOs),
+                  ).length;
                   return (
                     <button
                       key={day.date}
@@ -709,7 +972,7 @@ export function DailyExecutionReport() {
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                   <div>
                     <h2 className="text-sm font-semibold">Atividades de {formatDateBr(selectedDate)}</h2>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">Marque a execução sem alterar o status original da OS.</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">Corretivas são sincronizadas com o status oficial; demais atividades podem ser marcadas nesta tela.</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <div className="relative min-w-[210px] flex-1">
@@ -749,7 +1012,11 @@ export function DailyExecutionReport() {
                   <div className="divide-y divide-border">
                     {visibleRows.map((row) => {
                       const record = completions.get(row.id);
-                      const completed = Boolean(record);
+                      const canonicalCorrective = isCorrectiveActivity(row)
+                        ? correctiveByOs.get(correctiveOsKey(row.os))
+                        : undefined;
+                      const syncedCorrective = Boolean(canonicalCorrective);
+                      const completed = rowIsCompleted(row, completions, correctiveByOs);
                       const waitingProgramming = row.supplementalCorrective && !row.programmedCorrective;
                       return (
                         <div
@@ -776,6 +1043,19 @@ export function DailyExecutionReport() {
                           <div className="flex items-center justify-end gap-2">
                             {waitingProgramming ? (
                               <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-[9px] font-semibold text-amber-700 dark:text-amber-300">AGUARDA PROGRAMAÇÃO</span>
+                            ) : syncedCorrective ? (
+                              <span
+                                className={cn(
+                                  "inline-flex min-w-[150px] items-center justify-center gap-1.5 rounded-md border px-2.5 py-2 text-[10px] font-semibold",
+                                  completed
+                                    ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                                    : "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                                )}
+                                title="Status sincronizado automaticamente com o Corretiva Novo"
+                              >
+                                {completed ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
+                                {completed ? "Concluída • sincronizada" : "Pendente • sincronizada"}
+                              </span>
                             ) : (
                               <Button
                                 type="button"
@@ -832,7 +1112,7 @@ export function DailyExecutionReport() {
                   <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
                   <h2 className="text-sm font-semibold">Relatório em PDF</h2>
                 </div>
-                <p className="mt-1 text-[10px] leading-4 text-muted-foreground">Concluídas aparecem em verde no documento; pendências ficam destacadas separadamente.</p>
+                <p className="mt-1 text-[10px] leading-4 text-muted-foreground">Antes de baixar, o sistema valida novamente os status atuais. O PDF usa as marcas Sherwin-Williams e Grupo GPS e exibe apenas “CONCLUÍDO”, sem horário.</p>
 
                 <label className="mt-3 block text-[10px] font-medium text-muted-foreground">Responsável</label>
                 <Input
