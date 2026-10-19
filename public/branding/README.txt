@@ -1,0 +1,1 @@
+Arquivos de identidade visual usados no PDF do Relatório Diário: Sherwin-Williams e Grupo GPS.
