@@ -5,7 +5,7 @@
     "": {
       "name": "tanstack_start_ts",
       "dependencies": {
-        "@ai-sdk/openai-compatible": "^3.0.12",
+        "@ai-sdk/openai-compatible": "3.0.12",
         "@hookform/resolvers": "^5.2.2",
         "@lovable.dev/cloud-auth-js": "^1.1.2",
         "@radix-ui/react-accordion": "^1.2.12",
@@ -42,7 +42,7 @@
         "@tanstack/react-virtual": "^3.14.9",
         "@tanstack/router-plugin": "1.168.42",
         "ag-psd": "^31.0.2",
-        "ai": "^7.0.31",
+        "ai": "7.0.31",
         "canvas-confetti": "^1.9.4",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -81,7 +81,7 @@
       },
       "devDependencies": {
         "@eslint/js": "^9.32.0",
-        "@lovable.dev/vite-tanstack-config": "2.25.3",
+        "@lovable.dev/vite-tanstack-config": "2.26.5",
         "@types/canvas-confetti": "^1.9.0",
         "@types/file-saver": "^2.0.7",
         "@types/node": "^22.16.5",
@@ -105,6 +105,11 @@
         "vitest": "^4.1.10",
       },
     },
+  },
+  "overrides": {
+    "@ai-sdk/gateway": "4.0.23",
+    "@ai-sdk/provider": "4.0.3",
+    "@ai-sdk/provider-utils": "5.0.11",
   },
   "packages": {
     "@ai-sdk/gateway": ["@ai-sdk/gateway@4.0.23", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@ai-sdk/gateway/-/gateway-4.0.23.tgz", { "dependencies": { "@ai-sdk/provider": "4.0.3", "@ai-sdk/provider-utils": "5.0.11", "@vercel/oidc": "3.2.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-f85diFdPMXYJpxCjOYZchMQkRH8h3r6lhK4Q2xmzJ7UA2OQ80L3W7tFu61742xGQK7zHWm5AhxYhNuc50H9SGQ=="],
@@ -423,7 +428,7 @@
 
     "@lovable.dev/cloud-auth-js": ["@lovable.dev/cloud-auth-js@1.1.2", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@lovable.dev/cloud-auth-js/-/cloud-auth-js-1.1.2.tgz", {}, "sha512-xz8ocewsgwkp8giau272/eWWU3XrchCg5uba4yQPPYtevHTXaVU3sD+fO1JjyPBHacVcOcwhmgUiU9TKHt63cg=="],
 
-    "@lovable.dev/vite-tanstack-config": ["@lovable.dev/vite-tanstack-config@2.25.3", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@lovable.dev/vite-tanstack-config/-/vite-tanstack-config-2.25.3.tgz", { "dependencies": { "@tanstack/devtools-vite": "^0.8.1", "lightningcss": "^1.30.0" }, "peerDependencies": { "@tailwindcss/vite": ">=4.0.0", "@tanstack/react-start": ">=1.100.0", "@tanstack/router-generator": ">=1.121.0 <1.166.45 || >=1.166.49", "@vitejs/plugin-react": ">=4.0.0", "nitro": ">=3.0.260603-beta", "vite": ">=5.0.0 <9.0.0", "vite-tsconfig-paths": ">=6.0.0" }, "optionalPeers": ["@tanstack/router-generator", "nitro"] }, "sha512-a+/r0SxKRh6PG5VgmAwWs4KeLDQmJCBe6sSKFftGAibcBRRHnAAgSy6CiNfZNlQ6ajwUuMpQjZLRH4izhl5y6A=="],
+    "@lovable.dev/vite-tanstack-config": ["@lovable.dev/vite-tanstack-config@2.26.5", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@lovable.dev/vite-tanstack-config/-/vite-tanstack-config-2.26.5.tgz", { "dependencies": { "@tanstack/devtools-vite": "^0.8.1", "lightningcss": "^1.30.0" }, "peerDependencies": { "@tailwindcss/vite": ">=4.0.0", "@tanstack/react-start": ">=1.100.0", "@vitejs/plugin-react": ">=4.0.0", "nitro": ">=3.0.260603-beta", "vite": ">=5.0.0 <9.0.0", "vite-tsconfig-paths": ">=6.0.0" }, "optionalPeers": ["nitro"] }, "sha512-nRaztSS5BDM/d6oW/h2ev9l7RcjULxvWZtmrAwvI7rVQ9dPfNCBjNGmtiy8/THyYfFlcq+R2oLb4yaUBfneB6w=="],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.1.4", "", { "dependencies": { "@tybys/wasm-util": "^0.10.1" }, "peerDependencies": { "@emnapi/core": "^1.7.1", "@emnapi/runtime": "^1.7.1" } }, "sha512-3NQNNgA1YSlJb/kMH1ildASP9HW7/7kYnRI2szWJaofaS1hWmbGI4H+d3+22aGzXXN9IJ+n+GiFVcGipJP18ow=="],
 
