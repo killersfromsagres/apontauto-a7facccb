@@ -164,21 +164,53 @@ function normalizeSearchValue(value: unknown) {
     .trim();
 }
 
+function getOpeningDateSearchValues(value: unknown) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return [];
+
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return [raw];
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear());
+  const shortYear = year.slice(-2);
+
+  return [
+    raw,
+    date.toLocaleString("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }),
+    `${day}/${month}/${year}`,
+    `${day}/${month}/${shortYear}`,
+    `${day}/${month}`,
+    `${month}/${year}`,
+    `${year}-${month}-${day}`,
+    `${day}-${month}-${year}`,
+  ];
+}
+
 function matchesCorrectiveSearch(os: any, rawQuery: string) {
   const query = normalizeSearchValue(rawQuery);
   if (!query) return true;
 
+  const openingDateValues = getOpeningDateSearchValues(os.data_criacao);
   const searchableText = [
     os.numero_os,
+    `solicitante ${os.solicitante ?? ""}`,
     os.solicitante,
     os.nome_os,
     os.ativo,
     os.patrimonio,
     os.local,
+    `predio ${os.predio ?? ""}`,
     os.predio,
     os.andar,
     os.equipe,
     os.status,
+    `data abertura ${openingDateValues.join(" ")}`,
+    ...openingDateValues,
   ]
     .map(normalizeSearchValue)
     .filter(Boolean)
@@ -769,10 +801,12 @@ function CorretivaNovoPage() {
 
         <GlassCard className="p-4">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
-            <div className="relative w-full xl:w-[320px] xl:flex-none">
+            <div className="relative w-full xl:w-[420px] xl:flex-none">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar OS, solicitante, ativo, local..."
+                placeholder="Buscar por data, solicitante, prédio, OS, ativo..."
+                aria-label="Buscar corretivas por data de abertura, solicitante, prédio, OS, ativo ou local"
+                title="Aceita data de abertura (ex.: 13/10/2026), solicitante, prédio, OS, ativo, local e combinações"
                 className="h-11 rounded-xl border-white/10 bg-white/5 pl-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
