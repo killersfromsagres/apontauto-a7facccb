@@ -46,9 +46,8 @@ const TARGET_KEY = "apontauto:relatorio-diario:meta-equipe:v2";
 const AUTHOR_KEY = "apontauto:relatorio-diario:responsavel:v1";
 const NOTE_KEY = "apontauto:relatorio-diario:observacao-programacao:v1";
 
-// Mesmas artes de marca já carregadas no projeto. O PDF usa os pixels desses
-// arquivos e recorta apenas margens transparentes em memória para manter a
-// proporção correta, sem redesenhar ou gerar novas logos.
+// Artes institucionais já carregadas no projeto Lovable. O PDF usa exatamente
+// esses arquivos, preservando os pixels, transparência e proporção originais.
 const SHERWIN_WILLIAMS_LOGO_URL =
   "/__l5e/assets-v1/76b6660e-a690-4ff2-8943-c6f831b5ded6/sherwin-williams.png";
 const GRUPO_GPS_LOGO_URL =
@@ -123,8 +122,12 @@ const isCorrectiveActivity = (row: WeeklyPlanningRow) =>
     .toLowerCase() === "corretiva";
 
 const rowTimestamp = (row?: WeeklyCorrectiveSourceRow) => {
-  const value = new Date(String(row?.updated_at ?? "")).getTime();
-  return Number.isFinite(value) ? value : 0;
+  if (!row) return 0;
+  for (const candidate of [row.updated_at, row.fim, row.data_programada, row.data_criacao]) {
+    const value = new Date(String(candidate ?? "")).getTime();
+    if (Number.isFinite(value)) return value;
+  }
+  return 0;
 };
 
 const buildCorrectiveByOs = (rows: WeeklyCorrectiveSourceRow[]) => {
@@ -284,7 +287,7 @@ export function DailyExecutionReport() {
       const { data, error } = await supabase
         .from("corretiva_os")
         .select(
-          "id,numero_os,status,data_programada,data_criacao,data_sla,equipe,nome_os,equipamento,ativo,patrimonio,predio,andar,local,programacao_status,programacao_periodo_inicio,programacao_periodo_fim,programacao_dia_indice,programacao_equipe,programacao_tentativas,tipo_importacao,updated_at",
+          "id,numero_os,status,fim,observacao_conclusao,data_programada,data_criacao,data_sla,equipe,nome_os,equipamento,ativo,patrimonio,predio,andar,local,programacao_status,programacao_periodo_inicio,programacao_periodo_fim,programacao_dia_indice,programacao_equipe,programacao_tentativas,tipo_importacao,updated_at",
         )
         .order("updated_at", { ascending: false })
         .limit(10000);
@@ -565,9 +568,8 @@ export function DailyExecutionReport() {
 
     setGenerating(true);
     try {
-      // O PDF nunca depende apenas do estado em memória: antes de emitir,
-      // valida novamente corretivas e execuções no servidor para evitar status
-      // antigo, OS reaberta tratada como concluída ou contadores divergentes.
+      // O PDF nunca depende apenas do estado em memória. Antes de emitir, valida
+      // de novo o Corretiva Novo e as execuções, inclusive para refletir reaberturas.
       const [freshPortfolio, freshCompletions] = await Promise.all([
         loadPortfolio(false),
         loadExecutions(false),
@@ -612,39 +614,50 @@ export function DailyExecutionReport() {
       const generatedAt = new Date().toLocaleString("pt-BR");
 
       const drawHeader = () => {
-        doc.setFillColor(15, 23, 42);
-        doc.rect(0, 0, width, 25, "F");
-        doc.setFillColor(20, 184, 166);
-        doc.rect(0, 25, width, 1, "F");
+        // Cabeçalho institucional premium, sem marca interna do sistema.
+        doc.setFillColor(10, 18, 35);
+        doc.rect(0, 0, width, 29, "F");
+        doc.setFillColor(15, 118, 110);
+        doc.rect(0, 29, width, 1.15, "F");
 
-        drawContainedLogo(doc, sherwinLogo, margin, 2.4, 38, 19.5);
-        drawContainedLogo(doc, gpsLogo, width - margin - 48, 4.2, 48, 15.5);
+        // Divisores discretos ajudam a organizar logo / título / logo.
+        doc.setDrawColor(51, 65, 85);
+        doc.setLineWidth(0.25);
+        doc.line(56, 5, 56, 24);
+        doc.line(width - 58, 5, width - 58, 24);
+
+        drawContainedLogo(doc, sherwinLogo, margin, 3.1, 40, 20.5);
+        drawContainedLogo(doc, gpsLogo, width - margin - 48, 5.1, 48, 16.3);
 
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(13.5);
-        doc.text("RELATÓRIO DIÁRIO DE ATIVIDADES EXECUTADAS", width / 2, 9.5, {
+        doc.setFontSize(13.2);
+        doc.text("RELATÓRIO DIÁRIO DE ATIVIDADES EXECUTADAS", width / 2, 11, {
           align: "center",
         });
         doc.setTextColor(203, 213, 225);
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(7.5);
-        doc.text(`${formatDateBr(selectedDate)}  •  Acompanhamento de execução`, width / 2, 16.5, {
+        doc.setFontSize(7.4);
+        doc.text(`${formatDateBr(selectedDate)}  •  Acompanhamento de execução`, width / 2, 18.2, {
           align: "center",
         });
+        doc.setFontSize(6.2);
+        doc.setTextColor(148, 163, 184);
+        doc.text("Sherwin-Williams  •  Grupo GPS", width / 2, 23.6, { align: "center" });
       };
 
-      const metricY = 31.5;
+      const metricY = 35;
       const metricGap = 3.5;
       const metricW = (width - margin * 2 - metricGap * 3) / 4;
-      const metricH = 13.5;
+      const metricH = 14.5;
       const metrics = [
         {
           label: "ATIVIDADES",
           value: String(pdfRows.length),
-          fill: [241, 245, 249] as [number, number, number],
+          fill: [248, 250, 252] as [number, number, number],
           border: [226, 232, 240] as [number, number, number],
           text: [15, 23, 42] as [number, number, number],
+          accent: [71, 85, 105] as [number, number, number],
         },
         {
           label: "CONCLUÍDAS",
@@ -652,6 +665,7 @@ export function DailyExecutionReport() {
           fill: [236, 253, 245] as [number, number, number],
           border: [209, 250, 229] as [number, number, number],
           text: [5, 150, 105] as [number, number, number],
+          accent: [5, 150, 105] as [number, number, number],
         },
         {
           label: "PENDENTES",
@@ -659,6 +673,7 @@ export function DailyExecutionReport() {
           fill: [255, 251, 235] as [number, number, number],
           border: [254, 243, 199] as [number, number, number],
           text: [180, 83, 9] as [number, number, number],
+          accent: [217, 119, 6] as [number, number, number],
         },
         {
           label: "EXECUÇÃO",
@@ -666,6 +681,7 @@ export function DailyExecutionReport() {
           fill: [239, 246, 255] as [number, number, number],
           border: [219, 234, 254] as [number, number, number],
           text: [3, 105, 161] as [number, number, number],
+          accent: [2, 132, 199] as [number, number, number],
         },
       ];
 
@@ -673,36 +689,37 @@ export function DailyExecutionReport() {
         const x = margin + index * (metricW + metricGap);
         doc.setFillColor(...metric.fill);
         doc.setDrawColor(...metric.border);
-        doc.roundedRect(x, metricY, metricW, metricH, 1, 1, "FD");
+        doc.roundedRect(x, metricY, metricW, metricH, 1.4, 1.4, "FD");
+        doc.setFillColor(...metric.accent);
+        doc.roundedRect(x, metricY, 1.8, metricH, 0.8, 0.8, "F");
         doc.setFont("helvetica", "bold");
         doc.setFontSize(6.2);
         doc.setTextColor(100, 116, 139);
-        doc.text(metric.label, x + 3.2, metricY + 4.2);
+        doc.text(metric.label, x + 4.5, metricY + 4.5);
         doc.setTextColor(...metric.text);
-        doc.setFontSize(12.5);
-        doc.text(metric.value, x + 3.2, metricY + 11.1);
+        doc.setFontSize(13);
+        doc.text(metric.value, x + 4.5, metricY + 11.8);
       });
 
-      const infoY = 48.5;
-      const infoH = 13.5;
+      const infoY = 53.5;
+      const infoH = 14.5;
       const infoW = width - margin * 2;
-      const ownerW = infoW * 0.31;
-      const noteW = infoW * 0.34;
-      const legendW = infoW - ownerW - noteW;
+      const ownerW = infoW * 0.30;
+      const noteW = infoW * 0.38;
       doc.setFillColor(248, 250, 252);
       doc.setDrawColor(226, 232, 240);
-      doc.roundedRect(margin, infoY, infoW, infoH, 0.8, 0.8, "FD");
+      doc.roundedRect(margin, infoY, infoW, infoH, 1.2, 1.2, "FD");
       doc.line(margin + ownerW, infoY, margin + ownerW, infoY + infoH);
       doc.line(margin + ownerW + noteW, infoY, margin + ownerW + noteW, infoY + infoH);
 
-      const infoLabelY = infoY + 4.1;
-      const infoValueY = infoY + 8.7;
+      const infoLabelY = infoY + 4.3;
+      const infoValueY = infoY + 9.1;
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(6.2);
+      doc.setFontSize(6.1);
       doc.setTextColor(100, 116, 139);
-      doc.text("Responsável", margin + 3, infoLabelY);
-      doc.text("Observação", margin + ownerW + 3, infoLabelY);
-      doc.text("Legenda", margin + ownerW + noteW + 3, infoLabelY);
+      doc.text("RESPONSÁVEL", margin + 3, infoLabelY);
+      doc.text("OBSERVAÇÃO", margin + ownerW + 3, infoLabelY);
+      doc.text("LEGENDA", margin + ownerW + noteW + 3, infoLabelY);
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7.2);
@@ -715,16 +732,16 @@ export function DailyExecutionReport() {
 
       const legendX = margin + ownerW + noteW + 4;
       doc.setFillColor(5, 150, 105);
-      doc.circle(legendX, infoValueY - 0.8, 1, "F");
+      doc.circle(legendX, infoValueY - 0.9, 1, "F");
       doc.setTextColor(71, 85, 105);
-      doc.text("Concluído", legendX + 2.3, infoValueY);
-      doc.setFillColor(180, 83, 9);
-      doc.circle(legendX + 19, infoValueY - 0.8, 1, "F");
-      doc.text("Pendente", legendX + 21.3, infoValueY);
+      doc.text("Concluído", legendX + 2.4, infoValueY);
+      doc.setFillColor(217, 119, 6);
+      doc.circle(legendX + 20, infoValueY - 0.9, 1, "F");
+      doc.text("Pendente", legendX + 22.4, infoValueY);
 
       autoTable(doc, {
         startY: infoY + infoH + 3,
-        margin: { left: margin, right: margin, top: 31.5, bottom: 12 },
+        margin: { left: margin, right: margin, top: 35, bottom: 12 },
         head: [["Status", "OS", "Tipo", "Equipe", "Local", "Atividade executada / programada", "Ativo", "SLA"]],
         body: pdfRows.map((row) => [
           isDone(row) ? "CONCLUÍDO" : "PENDENTE",
@@ -750,15 +767,15 @@ export function DailyExecutionReport() {
           fillColor: [248, 250, 252],
         },
         headStyles: {
-          fillColor: [15, 23, 42],
+          fillColor: [10, 18, 35],
           textColor: [255, 255, 255],
           fontStyle: "bold",
           fontSize: 6.2,
-          cellPadding: 1.35,
-          lineColor: [203, 213, 225],
+          cellPadding: 1.45,
+          lineColor: [51, 65, 85],
         },
         columnStyles: {
-          0: { cellWidth: 22, fontStyle: "bold" },
+          0: { cellWidth: 22, fontStyle: "bold", halign: "center" },
           1: { cellWidth: 20, fontStyle: "bold" },
           2: { cellWidth: 22 },
           3: { cellWidth: 30 },
@@ -772,7 +789,7 @@ export function DailyExecutionReport() {
           const row = pdfRows[cell.row.index];
           if (!row) return;
           if (isDone(row)) {
-            cell.cell.styles.fillColor = [236, 253, 245];
+            cell.cell.styles.fillColor = [240, 253, 247];
             cell.cell.styles.textColor = [30, 41, 59];
             if (cell.column.index === 0) {
               cell.cell.styles.fillColor = [209, 250, 229];
@@ -800,11 +817,13 @@ export function DailyExecutionReport() {
 
       doc.setProperties({
         title: `Relatório Diário de Atividades - ${formatDateBr(selectedDate)}`,
-        subject: "Atividades executadas e pendentes do dia",
-        author: author.trim() || "ApontAuto",
+        subject: "Relatório diário de atividades executadas e pendentes",
+        author: author.trim() || "Sherwin-Williams • Grupo GPS",
+        creator: "Sherwin-Williams • Grupo GPS",
+        keywords: "relatório diário, manutenção, facilities, Sherwin-Williams, Grupo GPS",
       });
       doc.save(`RELATORIO_DIARIO_ATIVIDADES_${selectedDate}.pdf`);
-      toast.success("Relatório diário gerado após validar o status atual das corretivas.");
+      toast.success("Relatório corporativo gerado após validar o status atual das corretivas.");
     } catch (error) {
       console.error(error);
       toast.error(error instanceof Error ? error.message : "Não foi possível gerar o PDF.");
@@ -825,7 +844,7 @@ export function DailyExecutionReport() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">Controle diário de execução</p>
               <h1 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">Relatório Diário • Atividades executadas</h1>
               <p className="mt-1 max-w-4xl text-xs leading-5 text-slate-300">
-                Acompanhe a programação do dia, marque o que foi concluído e gere um PDF compacto com execução e pendências.
+                Corretivas são sincronizadas automaticamente com o Corretiva Novo; o PDF é validado novamente antes da emissão.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -919,7 +938,7 @@ export function DailyExecutionReport() {
         <section className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
           <FileSpreadsheet className="mx-auto h-7 w-7 text-muted-foreground" />
           <h2 className="mt-3 font-semibold">Importe a programação para iniciar o relatório diário</h2>
-          <p className="mx-auto mt-1 max-w-2xl text-sm text-muted-foreground">Depois você poderá marcar cada atividade como concluída e emitir o PDF de execução.</p>
+          <p className="mx-auto mt-1 max-w-2xl text-sm text-muted-foreground">Depois você poderá acompanhar automaticamente corretivas e marcar manualmente apenas as demais atividades.</p>
           <Button className="mt-4 gap-2" onClick={() => inputRef.current?.click()}>
             <Upload className="h-4 w-4" /> Selecionar planilhas
           </Button>
@@ -972,7 +991,7 @@ export function DailyExecutionReport() {
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                   <div>
                     <h2 className="text-sm font-semibold">Atividades de {formatDateBr(selectedDate)}</h2>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">Corretivas são sincronizadas com o status oficial; demais atividades podem ser marcadas nesta tela.</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">Corretivas oficiais seguem automaticamente o status do Corretiva Novo; demais atividades permanecem com controle manual.</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <div className="relative min-w-[210px] flex-1">
@@ -1112,7 +1131,7 @@ export function DailyExecutionReport() {
                   <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
                   <h2 className="text-sm font-semibold">Relatório em PDF</h2>
                 </div>
-                <p className="mt-1 text-[10px] leading-4 text-muted-foreground">Antes de baixar, o sistema valida novamente os status atuais. O PDF usa as marcas Sherwin-Williams e Grupo GPS e exibe apenas “CONCLUÍDO”, sem horário.</p>
+                <p className="mt-1 text-[10px] leading-4 text-muted-foreground">Antes de baixar, o sistema valida novamente os status atuais. O PDF usa somente as marcas Sherwin-Williams e Grupo GPS e exibe “CONCLUÍDO” sem horário.</p>
 
                 <label className="mt-3 block text-[10px] font-medium text-muted-foreground">Responsável</label>
                 <Input
