@@ -138,7 +138,9 @@ export function isCorrectiveProgrammedForWeek(
   periodStart: string,
   periodEnd: string,
 ) {
-  if (!OPEN_STATUSES.has(normalize(row.status))) return false;
+  // Uma corretiva já programada precisa continuar visível no relatório mesmo
+  // depois de ser concluída no Corretiva Novo. O status aberto é exigido apenas
+  // para novas sugestões de encaixe, não para preservar o histórico planejado.
   if (normalize(row.tipo_importacao) === "backorder_mensal") return false;
   if (normalize(row.programacao_status) !== "em_programacao") return false;
   if (String(row.programacao_periodo_inicio ?? "") !== periodStart) return false;
