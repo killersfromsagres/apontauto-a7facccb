@@ -19,8 +19,6 @@ export interface EstoqueItem {
   ca_numero: string | null;
   unidade: string;
   estoque_atual: number;
-  estoque_ideal: number | null;
-  estoque_minimo: number | null;
   valor_unitario: number | null;
   ativo: boolean;
   legacy_source_key?: string | null;
@@ -130,8 +128,6 @@ export interface EstoqueItemInput {
   tamanho?: string | null;
   ca_numero?: string | null;
   unidade?: string;
-  estoque_ideal?: number | null;
-  estoque_minimo?: number | null;
   valor_unitario?: number | null;
   ativo?: boolean;
 }
@@ -160,8 +156,6 @@ function mapItem(row: any): EstoqueItem {
   return {
     ...row,
     estoque_atual: numberOrZero(row.estoque_atual),
-    estoque_ideal: nullableNumber(row.estoque_ideal),
-    estoque_minimo: nullableNumber(row.estoque_minimo),
     valor_unitario: nullableNumber(row.valor_unitario),
   };
 }
@@ -193,7 +187,9 @@ export async function fetchEstoqueSnapshot(): Promise<EstoqueSnapshot> {
     await Promise.all([
       db
         .from("estoque_epi_itens")
-        .select("*")
+        .select(
+          "id,codigo,descricao,categoria,tamanho,ca_numero,unidade,estoque_atual,valor_unitario,ativo,legacy_source_key,origem_linha,created_at,updated_at",
+        )
         .order("categoria", { ascending: true })
         .order("descricao", { ascending: true }),
       db
@@ -245,8 +241,6 @@ export async function saveEstoqueItem(
     tamanho: input.tamanho?.trim() || null,
     ca_numero: input.ca_numero?.trim() || null,
     unidade: input.unidade?.trim() || "UN",
-    estoque_ideal: input.estoque_ideal ?? null,
-    estoque_minimo: input.estoque_minimo ?? null,
     valor_unitario: input.valor_unitario ?? null,
     ativo: input.ativo ?? true,
     updated_at: new Date().toISOString(),
@@ -413,25 +407,6 @@ export async function registerEstoqueDelivery(input: {
   });
   if (error) throw error;
   return data as string;
-}
-
-export function estoqueStatus(item: EstoqueItem):
-  | "ZERADO"
-  | "CRÍTICO"
-  | "COMPRAR"
-  | "IDEAL"
-  | "ACIMA"
-  | "SEM META" {
-  const atual = numberOrZero(item.estoque_atual);
-  const ideal = nullableNumber(item.estoque_ideal);
-  const minimo = nullableNumber(item.estoque_minimo);
-
-  if (atual <= 0) return "ZERADO";
-  if (minimo !== null && atual <= minimo) return "CRÍTICO";
-  if (ideal === null || ideal <= 0) return "SEM META";
-  if (atual < ideal) return "COMPRAR";
-  if (atual === ideal) return "IDEAL";
-  return "ACIMA";
 }
 
 export function inventoryValue(item: EstoqueItem): number {
