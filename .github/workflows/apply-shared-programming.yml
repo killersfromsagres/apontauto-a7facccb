@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 0
 
       - name: Apply patch
-        run: node .github/patch-shared-programming.mjs
+        run: python3 .github/patch_shared_programming.py
 
       - name: Setup Node
         uses: actions/setup-node@v4
