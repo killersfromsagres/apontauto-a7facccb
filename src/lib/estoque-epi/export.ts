@@ -5,14 +5,13 @@ import type {
   EstoqueMovimento,
   EstoqueSnapshot,
 } from "./data";
-import { estoqueStatus, inventoryValue } from "./data";
+import { inventoryValue } from "./data";
 
 const NAVY = "FF0B1F33";
 const BLUE = "FF0EA5E9";
 const CYAN = "FF22D3EE";
 const GREEN = "FF16A34A";
 const AMBER = "FFF59E0B";
-const RED = "FFDC2626";
 const WHITE = "FFFFFFFF";
 const TEXT = "FF172033";
 const MUTED = "FF64748B";
@@ -45,23 +44,13 @@ function movementLabel(tipo: string): string {
   return labels[tipo] ?? tipo;
 }
 
-function statusColor(status: string): string {
-  if (status === "ZERADO" || status === "CRÍTICO") return RED;
-  if (status === "COMPRAR") return AMBER;
-  if (status === "IDEAL") return GREEN;
-  if (status === "ACIMA") return BLUE;
-  return MUTED;
-}
-
 function applyHeader(row: any, color = NAVY) {
   row.height = 32;
   row.eachCell((cell: any) => {
     cell.font = { name: "Aptos", size: 10, bold: true, color: { argb: WHITE } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } };
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    cell.border = {
-      bottom: { style: "thin", color: { argb: BORDER } },
-    };
+    cell.border = { bottom: { style: "thin", color: { argb: BORDER } } };
   });
 }
 
@@ -92,7 +81,6 @@ function addTitle(
   subtitleCell.value = subtitle;
   subtitleCell.font = { name: "Aptos", size: 10, color: { argb: MUTED } };
   subtitleCell.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
-
   sheet.getCell(1, endColumn).border = {
     right: { style: "thick", color: { argb: accent } },
   };
@@ -103,9 +91,7 @@ function styleBodyRow(row: any, index: number) {
   row.eachCell((cell: any) => {
     cell.font = { name: "Aptos", size: 10, color: { argb: TEXT } };
     cell.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
-    cell.border = {
-      bottom: { style: "hair", color: { argb: BORDER } },
-    };
+    cell.border = { bottom: { style: "hair", color: { argb: BORDER } } };
     if (index % 2 === 1) {
       cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: SOFT } };
     }
@@ -146,8 +132,8 @@ function addStockSheet(
   addTitle(
     sheet,
     "ESTOQUE • EPI & UNIFORMES",
-    `${BRAND} • Posição atual • ${items.length} itens • Gerado em ${new Date().toLocaleString("pt-BR")}`,
-    18,
+    `${BRAND} • Quantidade física atual • ${items.length} itens • Gerado em ${new Date().toLocaleString("pt-BR")}`,
+    13,
   );
   sheet.addRow([]);
   const header = sheet.addRow([
@@ -159,12 +145,7 @@ function addStockSheet(
     "Un.",
     "Entradas",
     "Saídas",
-    "Saldo atual",
-    "Mínimo",
-    "Ideal",
-    "% do ideal",
-    "Status",
-    "Sugestão de compra",
+    "Quantidade atual",
     "Valor unitário",
     "Valor em estoque",
     "Comprado",
@@ -195,19 +176,12 @@ function addStockSheet(
   });
 
   items.forEach((item, index) => {
-    const status = estoqueStatus(item);
     const movement = movementTotals.get(item.id) ?? {
       entradas: 0,
       saidas: 0,
       comprado: 0,
       entregue: 0,
     };
-    const ideal = Number(item.estoque_ideal ?? 0);
-    const percentIdeal =
-      ideal > 0 ? Number(item.estoque_atual ?? 0) / ideal : null;
-    const purchaseSuggestion =
-      ideal > 0 ? Math.max(0, ideal - Number(item.estoque_atual ?? 0)) : 0;
-
     const row = sheet.addRow([
       item.codigo ?? "",
       item.descricao,
@@ -218,51 +192,39 @@ function addStockSheet(
       movement.entradas,
       movement.saidas,
       item.estoque_atual,
-      item.estoque_minimo ?? "",
-      item.estoque_ideal ?? "",
-      percentIdeal ?? "",
-      status,
-      purchaseSuggestion || "",
       item.valor_unitario ?? "",
       inventoryValue(item),
       movement.comprado,
       movement.entregue,
     ]);
     styleBodyRow(row, index);
-    [1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].forEach((col) => {
+    [1, 4, 5, 6, 7, 8, 9].forEach((col) => {
       row.getCell(col).alignment = {
         horizontal: "center",
         vertical: "middle",
         wrapText: true,
       };
     });
-    row.getCell(12).numFmt = '0.0%';
-    row.getCell(13).font = {
-      bold: true,
-      color: { argb: statusColor(status) },
-    };
-    [15, 16, 17, 18].forEach((col) => {
+    [10, 11, 12, 13].forEach((col) => {
       row.getCell(col).alignment = {
         horizontal: "right",
         vertical: "middle",
         wrapText: true,
       };
+      row.getCell(col).numFmt = 'R$ #,##0.00';
     });
     row.getCell(2).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
     row.getCell(3).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
-    row.getCell(15).numFmt = 'R$ #,##0.00';
-    row.getCell(16).numFmt = 'R$ #,##0.00';
-    row.getCell(17).numFmt = 'R$ #,##0.00';
-    row.getCell(18).numFmt = 'R$ #,##0.00';
+    if (Number(item.estoque_atual || 0) <= 0) {
+      row.getCell(9).font = { bold: true, color: { argb: AMBER } };
+    }
   });
 
-  const widths = [
-    12, 44, 24, 10, 14, 8, 10, 10, 11, 10, 10, 11, 12, 16, 14, 16, 14, 14,
-  ];
+  const widths = [12, 44, 24, 10, 14, 8, 10, 10, 14, 14, 16, 14, 14];
   widths.forEach((width, index) => (sheet.getColumn(index + 1).width = width));
   sheet.autoFilter = {
     from: { row: 5, column: 1 },
-    to: { row: Math.max(5, 5 + items.length), column: 18 },
+    to: { row: Math.max(5, 5 + items.length), column: 13 },
   };
   configureSheet(sheet, 2);
 }
@@ -318,13 +280,6 @@ function addMovementSheet(workbook: any, movimentos: EstoqueMovimento[]) {
     [1, 2, 3, 6, 7, 8, 9, 10].forEach((col) => {
       row.getCell(col).alignment = {
         horizontal: "center",
-        vertical: "middle",
-        wrapText: true,
-      };
-    });
-    [4, 5, 11, 12, 13, 14].forEach((col) => {
-      row.getCell(col).alignment = {
-        horizontal: "left",
         vertical: "middle",
         wrapText: true,
       };
@@ -518,42 +473,34 @@ function addSummarySheet(workbook: any, snapshot: EstoqueSnapshot) {
   const items = snapshot.items.filter((item) => item.ativo);
   const totalValue = items.reduce((sum, item) => sum + inventoryValue(item), 0);
   const qty = items.reduce((sum, item) => sum + Number(item.estoque_atual || 0), 0);
-  const critical = items.filter((item) =>
-    ["ZERADO", "CRÍTICO", "COMPRAR"].includes(estoqueStatus(item)),
-  );
+  const zeroed = items.filter((item) => Number(item.estoque_atual || 0) <= 0);
+  const lowest = [...items]
+    .sort((a, b) =>
+      Number(a.estoque_atual || 0) - Number(b.estoque_atual || 0) ||
+      a.descricao.localeCompare(b.descricao, "pt-BR"),
+    )
+    .slice(0, 40);
   const categoryCounts = new Map<string, { itens: number; qtd: number; valor: number }>();
   items.forEach((item) => {
-    const current = categoryCounts.get(item.categoria) ?? {
-      itens: 0,
-      qtd: 0,
-      valor: 0,
-    };
+    const current = categoryCounts.get(item.categoria) ?? { itens: 0, qtd: 0, valor: 0 };
     current.itens += 1;
     current.qtd += Number(item.estoque_atual || 0);
     current.valor += inventoryValue(item);
     categoryCounts.set(item.categoria, current);
   });
 
-  const sheet = workbook.addWorksheet("RESUMO", {
-    views: [{ showGridLines: false }],
-  });
+  const sheet = workbook.addWorksheet("RESUMO", { views: [{ showGridLines: false }] });
   sheet.columns = Array.from({ length: 10 }, () => ({ width: 16 }));
   sheet.mergeCells("A1:J2");
   const title = sheet.getCell("A1");
   title.value = BRAND;
-  title.font = {
-    name: "Aptos Display",
-    size: 24,
-    bold: true,
-    color: { argb: WHITE },
-  };
+  title.font = { name: "Aptos Display", size: 24, bold: true, color: { argb: WHITE } };
   title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
   title.alignment = { horizontal: "left", vertical: "middle" };
 
   sheet.mergeCells("A3:J3");
   const subtitle = sheet.getCell("A3");
-  subtitle.value =
-    "CONTROLE DE ESTOQUE • EPI & UNIFORMES • entradas, saídas e rastreabilidade por colaborador";
+  subtitle.value = "CONTROLE DE ESTOQUE • quantidade física, entradas, saídas e rastreabilidade por colaborador";
   subtitle.font = { name: "Aptos", size: 11, bold: true, color: { argb: MUTED } };
   subtitle.alignment = { horizontal: "left", vertical: "middle", wrapText: true };
   sheet.getRow(1).height = 28;
@@ -564,7 +511,7 @@ function addSummarySheet(workbook: any, snapshot: EstoqueSnapshot) {
     ["A5:B7", "ITENS CADASTRADOS", items.length, BLUE],
     ["D5:E7", "UNIDADES EM ESTOQUE", qty, CYAN],
     ["G5:H7", "VALOR DO ESTOQUE", money(totalValue), GREEN],
-    ["I5:J7", "ATENÇÃO / COMPRA", critical.length, AMBER],
+    ["I5:J7", "ITENS SEM SALDO", zeroed.length, AMBER],
   ] as const;
 
   cards.forEach(([range, label, value, color]) => {
@@ -572,18 +519,9 @@ function addSummarySheet(workbook: any, snapshot: EstoqueSnapshot) {
     const start = range.split(":")[0];
     const cell = sheet.getCell(start);
     cell.value = `${label}\n${value}`;
-    cell.font = {
-      name: "Aptos Display",
-      size: 12,
-      bold: true,
-      color: { argb: WHITE },
-    };
+    cell.font = { name: "Aptos Display", size: 12, bold: true, color: { argb: WHITE } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } };
-    cell.alignment = {
-      horizontal: "center",
-      vertical: "middle",
-      wrapText: true,
-    };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
   });
 
   sheet.getCell("A10").value = "Categoria";
@@ -602,51 +540,28 @@ function addSummarySheet(workbook: any, snapshot: EstoqueSnapshot) {
       row.getCell(4).numFmt = 'R$ #,##0.00';
     });
 
-  const criticalStart = Math.max(rowIndex + 2, 22);
-  sheet.getCell(criticalStart, 1).value = "Itens para atenção";
-  sheet.getCell(criticalStart, 1).font = {
-    size: 12,
-    bold: true,
-    color: { argb: TEXT },
-  };
-  const criticalHeader = sheet.getRow(criticalStart + 1);
-  criticalHeader.values = [
-    "Descrição",
-    "Categoria",
-    "Saldo",
-    "Mínimo",
-    "Ideal",
-    "Status",
-  ];
-  applyHeader(criticalHeader, NAVY);
+  const lowestStart = Math.max(rowIndex + 2, 22);
+  sheet.getCell(lowestStart, 1).value = "Menores saldos";
+  sheet.getCell(lowestStart, 1).font = { size: 12, bold: true, color: { argb: TEXT } };
+  const lowestHeader = sheet.getRow(lowestStart + 1);
+  lowestHeader.values = ["Descrição", "Categoria", "Quantidade atual", "Unidade"];
+  applyHeader(lowestHeader, NAVY);
 
-  critical
-    .sort((a, b) => a.estoque_atual - b.estoque_atual)
-    .slice(0, 40)
-    .forEach((item, index) => {
-      const row = sheet.getRow(criticalStart + 2 + index);
-      const status = estoqueStatus(item);
-      row.values = [
-        item.descricao,
-        item.categoria,
-        item.estoque_atual,
-        item.estoque_minimo ?? "",
-        item.estoque_ideal ?? "",
-        status,
-      ];
-      styleBodyRow(row, index);
-      row.getCell(6).font = {
-        bold: true,
-        color: { argb: statusColor(status) },
-      };
-    });
+  lowest.forEach((item, index) => {
+    const row = sheet.getRow(lowestStart + 2 + index);
+    row.values = [item.descricao, item.categoria, item.estoque_atual, item.unidade];
+    styleBodyRow(row, index);
+    row.getCell(3).alignment = { horizontal: "center", vertical: "middle" };
+    row.getCell(4).alignment = { horizontal: "center", vertical: "middle" };
+    if (Number(item.estoque_atual || 0) <= 0) {
+      row.getCell(3).font = { bold: true, color: { argb: AMBER } };
+    }
+  });
 
   sheet.getColumn(1).width = 46;
-  sheet.getColumn(2).width = 24;
-  sheet.getColumn(3).width = 14;
-  sheet.getColumn(4).width = 16;
-  sheet.getColumn(5).width = 12;
-  sheet.getColumn(6).width = 14;
+  sheet.getColumn(2).width = 28;
+  sheet.getColumn(3).width = 18;
+  sheet.getColumn(4).width = 14;
   sheet.pageSetup = {
     orientation: "landscape",
     paperSize: 9,
@@ -664,7 +579,7 @@ export async function generateEstoqueWorkbook(snapshot: EstoqueSnapshot) {
   workbook.creator = "Demarchi Sherwin Williams";
   workbook.company = "Demarchi Sherwin Williams";
   workbook.title = "Controle de Estoque • Uniformes e EPIs";
-  workbook.subject = "Estoque, movimentações, retiradas e colaboradores";
+  workbook.subject = "Quantidade atual, movimentações, retiradas e colaboradores";
   workbook.created = new Date();
 
   addSummarySheet(workbook, snapshot);
