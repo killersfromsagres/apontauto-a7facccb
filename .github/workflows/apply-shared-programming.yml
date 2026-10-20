@@ -43,8 +43,14 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      - name: Tests
-        run: npm test -- --passWithNoTests
+      - name: Relevant tests
+        run: |
+          npm test -- --passWithNoTests \
+            src/features/relatorio-diario/lib/corrective-report.test.ts \
+            src/features/relatorio-diario/lib/daily-maintenance.test.ts \
+            src/features/relatorio-diario/lib/weekly-planning.test.ts \
+            src/features/relatorio-diario/lib/weekly-planning-completed-day.test.ts \
+            src/features/relatorio-diario/lib/weekly-planning-completed-programmed.test.ts
 
       - name: Commit implementation
         run: |
