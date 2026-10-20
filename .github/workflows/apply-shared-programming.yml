@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   patch-and-validate:
-    if: github.event.head_commit.message == 'chore: run shared programming patch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
