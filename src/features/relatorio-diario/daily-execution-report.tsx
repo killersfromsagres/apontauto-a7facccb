@@ -153,8 +153,10 @@ const rowCompletionState = (
   if (isCorrectiveActivity(row)) {
     const canonical = correctiveByOs.get(correctiveOsKey(row.os));
     if (canonical) {
-      if (isCompletedCorrectiveStatus(canonical.status)) return "concluida";
-      return manualExecution ? "pendente_verificacao" : "pendente";
+      const canonicalCompleted = isCompletedCorrectiveStatus(canonical.status);
+      if (canonicalCompleted && manualExecution) return "concluida";
+      if (canonicalCompleted || manualExecution) return "pendente_verificacao";
+      return "pendente";
     }
   }
 
@@ -636,10 +638,9 @@ export function DailyExecutionReport() {
     const canonicalCorrective = isCorrectiveActivity(row)
       ? correctiveByOs.get(correctiveOsKey(row.os))
       : undefined;
-    if (canonicalCorrective && isCompletedCorrectiveStatus(canonicalCorrective.status)) {
-      toast.info(`A OS ${row.os} já está concluída e verificada pelo Corretiva Novo.`);
-      return;
-    }
+    const canonicalCompleted = Boolean(
+      canonicalCorrective && isCompletedCorrectiveStatus(canonicalCorrective.status),
+    );
 
     const current = completions.get(row.id);
     setCompletingId(row.id);
@@ -657,9 +658,11 @@ export function DailyExecutionReport() {
           return next;
         });
         toast.success(
-          canonicalCorrective
-            ? `OS ${row.os} voltou para pendente e deixou de aguardar verificação.`
-            : `OS ${row.os} voltou para pendente no relatório diário.`,
+          canonicalCompleted
+            ? `Verificação da OS ${row.os} desfeita no Relatório Diário. A conclusão do Corretiva Novo continua registrada e voltou a aguardar verificação.`
+            : canonicalCorrective
+              ? `OS ${row.os} voltou para pendente e deixou de aguardar confirmação do Corretiva Novo.`
+              : `OS ${row.os} voltou para pendente no relatório diário.`,
         );
         return;
       }
@@ -688,9 +691,11 @@ export function DailyExecutionReport() {
         return next;
       });
       toast.success(
-        canonicalCorrective
-          ? `OS ${row.os} marcada como concluída no Relatório Diário. Agora está pendente de verificação no Corretiva Novo.`
-          : `OS ${row.os} marcada como concluída.`,
+        canonicalCompleted
+          ? `OS ${row.os} verificada no Relatório Diário. A conclusão já estava registrada no Corretiva Novo.`
+          : canonicalCorrective
+            ? `OS ${row.os} marcada como concluída no Relatório Diário. Agora aguarda confirmação do Corretiva Novo.`
+            : `OS ${row.os} marcada como concluída.`,
       );
     } catch (error: any) {
       toast.error(error?.message || "Não foi possível atualizar a execução desta atividade.");
@@ -1025,7 +1030,7 @@ export function DailyExecutionReport() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">Controle diário de execução</p>
               <h1 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">Relatório Diário • Atividades executadas</h1>
               <p className="mt-1 max-w-4xl text-xs leading-5 text-slate-300">
-                Corretivas podem ser concluídas aqui. Enquanto o Corretiva Novo ainda não confirmar a conclusão, elas ficam como pendentes de verificação; ao concluir no Corretiva Novo, a confirmação é automática.
+                Corretivas usam verificação em duas vias: concluir aqui ou no Corretiva Novo marca a atividade como concluída e pendente de verificação; quando as duas confirmações existem, ela passa para concluída e verificada.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -1172,7 +1177,7 @@ export function DailyExecutionReport() {
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                   <div>
                     <h2 className="text-sm font-semibold">Atividades de {formatDateBr(selectedDate)}</h2>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">Você pode marcar corretivas como concluídas aqui. Elas ficam pendentes de verificação até o Corretiva Novo confirmar; conclusões feitas no Corretiva Novo entram como verificadas automaticamente.</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">A conclusão é sincronizada nos dois sentidos. Se concluir primeiro no Corretiva Novo, a OS entra aqui como concluída e pendente de verificação; clique para verificar. Se concluir primeiro aqui, ela aguarda a confirmação do Corretiva Novo.</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <div className="relative min-w-[210px] flex-1">
@@ -1220,6 +1225,10 @@ export function DailyExecutionReport() {
                       const completionState = rowCompletionState(row, completions, correctiveByOs);
                       const completed = completionState !== "pendente";
                       const pendingVerification = completionState === "pendente_verificacao";
+                      const canonicalCompleted = Boolean(
+                        canonicalCorrective && isCompletedCorrectiveStatus(canonicalCorrective.status),
+                      );
+                      const manualCompleted = Boolean(record);
                       const verifiedCorrective =
                         syncedCorrective && completionState === "concluida";
                       const waitingProgramming = row.supplementalCorrective && !row.programmedCorrective;
@@ -1251,7 +1260,7 @@ export function DailyExecutionReport() {
                             ) : verifiedCorrective ? (
                               <span
                                 className="inline-flex min-w-[150px] items-center justify-center gap-1.5 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-2 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300"
-                                title="Conclusão confirmada automaticamente pelo Corretiva Novo"
+                                title="Conclusão confirmada no Corretiva Novo e verificada no Relatório Diário"
                               >
                                 <CheckCircle2 className="h-3.5 w-3.5" />
                                 Concluída • verificada
@@ -1273,11 +1282,13 @@ export function DailyExecutionReport() {
                                 )}
                                 title={
                                   pendingVerification
-                                    ? "Concluída no Relatório Diário e aguardando verificação do Corretiva Novo. Clique para desfazer."
+                                    ? canonicalCompleted && !manualCompleted
+                                      ? "Concluída no Corretiva Novo e pendente de verificação no Relatório Diário. Clique para verificar."
+                                      : "Concluída no Relatório Diário e aguardando confirmação do Corretiva Novo. Clique para desfazer."
                                     : completed
                                       ? "Clique para voltar a atividade para pendente"
                                       : syncedCorrective
-                                        ? "Marcar corretiva como concluída no Relatório Diário; ficará pendente de verificação"
+                                        ? "Marcar corretiva como concluída no Relatório Diário; ficará pendente de confirmação do Corretiva Novo"
                                         : "Marcar atividade como concluída"
                                 }
                               >
@@ -1289,7 +1300,9 @@ export function DailyExecutionReport() {
                                   <Circle className="h-3.5 w-3.5" />
                                 )}
                                 {pendingVerification
-                                  ? "Concluída • verificar"
+                                  ? canonicalCompleted && !manualCompleted
+                                    ? "Concluída • verificar"
+                                    : "Concluída • aguarda confirmação"
                                   : completed
                                     ? `Concluída${completionTime(record) ? ` • ${completionTime(record)}` : ""}`
                                     : "Marcar concluída"}
