@@ -1,29 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   ArrowDownToLine,
   ArrowUpFromLine,
   Boxes,
-  BriefcaseBusiness,
-  Building2,
   CalendarDays,
   Check,
   ClipboardCheck,
   Edit3,
   FileSpreadsheet,
-  Footprints,
-  Glasses,
-  Hand,
-  HardHat,
-  Headphones,
   History,
   Loader2,
   PackageCheck,
@@ -33,15 +19,10 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Shirt,
   ShieldCheck,
-  UserRound,
   UserRoundPlus,
   Users,
   WalletCards,
-  Wind,
-  Wrench,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -69,11 +50,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 import { downloadBlob } from "@/lib/download";
 import {
   ESTOQUE_CATEGORIAS,
-  estoqueStatus,
   fetchEstoqueSnapshot,
   inventoryValue,
   registerEstoqueDelivery,
@@ -92,6 +71,7 @@ import {
 } from "@/lib/estoque-epi/data";
 import { generateEstoqueWorkbook } from "@/lib/estoque-epi/export";
 import { parseSraWorkbook } from "@/lib/estoque-epi/sra-import";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/estoque-epi")({
   component: EstoqueEpiPage,
@@ -112,191 +92,6 @@ const MOVEMENT_LABELS: Record<EstoqueMovementType, string> = {
   ajuste_negativo: "Ajuste negativo",
   descarte: "Descarte",
 };
-
-const STATUS_STYLES: Record<string, string> = {
-  ZERADO: "border-rose-500/25 bg-rose-500/[0.08] text-rose-600 dark:text-rose-300",
-  CRÍTICO: "border-rose-500/25 bg-rose-500/[0.08] text-rose-600 dark:text-rose-300",
-  COMPRAR: "border-amber-500/25 bg-amber-500/[0.08] text-amber-700 dark:text-amber-300",
-  IDEAL: "border-emerald-500/25 bg-emerald-500/[0.08] text-emerald-700 dark:text-emerald-300",
-  ACIMA: "border-sky-500/25 bg-sky-500/[0.08] text-sky-700 dark:text-sky-300",
-  "SEM META": "border-border/70 bg-muted/30 text-muted-foreground",
-};
-
-type MaterialVisualInput = Pick<EstoqueItem, "descricao" | "categoria">;
-
-function normalizeMaterialText(value?: string | null) {
-  return (value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLocaleLowerCase("pt-BR");
-}
-
-function materialVisual(item: MaterialVisualInput) {
-  const category = normalizeMaterialText(item.categoria);
-  const description = normalizeMaterialText(item.descricao);
-  const text = `${category} ${description}`;
-
-  if (/capacete/.test(text)) {
-    return {
-      icon: HardHat,
-      label: "Proteção para cabeça",
-      className:
-        "border-amber-500/20 bg-amber-500/[0.08] text-amber-600 dark:text-amber-300",
-    };
-  }
-
-  if (/oculos|protetor facial|viseira/.test(text)) {
-    return {
-      icon: Glasses,
-      label: "Proteção visual e facial",
-      className:
-        "border-indigo-500/20 bg-indigo-500/[0.08] text-indigo-600 dark:text-indigo-300",
-    };
-  }
-
-  if (/protetor auricular|tampao|mufflet|auditiv/.test(text)) {
-    return {
-      icon: Headphones,
-      label: "Proteção auditiva",
-      className:
-        "border-fuchsia-500/20 bg-fuchsia-500/[0.08] text-fuchsia-600 dark:text-fuchsia-300",
-    };
-  }
-
-  if (/respirador|mascara|pff|respirator/.test(text)) {
-    return {
-      icon: Wind,
-      label: "Proteção respiratória",
-      className:
-        "border-cyan-500/20 bg-cyan-500/[0.08] text-cyan-600 dark:text-cyan-300",
-    };
-  }
-
-  if (/luva|carneira/.test(text) || category.includes("luvas")) {
-    return {
-      icon: Hand,
-      label: "Luvas e proteção das mãos",
-      className:
-        "border-orange-500/20 bg-orange-500/[0.08] text-orange-600 dark:text-orange-300",
-    };
-  }
-
-  if (
-    /botina|sapato|palmilha|solado|calcado/.test(text) ||
-    category.includes("calcados")
-  ) {
-    return {
-      icon: Footprints,
-      label: "Calçados",
-      className:
-        "border-amber-600/20 bg-amber-600/[0.07] text-amber-700 dark:text-amber-300",
-    };
-  }
-
-  if (
-    /camisa|camiseta|calca|blusa|jaqueta|uniforme/.test(text) ||
-    category.includes("uniformes")
-  ) {
-    return {
-      icon: Shirt,
-      label: "Uniforme",
-      className:
-        "border-violet-500/20 bg-violet-500/[0.08] text-violet-600 dark:text-violet-300",
-    };
-  }
-
-  if (/cinto|talabarte|altura/.test(text) || category.includes("trabalho em altura")) {
-    return {
-      icon: ShieldCheck,
-      label: "Trabalho em altura",
-      className:
-        "border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-600 dark:text-emerald-300",
-    };
-  }
-
-  if (/ferrament|chave|alicate|martelo|furadeira|eletricista/.test(text)) {
-    return {
-      icon: Wrench,
-      label: "Ferramenta ou acessório",
-      className:
-        "border-sky-500/20 bg-sky-500/[0.08] text-sky-600 dark:text-sky-300",
-    };
-  }
-
-  if (
-    category.includes("protecao visual") ||
-    category.includes("protecao facial")
-  ) {
-    return {
-      icon: Glasses,
-      label: "Proteção visual e facial",
-      className:
-        "border-indigo-500/20 bg-indigo-500/[0.08] text-indigo-600 dark:text-indigo-300",
-    };
-  }
-
-  if (category.includes("protecao respiratoria")) {
-    return {
-      icon: Wind,
-      label: "Proteção respiratória",
-      className:
-        "border-cyan-500/20 bg-cyan-500/[0.08] text-cyan-600 dark:text-cyan-300",
-    };
-  }
-
-  if (
-    category.includes("protecao cabeca") ||
-    category.includes("protecao auditiva")
-  ) {
-    return {
-      icon: HardHat,
-      label: "Proteção para cabeça e audição",
-      className:
-        "border-amber-500/20 bg-amber-500/[0.08] text-amber-600 dark:text-amber-300",
-    };
-  }
-
-  if (category.includes("outros epis")) {
-    return {
-      icon: ShieldCheck,
-      label: "EPI",
-      className:
-        "border-teal-500/20 bg-teal-500/[0.08] text-teal-600 dark:text-teal-300",
-    };
-  }
-
-  return {
-    icon: PackageOpen,
-    label: "Material de estoque",
-    className:
-      "border-border/60 bg-muted/35 text-muted-foreground",
-  };
-}
-
-function MaterialIcon({
-  item,
-  size = "md",
-}: {
-  item: MaterialVisualInput;
-  size?: "sm" | "md";
-}) {
-  const visual = materialVisual(item);
-  const Icon = visual.icon;
-
-  return (
-    <span
-      title={visual.label}
-      aria-label={visual.label}
-      className={cn(
-        "inline-flex shrink-0 items-center justify-center border shadow-sm",
-        size === "sm" ? "h-7 w-7 rounded-lg" : "h-9 w-9 rounded-xl",
-        visual.className,
-      )}
-    >
-      <Icon className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} />
-    </span>
-  );
-}
 
 function numberValue(value: string): number | null {
   if (!value.trim()) return null;
@@ -319,7 +114,9 @@ function fmtDate(value?: string | null) {
 }
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60_000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
 }
 
 function EstoqueEpiPage() {
@@ -329,23 +126,18 @@ function EstoqueEpiPage() {
   const [tab, setTab] = useState("visao");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("TODAS");
-  const [statusFilter, setStatusFilter] = useState("TODOS");
   const [collabSearch, setCollabSearch] = useState("");
-  const [collabStatus, setCollabStatus] = useState("TODOS");
-  const [collabTeam, setCollabTeam] = useState("TODOS");
   const [sraImporting, setSraImporting] = useState(false);
   const sraInputRef = useRef<HTMLInputElement>(null);
 
   const [itemDialog, setItemDialog] = useState<EstoqueItem | "new" | null>(null);
-  const [movementItem, setMovementItem] = useState<EstoqueItem | null>(null);
-  const [movementKind, setMovementKind] =
-    useState<EstoqueMovementType>("entrada");
-  const [collabDialog, setCollabDialog] =
-    useState<EstoqueColaborador | "new" | null>(null);
   const [entryOpen, setEntryOpen] = useState(false);
   const [entryItemId, setEntryItemId] = useState<string | null>(null);
+  const [movementItem, setMovementItem] = useState<EstoqueItem | null>(null);
+  const [movementKind, setMovementKind] = useState<EstoqueMovementType>("ajuste_positivo");
   const [deliveryOpen, setDeliveryOpen] = useState(false);
   const [deliveryItemId, setDeliveryItemId] = useState<string | null>(null);
+  const [collabDialog, setCollabDialog] = useState<EstoqueColaborador | "new" | null>(null);
 
   const reload = useCallback(async () => {
     try {
@@ -363,10 +155,7 @@ function EstoqueEpiPage() {
     void reload();
   }, [reload]);
 
-  const activeItems = useMemo(
-    () => data.items.filter((item) => item.ativo),
-    [data.items],
-  );
+  const activeItems = useMemo(() => data.items.filter((item) => item.ativo), [data.items]);
 
   const kpis = useMemo(() => {
     const totalQty = activeItems.reduce(
@@ -377,145 +166,67 @@ function EstoqueEpiPage() {
       (sum, item) => sum + inventoryValue(item),
       0,
     );
-    const attention = activeItems.filter((item) =>
-      ["ZERADO", "CRÍTICO", "COMPRAR"].includes(estoqueStatus(item)),
-    );
-    const zeroed = activeItems.filter(
-      (item) => estoqueStatus(item) === "ZERADO",
-    );
+    const zeroed = activeItems.filter((item) => Number(item.estoque_atual || 0) <= 0).length;
     return {
       totalItems: activeItems.length,
       totalQty,
       totalValue,
-      attention: attention.length,
-      zeroed: zeroed.length,
+      zeroed,
     };
   }, [activeItems]);
-
-  const movementDatesByItem = useMemo(() => {
-    const result = new Map<string, { entrada?: string; saida?: string }>();
-    for (const movement of data.movimentos) {
-      const current = result.get(movement.item_id) ?? {};
-      if (
-        movement.tipo === "entrada" &&
-        !current.entrada
-      ) {
-        current.entrada = movement.data_movimento;
-      }
-      if (
-        movement.tipo === "saida" &&
-        !current.saida
-      ) {
-        current.saida = movement.data_movimento;
-      }
-      result.set(movement.item_id, current);
-    }
-    return result;
-  }, [data.movimentos]);
-
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLocaleLowerCase("pt-BR");
     return data.items.filter((item) => {
-      const status = estoqueStatus(item);
       const matchesSearch =
         !q ||
-        [
-          item.codigo,
-          item.descricao,
-          item.categoria,
-          item.tamanho,
-          item.ca_numero,
-        ]
+        [item.codigo, item.descricao, item.categoria, item.tamanho, item.ca_numero]
           .filter(Boolean)
           .join(" ")
           .toLocaleLowerCase("pt-BR")
           .includes(q);
-      const matchesCategory =
-        category === "TODAS" || item.categoria === category;
-      const matchesStatus =
-        statusFilter === "TODOS" || status === statusFilter;
-      return matchesSearch && matchesCategory && matchesStatus;
+      const matchesCategory = category === "TODAS" || item.categoria === category;
+      return matchesSearch && matchesCategory;
     });
-  }, [category, data.items, search, statusFilter]);
+  }, [category, data.items, search]);
 
-  const attentionItems = useMemo(
+  const lowestStockItems = useMemo(
     () =>
-      activeItems
-        .filter((item) =>
-          ["ZERADO", "CRÍTICO", "COMPRAR"].includes(estoqueStatus(item)),
-        )
-        .sort(
-          (a, b) =>
-            Number(a.estoque_atual || 0) - Number(b.estoque_atual || 0),
+      [...activeItems]
+        .sort((a, b) =>
+          Number(a.estoque_atual || 0) - Number(b.estoque_atual || 0) ||
+          a.descricao.localeCompare(b.descricao, "pt-BR"),
         )
         .slice(0, 12),
     [activeItems],
   );
 
-  const sraStats = useMemo(() => {
-    const sra = data.colaboradores.filter((item) => item.origem_sra);
-    const situations = new Map<string, number>();
-    sra.forEach((item) => {
-      const key = item.situacao_sra?.trim() || "SEM SITUAÇÃO";
-      situations.set(key, (situations.get(key) ?? 0) + 1);
-    });
-    const trainingDates = sra
-      .map((item) => item.data_treinamento)
-      .filter((value): value is string => Boolean(value))
-      .sort();
-    const syncDates = sra
-      .map((item) => item.sra_synced_at)
-      .filter((value): value is string => Boolean(value))
-      .sort();
-
-    return {
-      total: sra.length,
-      normal: situations.get("NORMAL") ?? 0,
-      ferias: situations.get("FÉRIAS") ?? 0,
-      afastado: situations.get("AFASTADO") ?? 0,
-      trainingDate: trainingDates[trainingDates.length - 1] ?? null,
-      lastSync: syncDates[syncDates.length - 1] ?? null,
-    };
-  }, [data.colaboradores]);
-
-  const collaboratorTeams = useMemo(
-    () =>
-      [...new Set(
-        data.colaboradores
-          .map((item) => item.centro_resultado)
-          .filter((value): value is string => Boolean(value)),
-      )].sort((a, b) => a.localeCompare(b, "pt-BR")),
-    [data.colaboradores],
-  );
-
   const filteredCollaborators = useMemo(() => {
     const q = collabSearch.trim().toLocaleLowerCase("pt-BR");
-    return data.colaboradores.filter((colab) => {
-      const matchesSearch =
-        !q ||
-        [
-          colab.nome,
-          colab.matricula,
-          colab.funcao,
-          colab.cargo,
-          colab.centro_resultado,
-          colab.setor_negocio,
-          colab.local_trabalho,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLocaleLowerCase("pt-BR")
-          .includes(q);
-      const matchesStatus =
-        collabStatus === "TODOS" ||
-        (colab.situacao_sra || (colab.ativo ? "ATIVO" : "INATIVO")) ===
-          collabStatus;
-      const matchesTeam =
-        collabTeam === "TODOS" || colab.centro_resultado === collabTeam;
-      return matchesSearch && matchesStatus && matchesTeam;
-    });
-  }, [collabSearch, collabStatus, collabTeam, data.colaboradores]);
+    if (!q) return data.colaboradores;
+    return data.colaboradores.filter((colab) =>
+      [colab.nome, colab.matricula, colab.funcao, colab.cargo, colab.centro_resultado, colab.setor]
+        .filter(Boolean)
+        .join(" ")
+        .toLocaleLowerCase("pt-BR")
+        .includes(q),
+    );
+  }, [collabSearch, data.colaboradores]);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const snapshot = await fetchEstoqueSnapshot();
+      const file = await generateEstoqueWorkbook(snapshot);
+      downloadBlob(file.blob, file.filename);
+      toast.success("Planilha de estoque atualizada.");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error?.message ?? "Falha ao gerar a planilha.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleSraImport = async (file: File) => {
     setSraImporting(true);
@@ -523,9 +234,7 @@ function EstoqueEpiPage() {
       const rows = await parseSraWorkbook(file);
       const result = await syncSraCollaborators(rows);
       await reload();
-      toast.success(
-        `SRA sincronizado: ${result.total ?? rows.length} colaborador(es) processado(s).`,
-      );
+      toast.success(`SRA sincronizado: ${result.total ?? rows.length} colaborador(es).`);
     } catch (error: any) {
       console.error(error);
       toast.error(error?.message ?? "Falha ao sincronizar o arquivo SRA.");
@@ -535,27 +244,9 @@ function EstoqueEpiPage() {
     }
   };
 
-  const handleExport = async () => {
-    setExporting(true);
-    try {
-      const snapshot = await fetchEstoqueSnapshot();
-      const file = await generateEstoqueWorkbook(snapshot);
-      downloadBlob(file.blob, file.filename);
-      toast.success("Planilha profissional de estoque atualizada.");
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error?.message ?? "Falha ao gerar a planilha.");
-    } finally {
-      setExporting(false);
-    }
-  };
-
   if (loading) {
     return (
-      <PageShell
-        title="Estoque EPI & Uniformes"
-        description="Carregando o controle de estoque."
-      >
+      <PageShell title="Estoque EPI & Uniformes" description="Carregando o controle de estoque.">
         <BrandedLoadingState variant="page" label="Carregando estoque" />
       </PageShell>
     );
@@ -564,27 +255,18 @@ function EstoqueEpiPage() {
   return (
     <PageShell
       title="Estoque EPI & Uniformes"
-      description="Entrada de materiais, retirada por colaborador e saldo de EPIs/uniformes em um fluxo simples e rastreável."
+      description="Controle simples pela quantidade física atual de cada item, com entradas, saídas e histórico rastreável."
       actions={
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="glass"
-            className="h-10 rounded-xl border-emerald-500/20 bg-emerald-500/[0.05]"
-            onClick={() => void handleExport()}
-            disabled={exporting}
-          >
+          <Button variant="glass" onClick={() => void handleExport()} disabled={exporting}>
             {exporting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" />
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
             )}
             Baixar planilha
           </Button>
-          <Button
-            variant="outline"
-            className="h-10 rounded-xl"
-            onClick={() => void reload()}
-          >
+          <Button variant="outline" onClick={() => void reload()}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Atualizar
           </Button>
@@ -594,144 +276,74 @@ function EstoqueEpiPage() {
       <div className="space-y-4">
         <GlassCard className="!p-3">
           <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_repeat(3,minmax(180px,auto))] lg:items-center">
-            <div className="min-w-0 px-1 py-1">
+            <div className="px-1 py-1">
               <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-primary">
                 Operação rápida
               </p>
-              <h2 className="mt-1 text-sm font-semibold">O que você precisa registrar?</h2>
+              <h2 className="mt-1 text-sm font-semibold">Movimente o saldo real</h2>
               <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
-                Entrada aumenta o saldo. Saída registra o colaborador e a data da retirada. Ajustes ficam dentro do item.
+                O estoque considera somente a quantidade disponível. Não há estoque mínimo, ideal ou meta de reposição.
               </p>
             </div>
-
-            <Button
-              variant="outline"
-              className="h-auto min-h-14 justify-start rounded-xl border-emerald-500/20 bg-emerald-500/[0.04] px-3 py-2.5 text-left hover:bg-emerald-500/[0.08]"
+            <QuickAction
+              icon={PackagePlus}
+              title="Registrar entrada"
+              detail="Somar quantidade ao estoque"
               onClick={() => {
                 setEntryItemId(null);
                 setEntryOpen(true);
               }}
-            >
-              <span className="mr-2.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
-                <PackagePlus className="h-4 w-4" />
-              </span>
-              <span>
-                <span className="block text-xs font-semibold">Registrar entrada</span>
-                <span className="mt-0.5 block text-[9px] font-normal text-muted-foreground">
-                  Item, quantidade e data de entrada
-                </span>
-              </span>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="h-auto min-h-14 justify-start rounded-xl border-sky-500/20 bg-sky-500/[0.04] px-3 py-2.5 text-left hover:bg-sky-500/[0.08]"
+            />
+            <QuickAction
+              icon={PackageMinus}
+              title="Registrar saída"
+              detail="Baixar quantidade por colaborador"
               onClick={() => {
                 setDeliveryItemId(null);
                 setDeliveryOpen(true);
               }}
-            >
-              <span className="mr-2.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600">
-                <PackageMinus className="h-4 w-4" />
-              </span>
-              <span>
-                <span className="block text-xs font-semibold">Registrar saída</span>
-                <span className="mt-0.5 block text-[9px] font-normal text-muted-foreground">
-                  Colaborador, data e itens retirados
-                </span>
-              </span>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="h-auto min-h-14 justify-start rounded-xl px-3 py-2.5 text-left"
+            />
+            <QuickAction
+              icon={Plus}
+              title="Cadastrar item"
+              detail="Novo EPI, uniforme ou material"
               onClick={() => setItemDialog("new")}
-            >
-              <span className="mr-2.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
-                <Plus className="h-4 w-4" />
-              </span>
-              <span>
-                <span className="block text-xs font-semibold">Cadastrar item</span>
-                <span className="mt-0.5 block text-[9px] font-normal text-muted-foreground">
-                  Novo EPI, uniforme ou material
-                </span>
-              </span>
-            </Button>
+            />
           </div>
         </GlassCard>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            icon={Boxes}
-            label="Itens cadastrados"
-            value={String(kpis.totalItems)}
-            detail="Tipos de EPI, uniforme e material"
-          />
-          <MetricCard
-            icon={PackageOpen}
-            label="Saldo físico"
-            value={kpis.totalQty.toLocaleString("pt-BR")}
-            detail="Unidades disponíveis no estoque"
-          />
-          <MetricCard
-            icon={AlertTriangle}
-            label="Precisam de atenção"
-            value={String(kpis.attention)}
-            detail={`${kpis.zeroed} item(ns) zerado(s)`}
-            tone="warning"
-          />
-          <MetricCard
-            icon={WalletCards}
-            label="Valor em estoque"
-            value={money(kpis.totalValue)}
-            detail="Custo estimado disponível"
-          />
+          <MetricCard icon={Boxes} label="Itens cadastrados" value={String(kpis.totalItems)} detail="Tipos de materiais ativos" />
+          <MetricCard icon={PackageOpen} label="Saldo físico" value={kpis.totalQty.toLocaleString("pt-BR")} detail="Quantidade total disponível" />
+          <MetricCard icon={AlertTriangle} label="Itens sem saldo" value={String(kpis.zeroed)} detail="Quantidade atual igual a zero" tone="warning" />
+          <MetricCard icon={WalletCards} label="Valor em estoque" value={money(kpis.totalValue)} detail="Valor da quantidade disponível" />
         </div>
 
         <GlassCard className="!p-2">
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-xl bg-muted/25 p-1">
-              <TabsTrigger value="visao" className="gap-2">
-                <ShieldCheck className="h-4 w-4" />
-                Início
-              </TabsTrigger>
-              <TabsTrigger value="estoque" className="gap-2">
-                <PackageOpen className="h-4 w-4" />
-                Estoque
-              </TabsTrigger>
-              <TabsTrigger value="retiradas" className="gap-2">
-                <PackageCheck className="h-4 w-4" />
-                Saídas
-              </TabsTrigger>
-              <TabsTrigger value="movimentos" className="gap-2">
-                <History className="h-4 w-4" />
-                Histórico
-              </TabsTrigger>
-              <TabsTrigger value="colaboradores" className="gap-2">
-                <Users className="h-4 w-4" />
-                Colaboradores
-              </TabsTrigger>
+              <TabsTrigger value="visao" className="gap-2"><ShieldCheck className="h-4 w-4" />Início</TabsTrigger>
+              <TabsTrigger value="estoque" className="gap-2"><PackageOpen className="h-4 w-4" />Estoque</TabsTrigger>
+              <TabsTrigger value="retiradas" className="gap-2"><PackageCheck className="h-4 w-4" />Saídas</TabsTrigger>
+              <TabsTrigger value="movimentos" className="gap-2"><History className="h-4 w-4" />Histórico</TabsTrigger>
+              <TabsTrigger value="colaboradores" className="gap-2"><Users className="h-4 w-4" />Colaboradores</TabsTrigger>
             </TabsList>
 
             <TabsContent value="visao" className="mt-3">
               <div className="grid gap-3 xl:grid-cols-[1.1fr_.9fr]">
                 <GlassCard className="!p-4">
                   <SectionTitle
-                    icon={AlertTriangle}
-                    title="Reposição e atenção"
-                    description="Itens zerados, críticos ou abaixo do estoque ideal."
+                    icon={PackageOpen}
+                    title="Menores saldos"
+                    description="Itens ordenados somente pela quantidade atual disponível."
                   />
                   <div className="mt-3 max-h-[52vh] space-y-1.5 overflow-y-auto pr-1">
-                    {attentionItems.length === 0 ? (
-                      <EmptyState text="Nenhum item exige reposição agora." />
-                    ) : (
-                      attentionItems.map((item) => (
+                    {lowestStockItems.length ? (
+                      lowestStockItems.map((item) => (
                         <StockRow
                           key={item.id}
                           item={item}
                           compact
-                          lastEntryDate={movementDatesByItem.get(item.id)?.entrada}
-                          lastExitDate={movementDatesByItem.get(item.id)?.saida}
                           onEntry={() => {
                             setEntryItemId(item.id);
                             setEntryOpen(true);
@@ -740,13 +352,15 @@ function EstoqueEpiPage() {
                             setDeliveryItemId(item.id);
                             setDeliveryOpen(true);
                           }}
-                          onAdjust={(kind) => {
-                            setMovementKind(kind);
+                          onAdjust={() => {
+                            setMovementKind("ajuste_positivo");
                             setMovementItem(item);
                           }}
                           onEdit={() => setItemDialog(item)}
                         />
                       ))
+                    ) : (
+                      <EmptyState text="Nenhum item cadastrado no estoque." />
                     )}
                   </div>
                 </GlassCard>
@@ -754,54 +368,18 @@ function EstoqueEpiPage() {
                 <GlassCard className="!p-4">
                   <SectionTitle
                     icon={ClipboardCheck}
-                    title="Como usar"
-                    description="Três passos simples para manter o estoque correto."
+                    title="Controle por quantidade"
+                    description="O saldo é o único indicador de estoque usado pelo sistema."
                   />
-                  <div className="mt-3 space-y-2">
-                    <div className="flex gap-3 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.035] p-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
-                        <span className="text-xs font-bold">1</span>
-                      </span>
-                      <div>
-                        <p className="text-xs font-semibold">Quando receber material</p>
-                        <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
-                          Clique em <strong>Registrar entrada</strong>, selecione o item, informe a quantidade e a data real da entrada.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3 rounded-xl border border-sky-500/15 bg-sky-500/[0.035] p-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600">
-                        <span className="text-xs font-bold">2</span>
-                      </span>
-                      <div>
-                        <p className="text-xs font-semibold">Quando alguém retirar EPI ou uniforme</p>
-                        <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
-                          Clique em <strong>Registrar saída</strong>. O nome do colaborador e a data da retirada são obrigatórios.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3 rounded-xl border border-border/50 bg-background/35 p-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
-                        <span className="text-xs font-bold">3</span>
-                      </span>
-                      <div>
-                        <p className="text-xs font-semibold">Acompanhe pelo histórico</p>
-                        <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
-                          Consulte entradas, saídas e saldos ou use <strong>Baixar planilha</strong> para gerar o Excel atualizado.
-                        </p>
-                      </div>
-                    </div>
+                  <div className="mt-3 space-y-2 text-[10px] text-muted-foreground">
+                    <InfoBox title="Entrada">Aumenta a quantidade física disponível.</InfoBox>
+                    <InfoBox title="Saída">Reduz o saldo e registra quem retirou.</InfoBox>
+                    <InfoBox title="Ajuste">Corrige inventário, devolução, perda ou descarte.</InfoBox>
                   </div>
                 </GlassCard>
 
                 <GlassCard className="!p-4 xl:col-span-2">
-                  <SectionTitle
-                    icon={History}
-                    title="Atividade recente"
-                    description="Últimas movimentações registradas no estoque."
-                  />
+                  <SectionTitle icon={History} title="Atividade recente" description="Últimas movimentações registradas." />
                   <MovementList movimentos={data.movimentos.slice(0, 12)} />
                 </GlassCard>
               </div>
@@ -812,22 +390,15 @@ function EstoqueEpiPage() {
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <SectionTitle
                     icon={PackageOpen}
-                    title="Estoque atual"
-                    description="Consulte o saldo e use Entrada, Saída ou Ajuste diretamente no item."
+                    title="Quantidade atual"
+                    description="Consulte e movimente apenas o saldo físico de cada item."
                   />
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setItemDialog("new")}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Novo item
-                    </Button>
-                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setItemDialog("new")}>
+                    <Plus className="mr-2 h-4 w-4" />Novo item
+                  </Button>
                 </div>
 
-                <div className="mt-4 grid gap-2 md:grid-cols-[minmax(0,1fr)_220px_180px]">
+                <div className="mt-4 grid gap-2 md:grid-cols-[minmax(0,1fr)_240px]">
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -838,59 +409,25 @@ function EstoqueEpiPage() {
                     />
                   </div>
                   <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Categoria" />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Categoria" /></SelectTrigger>
                     <SelectContent className="max-h-56">
                       <SelectItem value="TODAS">Todas as categorias</SelectItem>
-                      {[
-                        ...new Set(data.items.map((item) => item.categoria)),
-                      ]
+                      {[...new Set(data.items.map((item) => item.categoria))]
                         .sort((a, b) => a.localeCompare(b, "pt-BR"))
-                        .map((value) => (
-                          <SelectItem key={value} value={value}>
-                            {value}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-56">
-                      {[
-                        "TODOS",
-                        "ZERADO",
-                        "CRÍTICO",
-                        "COMPRAR",
-                        "IDEAL",
-                        "ACIMA",
-                        "SEM META",
-                      ].map((value) => (
-                        <SelectItem key={value} value={value}>
-                          {value === "TODOS" ? "Todos os status" : value}
-                        </SelectItem>
-                      ))}
+                        .map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between gap-2 px-1">
-                  <p className="text-[9px] text-muted-foreground">
-                    {filteredItems.length} item(ns) encontrado(s)
-                  </p>
-                  <span className="text-[8px] text-muted-foreground/70">
-                    Lista compacta com rolagem
-                  </span>
+                <div className="mt-3 flex items-center justify-between px-1">
+                  <p className="text-[9px] text-muted-foreground">{filteredItems.length} item(ns) encontrado(s)</p>
+                  <span className="text-[8px] text-muted-foreground/70">Somente quantidade atual</span>
                 </div>
-                <div className="mt-2 max-h-[58vh] space-y-1.5 overflow-y-auto overscroll-contain pr-1">
+                <div className="mt-2 max-h-[58vh] space-y-1.5 overflow-y-auto pr-1">
                   {filteredItems.map((item) => (
                     <StockRow
                       key={item.id}
                       item={item}
-                      lastEntryDate={movementDatesByItem.get(item.id)?.entrada}
-                      lastExitDate={movementDatesByItem.get(item.id)?.saida}
                       onEntry={() => {
                         setEntryItemId(item.id);
                         setEntryOpen(true);
@@ -899,8 +436,8 @@ function EstoqueEpiPage() {
                         setDeliveryItemId(item.id);
                         setDeliveryOpen(true);
                       }}
-                      onAdjust={(kind) => {
-                        setMovementKind(kind);
+                      onAdjust={() => {
+                        setMovementKind("ajuste_positivo");
                         setMovementItem(item);
                       }}
                       onEdit={() => setItemDialog(item)}
@@ -913,11 +450,7 @@ function EstoqueEpiPage() {
             <TabsContent value="retiradas" className="mt-3">
               <div className="grid gap-3 xl:grid-cols-[.8fr_1.2fr]">
                 <GlassCard className="!p-4">
-                  <SectionTitle
-                    icon={PackageCheck}
-                    title="Saída para colaborador"
-                    description="Toda saída registra obrigatoriamente quem retirou e a data da retirada."
-                  />
+                  <SectionTitle icon={PackageCheck} title="Saída para colaborador" description="Registre a quantidade retirada de um ou mais itens." />
                   <Button
                     className="mt-4 w-full"
                     onClick={() => {
@@ -925,21 +458,11 @@ function EstoqueEpiPage() {
                       setDeliveryOpen(true);
                     }}
                   >
-                    <ClipboardCheck className="mr-2 h-4 w-4" />
-                    Registrar saída
+                    <ClipboardCheck className="mr-2 h-4 w-4" />Registrar saída
                   </Button>
-                  <div className="mt-4 rounded-xl border border-border/45 bg-background/30 p-3 text-xs text-muted-foreground">
-                    Selecione o colaborador, informe a data e inclua um ou mais itens.
-                    O saldo é reduzido automaticamente e o histórico fica disponível para auditoria.
-                  </div>
                 </GlassCard>
-
                 <GlassCard className="!p-4">
-                  <SectionTitle
-                    icon={History}
-                    title="Últimas retiradas"
-                    description="Histórico nominal de entrega aos colaboradores."
-                  />
+                  <SectionTitle icon={History} title="Últimas retiradas" description="Histórico nominal de entrega aos colaboradores." />
                   <DeliveryList entregas={data.entregas.slice(0, 60)} />
                 </GlassCard>
               </div>
@@ -947,11 +470,7 @@ function EstoqueEpiPage() {
 
             <TabsContent value="movimentos" className="mt-3">
               <GlassCard className="!p-4">
-                <SectionTitle
-                  icon={History}
-                  title="Histórico do estoque"
-                  description="Veja quando entrou, quando saiu, quem retirou e todas as correções de inventário."
-                />
+                <SectionTitle icon={History} title="Histórico do estoque" description="Entradas, saídas, devoluções e ajustes com saldo anterior e saldo após." />
                 <MovementList movimentos={data.movimentos} />
               </GlassCard>
             </TabsContent>
@@ -960,12 +479,8 @@ function EstoqueEpiPage() {
               <div className="space-y-3">
                 <GlassCard className="!p-4">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                    <SectionTitle
-                      icon={Users}
-                      title="Colaboradores • SRA"
-                      description="Base funcional integrada ao almoxarifado para identificar corretamente cada retirada."
-                    />
-                    <div className="flex flex-wrap gap-2">
+                    <SectionTitle icon={Users} title="Colaboradores • SRA" description="Base usada para identificar cada retirada." />
+                    <div className="flex gap-2">
                       <input
                         ref={sraInputRef}
                         type="file"
@@ -976,141 +491,48 @@ function EstoqueEpiPage() {
                           if (file) void handleSraImport(file);
                         }}
                       />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={sraImporting}
-                        onClick={() => sraInputRef.current?.click()}
-                      >
-                        {sraImporting ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" />
-                        )}
+                      <Button variant="outline" size="sm" disabled={sraImporting} onClick={() => sraInputRef.current?.click()}>
+                        {sraImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
                         Atualizar SRA
                       </Button>
                       <Button size="sm" onClick={() => setCollabDialog("new")}>
-                        <UserRoundPlus className="mr-2 h-4 w-4" />
-                        Novo colaborador
+                        <UserRoundPlus className="mr-2 h-4 w-4" />Novo colaborador
                       </Button>
                     </div>
                   </div>
-
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
-                    <SraMetric label="No SRA" value={String(sraStats.total)} detail="Colaboradores sincronizados" />
-                    <SraMetric label="Normal" value={String(sraStats.normal)} detail="Situação ativa no SRA" />
-                    <SraMetric label="Férias" value={String(sraStats.ferias)} detail="Identificados no arquivo" />
-                    <SraMetric label="Afastado" value={String(sraStats.afastado)} detail="Identificados no arquivo" tone="warning" />
-                    <SraMetric
-                      label="Treinamento NR 23"
-                      value={sraStats.trainingDate ? fmtDate(sraStats.trainingDate) : "—"}
-                      detail={sraStats.lastSync ? `SRA atualizado em ${fmtDate(sraStats.lastSync)}` : "Sem sincronização"}
+                  <div className="relative mt-4">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={collabSearch}
+                      onChange={(event) => setCollabSearch(event.target.value)}
+                      className="pl-9"
+                      placeholder="Buscar nome, matrícula, função ou equipe..."
                     />
                   </div>
-
-                  <div className="mt-4 rounded-xl border border-border/45 bg-background/25 p-3">
-                    <p className="text-[10px] leading-4 text-muted-foreground">
-                      O almoxarifado usa os dados operacionais do SRA: matrícula, função, setor, centro/equipe,
-                      situação, admissão, escala, horário, supervisão e treinamento. Dados bancários e documentos
-                      pessoais que não são necessários para entrega de EPI não são importados.
-                    </p>
-                  </div>
-                </GlassCard>
-
-                <GlassCard className="!p-4">
-                  <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_190px_280px]">
-                    <div className="relative">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        value={collabSearch}
-                        onChange={(event) => setCollabSearch(event.target.value)}
-                        className="pl-9"
-                        placeholder="Buscar por nome, matrícula, função ou equipe..."
-                      />
-                    </div>
-                    <Select value={collabStatus} onValueChange={setCollabStatus}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent className="max-h-56">
-                        <SelectItem value="TODOS">Todas as situações</SelectItem>
-                        <SelectItem value="NORMAL">Normal</SelectItem>
-                        <SelectItem value="FÉRIAS">Férias</SelectItem>
-                        <SelectItem value="AFASTADO">Afastado</SelectItem>
-                        <SelectItem value="ATIVO">Ativo manual</SelectItem>
-                        <SelectItem value="INATIVO">Inativo</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={collabTeam} onValueChange={setCollabTeam}>
-                      <SelectTrigger><SelectValue placeholder="Centro / equipe" /></SelectTrigger>
-                      <SelectContent className="max-h-56">
-                        <SelectItem value="TODOS">Todos os centros / equipes</SelectItem>
-                        {collaboratorTeams.map((team) => (
-                          <SelectItem key={team} value={team}>{team}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between px-1">
-                    <p className="text-[9px] text-muted-foreground">
-                      {filteredCollaborators.length} de {data.colaboradores.length} colaborador(es)
-                    </p>
-                    {sraStats.lastSync && (
-                      <Badge variant="outline" className="rounded-full text-[8px]">
-                        SRA sincronizado
-                      </Badge>
-                    )}
-                  </div>
-
-                  <div className="mt-2 max-h-[58vh] overflow-y-auto overscroll-contain pr-1">
-                    <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="mt-3 grid max-h-[58vh] gap-2 overflow-y-auto md:grid-cols-2 xl:grid-cols-3">
                     {filteredCollaborators.map((colab) => (
                       <button
                         type="button"
                         key={colab.id}
                         onClick={() => setCollabDialog(colab)}
-                        className="rounded-xl border border-border/50 bg-background/30 p-3 text-left transition hover:border-primary/25 hover:bg-background/50"
+                        className="rounded-xl border border-border/50 bg-background/30 p-3 text-left hover:border-primary/25"
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="flex min-w-0 items-center gap-1.5">
-                              <p className="truncate text-xs font-semibold">{colab.nome}</p>
-                              {colab.origem_sra && (
-                                <Badge variant="outline" className="shrink-0 rounded-full border-emerald-500/20 px-1.5 text-[7px] text-emerald-600 dark:text-emerald-300">
-                                  SRA
-                                </Badge>
-                              )}
-                            </div>
+                            <p className="truncate text-xs font-semibold">{colab.nome}</p>
                             <p className="mt-1 truncate text-[9px] text-muted-foreground">
-                              Matrícula {colab.matricula || "—"} · {colab.funcao || colab.cargo || "Função não informada"}
+                              Mat. {colab.matricula || "—"} · {colab.funcao || colab.cargo || "Função não informada"}
                             </p>
                           </div>
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "shrink-0 rounded-full text-[8px]",
-                              colab.situacao_sra === "AFASTADO"
-                                ? "border-amber-500/20 text-amber-600 dark:text-amber-300"
-                                : colab.situacao_sra === "FÉRIAS"
-                                  ? "border-sky-500/20 text-sky-600 dark:text-sky-300"
-                                  : colab.ativo
-                                    ? "border-emerald-500/20 text-emerald-600 dark:text-emerald-300"
-                                    : "text-muted-foreground",
-                            )}
-                          >
+                          <Badge variant="outline" className="rounded-full text-[8px]">
                             {colab.situacao_sra || (colab.ativo ? "ATIVO" : "INATIVO")}
                           </Badge>
                         </div>
-
-                        <div className="mt-2 space-y-1 text-[9px] text-muted-foreground">
-                          <p className="truncate">{colab.centro_resultado || colab.setor || "Centro/equipe não informado"}</p>
-                          <div className="flex flex-wrap gap-x-2 gap-y-1">
-                            {colab.horario_trabalho && <span>{colab.horario_trabalho}</span>}
-                            {colab.data_admissao && <span>Admissão {fmtDate(colab.data_admissao)}</span>}
-                          </div>
-                        </div>
+                        <p className="mt-2 truncate text-[9px] text-muted-foreground">
+                          {colab.centro_resultado || colab.setor || "Centro/equipe não informado"}
+                        </p>
                       </button>
                     ))}
-                    </div>
                   </div>
                 </GlassCard>
               </div>
@@ -1127,7 +549,6 @@ function EstoqueEpiPage() {
           await reload();
         }}
       />
-
       <EntryDialog
         open={entryOpen}
         initialItemId={entryItemId}
@@ -1142,7 +563,6 @@ function EstoqueEpiPage() {
           await reload();
         }}
       />
-
       <MovementDialog
         item={movementItem}
         initialType={movementKind}
@@ -1152,27 +572,11 @@ function EstoqueEpiPage() {
           await reload();
         }}
       />
-
-      <CollaboratorDialog
-        target={collabDialog}
-        onClose={() => setCollabDialog(null)}
-        onSaved={async () => {
-          setCollabDialog(null);
-          await reload();
-        }}
-      />
-
       <DeliveryDialog
         open={deliveryOpen}
         initialItemId={deliveryItemId}
         items={activeItems}
-        colaboradores={data.colaboradores.filter((c) => c.ativo)}
-        onNewCollaborator={() => {
-          setDeliveryOpen(false);
-          setDeliveryItemId(null);
-          setCollabDialog("new");
-          setTab("colaboradores");
-        }}
+        colaboradores={data.colaboradores.filter((item) => item.ativo)}
         onClose={() => {
           setDeliveryOpen(false);
           setDeliveryItemId(null);
@@ -1183,7 +587,39 @@ function EstoqueEpiPage() {
           await reload();
         }}
       />
+      <CollaboratorDialog
+        target={collabDialog}
+        onClose={() => setCollabDialog(null)}
+        onSaved={async () => {
+          setCollabDialog(null);
+          await reload();
+        }}
+      />
     </PageShell>
+  );
+}
+
+function QuickAction({
+  icon: Icon,
+  title,
+  detail,
+  onClick,
+}: {
+  icon: typeof Plus;
+  title: string;
+  detail: string;
+  onClick: () => void;
+}) {
+  return (
+    <Button variant="outline" className="h-auto min-h-14 justify-start rounded-xl px-3 py-2.5 text-left" onClick={onClick}>
+      <span className="mr-2.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
+        <Icon className="h-4 w-4" />
+      </span>
+      <span>
+        <span className="block text-xs font-semibold">{title}</span>
+        <span className="mt-0.5 block text-[9px] font-normal text-muted-foreground">{detail}</span>
+      </span>
+    </Button>
   );
 }
 
@@ -1203,20 +639,14 @@ function MetricCard({
   return (
     <GlassCard className="!p-3.5">
       <div className="flex items-start gap-3">
-        <span
-          className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-            tone === "warning"
-              ? "bg-amber-500/[0.08] text-amber-500"
-              : "bg-primary/[0.07] text-primary",
-          )}
-        >
+        <span className={cn(
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+          tone === "warning" ? "bg-amber-500/[0.08] text-amber-500" : "bg-primary/[0.07] text-primary",
+        )}>
           <Icon className="h-4 w-4" />
         </span>
         <div className="min-w-0">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            {label}
-          </p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
           <p className="mt-1 truncate text-lg font-bold tracking-tight">{value}</p>
           <p className="mt-0.5 text-[10px] text-muted-foreground">{detail}</p>
         </div>
@@ -1225,51 +655,7 @@ function MetricCard({
   );
 }
 
-function SraMetric({
-  label,
-  value,
-  detail,
-  tone = "default",
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  tone?: "default" | "warning";
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-xl border px-3 py-2.5",
-        tone === "warning"
-          ? "border-amber-500/20 bg-amber-500/[0.04]"
-          : "border-border/45 bg-background/30",
-      )}
-    >
-      <p className="text-[8px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
-        {label}
-      </p>
-      <p
-        className={cn(
-          "mt-1 text-base font-bold tracking-tight",
-          tone === "warning" && "text-amber-600 dark:text-amber-300",
-        )}
-      >
-        {value}
-      </p>
-      <p className="mt-0.5 truncate text-[8px] text-muted-foreground">{detail}</p>
-    </div>
-  );
-}
-
-function SectionTitle({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: typeof Boxes;
-  title: string;
-  description: string;
-}) {
+function SectionTitle({ icon: Icon, title, description }: { icon: typeof Boxes; title: string; description: string }) {
   return (
     <div className="flex items-start gap-3">
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
@@ -1277,27 +663,28 @@ function SectionTitle({
       </span>
       <div>
         <h3 className="text-sm font-semibold">{title}</h3>
-        <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
-          {description}
-        </p>
+        <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">{description}</p>
       </div>
     </div>
   );
 }
 
-function EmptyState({ text }: { text: string }) {
+function InfoBox({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-dashed border-border/60 px-4 py-8 text-center text-xs text-muted-foreground">
-      {text}
+    <div className="rounded-xl border border-border/45 bg-background/30 p-3">
+      <p className="text-xs font-semibold text-foreground">{title}</p>
+      <p className="mt-1 leading-4">{children}</p>
     </div>
   );
+}
+
+function EmptyState({ text }: { text: string }) {
+  return <div className="rounded-xl border border-dashed border-border/60 px-4 py-8 text-center text-xs text-muted-foreground">{text}</div>;
 }
 
 function StockRow({
   item,
   compact = false,
-  lastEntryDate,
-  lastExitDate,
   onEntry,
   onWithdraw,
   onAdjust,
@@ -1305,108 +692,49 @@ function StockRow({
 }: {
   item: EstoqueItem;
   compact?: boolean;
-  lastEntryDate?: string;
-  lastExitDate?: string;
   onEntry: () => void;
   onWithdraw: () => void;
-  onAdjust: (type: EstoqueMovementType) => void;
+  onAdjust: () => void;
   onEdit: () => void;
 }) {
-  const status = estoqueStatus(item);
+  const withoutStock = Number(item.estoque_atual || 0) <= 0;
   return (
-    <div className="grid gap-2 rounded-xl border border-border/45 bg-background/30 p-2.5 transition-colors hover:border-primary/15 hover:bg-background/50 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-      <div className="flex min-w-0 items-start gap-2.5">
-        <MaterialIcon item={item} />
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          <p className="min-w-0 flex-1 truncate text-xs font-semibold">
-            {item.descricao}
-          </p>
-          <Badge
-            variant="outline"
-            className={cn("rounded-full px-2 text-[8px]", STATUS_STYLES[status])}
-          >
-            {status}
-          </Badge>
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[9px] text-muted-foreground">
+    <div className="grid gap-2 rounded-xl border border-border/45 bg-background/30 p-2.5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="min-w-0 flex-1 truncate text-xs font-semibold">{item.descricao}</p>
+          {withoutStock && (
+            <Badge variant="outline" className="rounded-full border-rose-500/25 bg-rose-500/[0.05] text-[8px] text-rose-600">
+              SEM SALDO
+            </Badge>
+          )}
+        </div>
+        <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-[9px] text-muted-foreground">
           {item.codigo && <span>Cód. {item.codigo}</span>}
           <span>{item.categoria}</span>
           {item.tamanho && <span>Tam. {item.tamanho}</span>}
           {item.ca_numero && <span>CA {item.ca_numero}</span>}
-          {!compact && item.valor_unitario !== null && (
-            <span>{money(item.valor_unitario)}</span>
-          )}
-        </div>
-          {!compact && (lastEntryDate || lastExitDate) && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[8px] text-muted-foreground/80">
-            {lastEntryDate && (
-              <span className="inline-flex items-center gap-1">
-                <ArrowDownToLine className="h-2.5 w-2.5 text-emerald-500" />
-                Últ. entrada {fmtDate(lastEntryDate)}
-              </span>
-            )}
-            {lastExitDate && (
-              <span className="inline-flex items-center gap-1">
-                <ArrowUpFromLine className="h-2.5 w-2.5 text-sky-500" />
-                Últ. saída {fmtDate(lastExitDate)}
-              </span>
-            )}
-            </div>
-          )}
+          {!compact && item.valor_unitario !== null && <span>{money(item.valor_unitario)}</span>}
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 md:justify-end">
-        <div className="mr-1 text-right">
-          <p className="text-sm font-bold">
-            {item.estoque_atual.toLocaleString("pt-BR")}{" "}
-            <span className="text-[9px] font-medium text-muted-foreground">
-              {item.unidade}
-            </span>
-          </p>
-          <p className="text-[8px] text-muted-foreground">
-            Ideal {item.estoque_ideal ?? "—"}
+        <div className="min-w-[105px] text-right">
+          <p className="text-[8px] uppercase tracking-wide text-muted-foreground">Quantidade</p>
+          <p className="text-base font-bold">
+            {Number(item.estoque_atual || 0).toLocaleString("pt-BR")} <span className="text-[9px] font-medium text-muted-foreground">{item.unidade}</span>
           </p>
         </div>
-
         {!compact && (
-          <div className="flex flex-wrap items-center gap-1">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 rounded-lg border-emerald-500/20 bg-emerald-500/[0.04] px-2.5 text-[9px] text-emerald-700 hover:bg-emerald-500/[0.09] dark:text-emerald-300"
-              onClick={onEntry}
-            >
-              <ArrowDownToLine className="mr-1 h-3.5 w-3.5" />
-              Entrada
+          <div className="flex flex-wrap gap-1">
+            <Button size="sm" variant="outline" className="h-8 text-[9px]" onClick={onEntry}>
+              <ArrowDownToLine className="mr-1 h-3.5 w-3.5" />Entrada
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 rounded-lg border-sky-500/20 bg-sky-500/[0.04] px-2.5 text-[9px] text-sky-700 hover:bg-sky-500/[0.09] dark:text-sky-300"
-              onClick={onWithdraw}
-              disabled={item.estoque_atual <= 0}
-            >
-              <ArrowUpFromLine className="mr-1 h-3.5 w-3.5" />
-              Saída
+            <Button size="sm" variant="outline" className="h-8 text-[9px]" disabled={withoutStock} onClick={onWithdraw}>
+              <ArrowUpFromLine className="mr-1 h-3.5 w-3.5" />Saída
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 rounded-lg px-2 text-[9px] text-muted-foreground"
-              title="Ajustar saldo, registrar devolução ou descarte"
-              onClick={() => onAdjust("ajuste_positivo")}
-            >
-              Ajuste
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 rounded-lg"
-              title="Editar cadastro do item"
-              onClick={onEdit}
-            >
+            <Button size="sm" variant="ghost" className="h-8 text-[9px]" onClick={onAdjust}>Ajuste</Button>
+            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onEdit} title="Editar item">
               <Edit3 className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -1417,57 +745,23 @@ function StockRow({
 }
 
 function MovementList({ movimentos }: { movimentos: EstoqueMovimento[] }) {
-  if (movimentos.length === 0) return <EmptyState text="Sem movimentações registradas." />;
-
+  if (!movimentos.length) return <EmptyState text="Sem movimentações registradas." />;
   return (
     <div className="mt-3 max-h-[52vh] overflow-y-auto rounded-xl border border-border/45">
       {movimentos.map((mov, index) => (
-        <div
-          key={mov.id}
-          className={cn(
-            "grid gap-2 bg-background/25 px-3 py-2.5 md:grid-cols-[110px_120px_minmax(0,1fr)_auto] md:items-center",
-            index > 0 && "border-t border-border/35",
-          )}
-        >
-          <div>
-            <p className="text-[8px] uppercase tracking-wide text-muted-foreground">
-              {mov.tipo === "entrada" ? "Data da entrada" : mov.tipo === "saida" ? "Data da retirada" : "Data"}
-            </p>
-            <span className="text-[10px] font-medium">
-              {fmtDate(mov.data_movimento)}
-            </span>
-          </div>
-          <Badge variant="outline" className="w-fit rounded-full text-[9px]">
-            {MOVEMENT_LABELS[mov.tipo]}
-          </Badge>
+        <div key={mov.id} className={cn(
+          "grid gap-2 bg-background/25 px-3 py-2.5 md:grid-cols-[110px_120px_minmax(0,1fr)_auto] md:items-center",
+          index > 0 && "border-t border-border/35",
+        )}>
+          <span className="text-[10px] font-medium">{fmtDate(mov.data_movimento)}</span>
+          <Badge variant="outline" className="w-fit rounded-full text-[9px]">{MOVEMENT_LABELS[mov.tipo]}</Badge>
           <div className="min-w-0">
-            <p className="truncate text-[11px] font-semibold">
-              {mov.item?.descricao || "Item"}
-            </p>
-            <p className="mt-0.5 truncate text-[9px] text-muted-foreground">
-              {mov.colaborador_nome ||
-                mov.motivo ||
-                mov.observacao ||
-                "Movimentação de estoque"}
-            </p>
+            <p className="truncate text-[11px] font-semibold">{mov.item?.descricao || "Item"}</p>
+            <p className="mt-0.5 truncate text-[9px] text-muted-foreground">{mov.colaborador_nome || mov.motivo || mov.observacao || "Movimentação de estoque"}</p>
           </div>
           <div className="text-right">
-            <p
-              className={cn(
-                "text-xs font-bold",
-                ["entrada", "devolucao", "ajuste_positivo"].includes(mov.tipo)
-                  ? "text-emerald-600"
-                  : "text-amber-600",
-              )}
-            >
-              {["entrada", "devolucao", "ajuste_positivo"].includes(mov.tipo)
-                ? "+"
-                : "-"}
-              {mov.quantidade.toLocaleString("pt-BR")}
-            </p>
-            <p className="text-[8px] text-muted-foreground">
-              saldo {mov.saldo_apos.toLocaleString("pt-BR")}
-            </p>
+            <p className="text-xs font-bold">{mov.quantidade.toLocaleString("pt-BR")}</p>
+            <p className="text-[8px] text-muted-foreground">saldo {mov.saldo_apos.toLocaleString("pt-BR")}</p>
           </div>
         </div>
       ))}
@@ -1476,55 +770,23 @@ function MovementList({ movimentos }: { movimentos: EstoqueMovimento[] }) {
 }
 
 function DeliveryList({ entregas }: { entregas: EstoqueEntrega[] }) {
-  if (entregas.length === 0) return <EmptyState text="Nenhuma retirada registrada." />;
-
+  if (!entregas.length) return <EmptyState text="Nenhuma retirada registrada." />;
   return (
-    <div className="mt-3 max-h-[52vh] space-y-1.5 overflow-y-auto overscroll-contain pr-1">
+    <div className="mt-3 max-h-[52vh] space-y-1.5 overflow-y-auto pr-1">
       {entregas.map((entrega) => {
-        const qty = (entrega.itens ?? []).reduce(
-          (sum, item) => sum + Number(item.quantidade || 0),
-          0,
-        );
+        const qty = (entrega.itens ?? []).reduce((sum, item) => sum + Number(item.quantidade || 0), 0);
         return (
-          <div
-            key={entrega.id}
-            className="rounded-xl border border-border/45 bg-background/30 p-3"
-          >
+          <div key={entrega.id} className="rounded-xl border border-border/45 bg-background/30 p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="truncate text-xs font-semibold">
-                  {entrega.colaborador_nome}
-                </p>
-                <p className="mt-1 text-[9px] text-muted-foreground">
-                  {fmtDate(entrega.data_entrega)}
-                  {entrega.colaborador_matricula ? ` · Mat. ${entrega.colaborador_matricula}` : ""}
-                  {entrega.colaborador_funcao ? ` · ${entrega.colaborador_funcao}` : ""}
-                </p>
-                {(entrega.colaborador_centro_resultado || entrega.colaborador_situacao_sra) && (
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    {entrega.colaborador_situacao_sra && (
-                      <Badge variant="outline" className="rounded-full px-1.5 text-[7px]">
-                        {entrega.colaborador_situacao_sra}
-                      </Badge>
-                    )}
-                    {entrega.colaborador_centro_resultado && (
-                      <span className="max-w-[360px] truncate text-[8px] text-muted-foreground/80">
-                        {entrega.colaborador_centro_resultado}
-                      </span>
-                    )}
-                  </div>
-                )}
+                <p className="truncate text-xs font-semibold">{entrega.colaborador_nome}</p>
+                <p className="mt-1 text-[9px] text-muted-foreground">{fmtDate(entrega.data_entrega)}{entrega.colaborador_matricula ? ` · Mat. ${entrega.colaborador_matricula}` : ""}</p>
               </div>
-              <Badge variant="outline" className="rounded-full text-[9px]">
-                {qty} item(ns)
-              </Badge>
+              <Badge variant="outline" className="rounded-full text-[9px]">{qty} item(ns)</Badge>
             </div>
             <div className="mt-2 flex flex-wrap gap-1">
-              {(entrega.itens ?? []).slice(0, 5).map((item) => (
-                <span
-                  key={item.id}
-                  className="rounded-md border border-border/40 bg-muted/20 px-2 py-1 text-[8px] text-muted-foreground"
-                >
+              {(entrega.itens ?? []).slice(0, 6).map((item) => (
+                <span key={item.id} className="rounded-md border border-border/40 bg-muted/20 px-2 py-1 text-[8px] text-muted-foreground">
                   {item.quantidade}× {item.descricao}
                 </span>
               ))}
@@ -1536,47 +798,23 @@ function DeliveryList({ entregas }: { entregas: EstoqueEntrega[] }) {
   );
 }
 
-function ItemDialog({
-  target,
-  onClose,
-  onSaved,
-}: {
-  target: EstoqueItem | "new" | null;
-  onClose: () => void;
-  onSaved: () => Promise<void>;
-}) {
+function ItemDialog({ target, onClose, onSaved }: { target: EstoqueItem | "new" | null; onClose: () => void; onSaved: () => Promise<void> }) {
   const item = target && target !== "new" ? target : null;
-  const [form, setForm] = useState<EstoqueItemInput>({
-    descricao: "",
-    categoria: "Outros EPIs",
-    unidade: "UN",
-    ativo: true,
-  });
+  const [form, setForm] = useState<EstoqueItemInput>({ descricao: "", categoria: "Outros EPIs", unidade: "UN", ativo: true });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!target) return;
-    setForm(
-      item
-        ? {
-            codigo: item.codigo,
-            descricao: item.descricao,
-            categoria: item.categoria,
-            tamanho: item.tamanho,
-            ca_numero: item.ca_numero,
-            unidade: item.unidade,
-            estoque_ideal: item.estoque_ideal,
-            estoque_minimo: item.estoque_minimo,
-            valor_unitario: item.valor_unitario,
-            ativo: item.ativo,
-          }
-        : {
-            descricao: "",
-            categoria: "Outros EPIs",
-            unidade: "UN",
-            ativo: true,
-          },
-    );
+    setForm(item ? {
+      codigo: item.codigo,
+      descricao: item.descricao,
+      categoria: item.categoria,
+      tamanho: item.tamanho,
+      ca_numero: item.ca_numero,
+      unidade: item.unidade,
+      valor_unitario: item.valor_unitario,
+      ativo: item.ativo,
+    } : { descricao: "", categoria: "Outros EPIs", unidade: "UN", ativo: true });
   }, [item, target]);
 
   return (
@@ -1584,115 +822,50 @@ function ItemDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{item ? "Editar item" : "Novo item de estoque"}</DialogTitle>
-          <DialogDescription>
-            Cadastre uniforme, EPI, calçado ou consumível com meta de estoque e CA.
-          </DialogDescription>
+          <DialogDescription>Cadastre a identificação do item. A quantidade é controlada pelas entradas, saídas e ajustes.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Descrição" className="sm:col-span-2">
-            <Input
-              value={form.descricao}
-              onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-            />
-          </Field>
-          <Field label="Código">
-            <Input
-              value={form.codigo ?? ""}
-              onChange={(e) => setForm({ ...form, codigo: e.target.value })}
-            />
-          </Field>
+          <Field label="Descrição" className="sm:col-span-2"><Input value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></Field>
+          <Field label="Código"><Input value={form.codigo ?? ""} onChange={(e) => setForm({ ...form, codigo: e.target.value })} /></Field>
           <Field label="Categoria">
-            <Select
-              value={form.categoria}
-              onValueChange={(value) => setForm({ ...form, categoria: value })}
-            >
+            <Select value={form.categoria} onValueChange={(value) => setForm({ ...form, categoria: value })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {ESTOQUE_CATEGORIAS.map((value) => (
-                  <SelectItem key={value} value={value}>{value}</SelectItem>
-                ))}
-              </SelectContent>
+              <SelectContent>{ESTOQUE_CATEGORIAS.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent>
             </Select>
           </Field>
-          <Field label="Tamanho">
-            <Input
-              value={form.tamanho ?? ""}
-              onChange={(e) => setForm({ ...form, tamanho: e.target.value })}
-            />
-          </Field>
-          <Field label="CA">
-            <Input
-              value={form.ca_numero ?? ""}
-              onChange={(e) => setForm({ ...form, ca_numero: e.target.value })}
-            />
-          </Field>
-          <Field label="Estoque mínimo">
-            <Input
-              inputMode="decimal"
-              value={form.estoque_minimo ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, estoque_minimo: numberValue(e.target.value) })
-              }
-            />
-          </Field>
-          <Field label="Estoque ideal">
-            <Input
-              inputMode="decimal"
-              value={form.estoque_ideal ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, estoque_ideal: numberValue(e.target.value) })
-              }
-            />
-          </Field>
-          <Field label="Valor unitário">
-            <Input
-              inputMode="decimal"
-              value={form.valor_unitario ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, valor_unitario: numberValue(e.target.value) })
-              }
-            />
-          </Field>
-          <Field label="Unidade">
-            <Input
-              value={form.unidade ?? "UN"}
-              onChange={(e) => setForm({ ...form, unidade: e.target.value })}
-            />
-          </Field>
+          <Field label="Tamanho"><Input value={form.tamanho ?? ""} onChange={(e) => setForm({ ...form, tamanho: e.target.value })} /></Field>
+          <Field label="CA"><Input value={form.ca_numero ?? ""} onChange={(e) => setForm({ ...form, ca_numero: e.target.value })} /></Field>
+          <Field label="Valor unitário"><Input inputMode="decimal" value={form.valor_unitario ?? ""} onChange={(e) => setForm({ ...form, valor_unitario: numberValue(e.target.value) })} /></Field>
+          <Field label="Unidade"><Input value={form.unidade ?? "UN"} onChange={(e) => setForm({ ...form, unidade: e.target.value })} /></Field>
           <Field label="Status">
-            <Select
-              value={form.ativo === false ? "INATIVO" : "ATIVO"}
-              onValueChange={(value) =>
-                setForm({ ...form, ativo: value === "ATIVO" })
-              }
-            >
+            <Select value={form.ativo === false ? "INATIVO" : "ATIVO"} onValueChange={(value) => setForm({ ...form, ativo: value === "ATIVO" })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ATIVO">Ativo</SelectItem>
-                <SelectItem value="INATIVO">Inativo</SelectItem>
-              </SelectContent>
+              <SelectContent><SelectItem value="ATIVO">Ativo</SelectItem><SelectItem value="INATIVO">Inativo</SelectItem></SelectContent>
             </Select>
           </Field>
+          {item && (
+            <div className="rounded-xl border border-border/50 bg-muted/20 p-3 sm:col-span-2">
+              <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Quantidade atual</p>
+              <p className="mt-1 text-lg font-bold">{item.estoque_atual.toLocaleString("pt-BR")} {item.unidade}</p>
+              <p className="mt-1 text-[9px] text-muted-foreground">Use Entrada, Saída ou Ajuste para alterar este saldo.</p>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button
-            disabled={saving || !form.descricao.trim()}
-            onClick={async () => {
-              setSaving(true);
-              try {
-                await saveEstoqueItem(form, item?.id);
-                toast.success(item ? "Item atualizado." : "Item cadastrado.");
-                await onSaved();
-              } catch (error: any) {
-                toast.error(error?.message ?? "Falha ao salvar item.");
-              } finally {
-                setSaving(false);
-              }
-            }}
-          >
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Salvar
+          <Button disabled={saving || !form.descricao.trim()} onClick={async () => {
+            setSaving(true);
+            try {
+              await saveEstoqueItem(form, item?.id);
+              toast.success(item ? "Item atualizado." : "Item cadastrado.");
+              await onSaved();
+            } catch (error: any) {
+              toast.error(error?.message ?? "Falha ao salvar item.");
+            } finally {
+              setSaving(false);
+            }
+          }}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1700,25 +873,11 @@ function ItemDialog({
   );
 }
 
-function EntryDialog({
-  open,
-  initialItemId,
-  items,
-  onClose,
-  onSaved,
-}: {
-  open: boolean;
-  initialItemId: string | null;
-  items: EstoqueItem[];
-  onClose: () => void;
-  onSaved: () => Promise<void>;
-}) {
+function EntryDialog({ open, initialItemId, items, onClose, onSaved }: { open: boolean; initialItemId: string | null; items: EstoqueItem[]; onClose: () => void; onSaved: () => Promise<void> }) {
   const [itemId, setItemId] = useState("");
   const [quantidade, setQuantidade] = useState("1");
   const [dataEntrada, setDataEntrada] = useState(todayIso());
   const [valorUnitario, setValorUnitario] = useState("");
-  const [documento, setDocumento] = useState("");
-  const [origem, setOrigem] = useState("");
   const [observacao, setObservacao] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -1728,155 +887,59 @@ function EntryDialog({
     setQuantidade("1");
     setDataEntrada(todayIso());
     setValorUnitario("");
-    setDocumento("");
-    setOrigem("");
     setObservacao("");
   }, [initialItemId, open]);
 
   const selected = items.find((item) => item.id === itemId) ?? null;
   const amount = Number(quantidade.replace(",", "."));
-  const valid = Boolean(
-    itemId &&
-      dataEntrada &&
-      Number.isFinite(amount) &&
-      amount > 0,
-  );
+  const valid = Boolean(itemId && dataEntrada && Number.isFinite(amount) && amount > 0);
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-w-xl">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
-              <PackagePlus className="h-5 w-5" />
-            </span>
-            <div>
-              <DialogTitle>Registrar entrada no estoque</DialogTitle>
-              <DialogDescription className="mt-1">
-                Informe o item, a quantidade e a data real em que o material entrou.
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
-
-        <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.035] p-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Item *" className="sm:col-span-2">
-              <ItemAutocomplete
-                items={items}
-                value={itemId}
-                onValueChange={setItemId}
-                placeholder="Digite nome, código, CA ou tamanho..."
-              />
-            </Field>
-
-            <Field label="Quantidade recebida *">
-              <Input
-                inputMode="decimal"
-                value={quantidade}
-                onChange={(e) => setQuantidade(e.target.value)}
-              />
-            </Field>
-
-            <Field label="Data da entrada *">
-              <div className="relative">
-                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="date"
-                  className="pl-9"
-                  value={dataEntrada}
-                  onChange={(e) => setDataEntrada(e.target.value)}
-                />
-              </div>
-            </Field>
-
-            <Field label="Valor unitário da entrada">
-              <Input
-                inputMode="decimal"
-                value={valorUnitario}
-                onChange={(e) => setValorUnitario(e.target.value)}
-                placeholder="0,00"
-              />
-            </Field>
-
-            <Field label="Documento / Nota fiscal">
-              <Input
-                value={documento}
-                onChange={(e) => setDocumento(e.target.value)}
-                placeholder="NF, pedido ou protocolo"
-              />
-            </Field>
-
-            <Field label="Fornecedor / origem" className="sm:col-span-2">
-              <Input
-                value={origem}
-                onChange={(e) => setOrigem(e.target.value)}
-                placeholder="Ex.: compra, devolução do almoxarifado, transferência..."
-              />
-            </Field>
-
-            <Field label="Observação" className="sm:col-span-2">
-              <Textarea
-                rows={2}
-                value={observacao}
-                onChange={(e) => setObservacao(e.target.value)}
-                placeholder="Informação opcional sobre esta entrada"
-              />
-            </Field>
-          </div>
+        <DialogHeader><DialogTitle>Registrar entrada</DialogTitle><DialogDescription>Informe item, quantidade e data da entrada.</DialogDescription></DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Item *" className="sm:col-span-2">
+            <Select value={itemId} onValueChange={setItemId}>
+              <SelectTrigger><SelectValue placeholder="Selecione o item" /></SelectTrigger>
+              <SelectContent className="max-h-64">{items.map((item) => <SelectItem key={item.id} value={item.id}>{item.descricao} · {item.estoque_atual} {item.unidade}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Quantidade *"><Input inputMode="decimal" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></Field>
+          <Field label="Data *"><Input type="date" value={dataEntrada} onChange={(e) => setDataEntrada(e.target.value)} /></Field>
+          <Field label="Valor unitário"><Input inputMode="decimal" value={valorUnitario} onChange={(e) => setValorUnitario(e.target.value)} /></Field>
+          <Field label="Observação"><Input value={observacao} onChange={(e) => setObservacao(e.target.value)} /></Field>
         </div>
-
         {selected && (
           <div className="flex items-center justify-between rounded-xl border border-border/50 bg-background/35 px-3 py-2.5">
-            <div>
-              <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Saldo atual</p>
-              <p className="text-sm font-semibold">{selected.estoque_atual} {selected.unidade}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Saldo após entrada</p>
-              <p className="text-sm font-semibold text-emerald-600">
-                {(selected.estoque_atual + (Number.isFinite(amount) ? amount : 0)).toLocaleString("pt-BR")} {selected.unidade}
-              </p>
-            </div>
+            <span className="text-[10px] text-muted-foreground">Saldo atual: {selected.estoque_atual} {selected.unidade}</span>
+            <span className="text-sm font-semibold text-emerald-600">Após: {(selected.estoque_atual + (Number.isFinite(amount) ? amount : 0)).toLocaleString("pt-BR")} {selected.unidade}</span>
           </div>
         )}
-
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button
-            disabled={saving || !valid}
-            className="bg-emerald-600 text-white hover:bg-emerald-700"
-            onClick={async () => {
-              if (!valid) return;
-              setSaving(true);
-              try {
-                await registerEstoqueMovement({
-                  itemId,
-                  tipo: "entrada",
-                  quantidade: amount,
-                  motivo: origem || "Entrada de estoque",
-                  documento,
-                  observacao,
-                  valorUnitario: numberValue(valorUnitario),
-                  dataMovimento: dataEntrada,
-                });
-                toast.success(
-                  `Entrada registrada em ${fmtDate(dataEntrada)}. Saldo atualizado.`,
-                );
-                await onSaved();
-              } catch (error: any) {
-                toast.error(error?.message ?? "Falha ao registrar entrada.");
-              } finally {
-                setSaving(false);
-              }
-            }}
-          >
-            {saving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <PackagePlus className="mr-2 h-4 w-4" />
-            )}
-            Confirmar entrada
+          <Button disabled={saving || !valid} onClick={async () => {
+            if (!valid) return;
+            setSaving(true);
+            try {
+              await registerEstoqueMovement({
+                itemId,
+                tipo: "entrada",
+                quantidade: amount,
+                motivo: "Entrada de estoque",
+                observacao,
+                valorUnitario: numberValue(valorUnitario),
+                dataMovimento: dataEntrada,
+              });
+              toast.success("Entrada registrada.");
+              await onSaved();
+            } catch (error: any) {
+              toast.error(error?.message ?? "Falha ao registrar entrada.");
+            } finally {
+              setSaving(false);
+            }
+          }}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar entrada
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1884,147 +947,67 @@ function EntryDialog({
   );
 }
 
-function MovementDialog({
-  item,
-  initialType,
-  onClose,
-  onSaved,
-}: {
-  item: EstoqueItem | null;
-  initialType: EstoqueMovementType;
-  onClose: () => void;
-  onSaved: () => Promise<void>;
-}) {
+function MovementDialog({ item, initialType, onClose, onSaved }: { item: EstoqueItem | null; initialType: EstoqueMovementType; onClose: () => void; onSaved: () => Promise<void> }) {
   const [tipo, setTipo] = useState<EstoqueMovementType>(initialType);
   const [quantidade, setQuantidade] = useState("1");
   const [motivo, setMotivo] = useState("");
-  const [observacao, setObservacao] = useState("");
   const [dataMovimento, setDataMovimento] = useState(todayIso());
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const allowed: EstoqueMovementType[] = [
-      "devolucao",
-      "ajuste_positivo",
-      "ajuste_negativo",
-      "descarte",
-    ];
-    setTipo(allowed.includes(initialType) ? initialType : "ajuste_positivo");
+    setTipo(initialType);
     setQuantidade("1");
     setMotivo("");
-    setObservacao("");
     setDataMovimento(todayIso());
   }, [initialType, item?.id]);
 
   const amount = Number(quantidade.replace(",", "."));
   const negative = ["ajuste_negativo", "descarte"].includes(tipo);
-  const projected = item
-    ? item.estoque_atual + (negative ? -amount : amount)
-    : 0;
+  const projected = item ? item.estoque_atual + (negative ? -amount : amount) : 0;
 
   return (
     <Dialog open={Boolean(item)} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Ajustar saldo do estoque</DialogTitle>
-          <DialogDescription>
-            Use somente para devolução, correção de inventário ou descarte. Entrada e saída possuem fluxos próprios.
-          </DialogDescription>
-        </DialogHeader>
-
+        <DialogHeader><DialogTitle>Ajustar quantidade</DialogTitle><DialogDescription>Corrija o saldo físico, registre devolução ou descarte.</DialogDescription></DialogHeader>
         <div className="rounded-xl border border-border/50 bg-background/30 p-3">
           <p className="text-xs font-semibold">{item?.descricao}</p>
-          <p className="mt-1 text-[10px] text-muted-foreground">
-            Saldo atual: {item?.estoque_atual ?? 0} {item?.unidade}
-          </p>
+          <p className="mt-1 text-[10px] text-muted-foreground">Quantidade atual: {item?.estoque_atual ?? 0} {item?.unidade}</p>
         </div>
-
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Tipo de ajuste *">
+          <Field label="Tipo">
             <Select value={tipo} onValueChange={(value) => setTipo(value as EstoqueMovementType)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="devolucao">Devolução ao estoque</SelectItem>
+                <SelectItem value="devolucao">Devolução</SelectItem>
                 <SelectItem value="ajuste_positivo">Ajuste positivo</SelectItem>
                 <SelectItem value="ajuste_negativo">Ajuste negativo</SelectItem>
-                <SelectItem value="descarte">Descarte / perda</SelectItem>
+                <SelectItem value="descarte">Descarte</SelectItem>
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Quantidade *">
-            <Input
-              inputMode="decimal"
-              value={quantidade}
-              onChange={(e) => setQuantidade(e.target.value)}
-            />
-          </Field>
-          <Field label="Data do ajuste *">
-            <Input
-              type="date"
-              value={dataMovimento}
-              onChange={(e) => setDataMovimento(e.target.value)}
-            />
-          </Field>
-          <Field label="Motivo *">
-            <Input
-              value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-              placeholder="Ex.: inventário, avaria, devolução..."
-            />
-          </Field>
-          <Field label="Observação" className="sm:col-span-2">
-            <Textarea
-              rows={2}
-              value={observacao}
-              onChange={(e) => setObservacao(e.target.value)}
-            />
-          </Field>
+          <Field label="Quantidade"><Input inputMode="decimal" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></Field>
+          <Field label="Data"><Input type="date" value={dataMovimento} onChange={(e) => setDataMovimento(e.target.value)} /></Field>
+          <Field label="Motivo"><Input value={motivo} onChange={(e) => setMotivo(e.target.value)} /></Field>
         </div>
-
         {item && Number.isFinite(amount) && amount > 0 && (
-          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-background/35 px-3 py-2">
-            <span className="text-[10px] text-muted-foreground">Saldo após ajuste</span>
-            <span className={cn("text-sm font-semibold", projected < 0 && "text-rose-600")}>
-              {projected.toLocaleString("pt-BR")} {item.unidade}
-            </span>
-          </div>
+          <p className={cn("rounded-xl border border-border/50 p-3 text-sm font-semibold", projected < 0 && "text-rose-600")}>Quantidade após ajuste: {projected.toLocaleString("pt-BR")} {item.unidade}</p>
         )}
-
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button
-            disabled={
-              saving ||
-              !item ||
-              !dataMovimento ||
-              !motivo.trim() ||
-              !Number.isFinite(amount) ||
-              amount <= 0 ||
-              projected < 0
+          <Button disabled={saving || !item || !motivo.trim() || !dataMovimento || !Number.isFinite(amount) || amount <= 0 || projected < 0} onClick={async () => {
+            if (!item) return;
+            setSaving(true);
+            try {
+              await registerEstoqueMovement({ itemId: item.id, tipo, quantidade: amount, motivo, dataMovimento });
+              toast.success("Quantidade ajustada.");
+              await onSaved();
+            } catch (error: any) {
+              toast.error(error?.message ?? "Falha ao ajustar estoque.");
+            } finally {
+              setSaving(false);
             }
-            onClick={async () => {
-              if (!item) return;
-              setSaving(true);
-              try {
-                await registerEstoqueMovement({
-                  itemId: item.id,
-                  tipo,
-                  quantidade: amount,
-                  motivo,
-                  observacao,
-                  dataMovimento,
-                });
-                toast.success("Ajuste registrado no histórico.");
-                await onSaved();
-              } catch (error: any) {
-                toast.error(error?.message ?? "Falha ao ajustar estoque.");
-              } finally {
-                setSaving(false);
-              }
-            }}
-          >
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Confirmar ajuste
+          }}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar ajuste
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -2032,178 +1015,10 @@ function MovementDialog({
   );
 }
 
-function CollaboratorDialog({
-  target,
-  onClose,
-  onSaved,
-}: {
-  target: EstoqueColaborador | "new" | null;
-  onClose: () => void;
-  onSaved: () => Promise<void>;
-}) {
-  const collaborator = target && target !== "new" ? target : null;
-  const [form, setForm] = useState<EstoqueColaboradorInput>({
-    nome: "",
-    ativo: true,
-  });
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!target) return;
-    setForm(
-      collaborator
-        ? {
-            nome: collaborator.nome,
-            matricula: collaborator.matricula,
-            setor: collaborator.setor,
-            cargo: collaborator.cargo,
-            unidade: collaborator.unidade,
-            ativo: collaborator.ativo,
-          }
-        : { nome: "", ativo: true },
-    );
-  }, [collaborator, target]);
-
-  return (
-    <Dialog open={Boolean(target)} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {collaborator ? "Editar colaborador" : "Novo colaborador"}
-          </DialogTitle>
-          <DialogDescription>
-            Cadastro usado para rastrear quem recebeu cada EPI ou uniforme.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Nome" className="sm:col-span-2">
-            <Input
-              value={form.nome}
-              onChange={(e) => setForm({ ...form, nome: e.target.value })}
-            />
-          </Field>
-          <Field label="Matrícula">
-            <Input
-              value={form.matricula ?? ""}
-              onChange={(e) => setForm({ ...form, matricula: e.target.value })}
-            />
-          </Field>
-          <Field label="Setor / equipe">
-            <Input
-              value={form.setor ?? ""}
-              onChange={(e) => setForm({ ...form, setor: e.target.value })}
-            />
-          </Field>
-          <Field label="Cargo">
-            <Input
-              value={form.cargo ?? ""}
-              onChange={(e) => setForm({ ...form, cargo: e.target.value })}
-            />
-          </Field>
-          <Field label="Unidade">
-            <Input
-              value={form.unidade ?? ""}
-              onChange={(e) => setForm({ ...form, unidade: e.target.value })}
-            />
-          </Field>
-          <Field label="Status">
-            <Select
-              value={form.ativo === false ? "INATIVO" : "ATIVO"}
-              onValueChange={(value) =>
-                setForm({ ...form, ativo: value === "ATIVO" })
-              }
-            >
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ATIVO">Ativo</SelectItem>
-                <SelectItem value="INATIVO">Inativo</SelectItem>
-              </SelectContent>
-            </Select>
-          </Field>
-        </div>
-        {collaborator?.origem_sra && (
-          <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.035] p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold">Perfil funcional SRA</p>
-                <p className="mt-0.5 text-[9px] text-muted-foreground">
-                  Informações corporativas usadas para identificar a retirada no almoxarifado.
-                </p>
-              </div>
-              <Badge
-                variant="outline"
-                className="rounded-full border-emerald-500/20 text-[8px] text-emerald-600 dark:text-emerald-300"
-              >
-                Sincronizado
-              </Badge>
-            </div>
-
-            <div className="mt-3 grid gap-x-4 gap-y-2 sm:grid-cols-2">
-              <SraInfo label="Função" value={collaborator.funcao || collaborator.cargo} />
-              <SraInfo label="Situação" value={collaborator.situacao_sra} />
-              <SraInfo label="Centro / equipe" value={collaborator.centro_resultado} />
-              <SraInfo label="Setor do negócio" value={collaborator.setor_negocio || collaborator.setor} />
-              <SraInfo label="Admissão" value={collaborator.data_admissao ? fmtDate(collaborator.data_admissao) : null} />
-              <SraInfo label="Treinamento NR 23" value={collaborator.data_treinamento ? fmtDate(collaborator.data_treinamento) : null} />
-              <SraInfo label="Escala" value={collaborator.escala} />
-              <SraInfo label="Horário" value={collaborator.horario_trabalho} />
-              <SraInfo label="Intervalo" value={collaborator.intervalo_trabalho} />
-              <SraInfo label="Supervisor" value={collaborator.supervisor} />
-              <SraInfo label="Gerente" value={collaborator.gerente} />
-              <SraInfo label="Local" value={collaborator.local_trabalho || collaborator.unidade} />
-            </div>
-          </div>
-        )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button
-            disabled={saving || !form.nome.trim()}
-            onClick={async () => {
-              setSaving(true);
-              try {
-                await saveEstoqueColaborador(form, collaborator?.id);
-                toast.success(
-                  collaborator ? "Colaborador atualizado." : "Colaborador cadastrado.",
-                );
-                await onSaved();
-              } catch (error: any) {
-                toast.error(error?.message ?? "Falha ao salvar colaborador.");
-              } finally {
-                setSaving(false);
-              }
-            }}
-          >
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Salvar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function DeliveryDialog({
-  open,
-  initialItemId,
-  items,
-  colaboradores,
-  onNewCollaborator,
-  onClose,
-  onSaved,
-}: {
-  open: boolean;
-  initialItemId: string | null;
-  items: EstoqueItem[];
-  colaboradores: EstoqueColaborador[];
-  onNewCollaborator: () => void;
-  onClose: () => void;
-  onSaved: () => Promise<void>;
-}) {
+function DeliveryDialog({ open, initialItemId, items, colaboradores, onClose, onSaved }: { open: boolean; initialItemId: string | null; items: EstoqueItem[]; colaboradores: EstoqueColaborador[]; onClose: () => void; onSaved: () => Promise<void> }) {
   const [colaboradorId, setColaboradorId] = useState("");
-  const [selectedItem, setSelectedItem] = useState("");
-  const [qty, setQty] = useState("1");
-  const [cart, setCart] = useState<Array<{ itemId: string; quantidade: number }>>([]);
+  const [itemId, setItemId] = useState("");
+  const [quantidade, setQuantidade] = useState("1");
   const [dataEntrega, setDataEntrega] = useState(todayIso());
   const [observacao, setObservacao] = useState("");
   const [saving, setSaving] = useState(false);
@@ -2211,706 +1026,133 @@ function DeliveryDialog({
   useEffect(() => {
     if (!open) return;
     setColaboradorId("");
-    setSelectedItem("");
-    setQty("1");
-    const initialItem = initialItemId
-      ? items.find((item) => item.id === initialItemId)
-      : null;
-    setCart(
-      initialItem && initialItem.estoque_atual > 0
-        ? [{ itemId: initialItem.id, quantidade: 1 }]
-        : [],
-    );
+    setItemId(initialItemId ?? "");
+    setQuantidade("1");
     setDataEntrega(todayIso());
     setObservacao("");
-  }, [initialItemId, items, open]);
+  }, [initialItemId, open]);
 
-  const collaborator = colaboradores.find((item) => item.id === colaboradorId) ?? null;
-  const itemToAdd = items.find((item) => item.id === selectedItem) ?? null;
-  const totalUnits = cart.reduce((sum, entry) => sum + entry.quantidade, 0);
-  const ready = Boolean(colaboradorId && dataEntrega && cart.length > 0);
-
-  const addItem = () => {
-    const amount = Number(qty.replace(",", "."));
-    if (!selectedItem) {
-      toast.warning("Pesquise e selecione um item para adicionar.");
-      return;
-    }
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast.warning("Informe uma quantidade válida.");
-      return;
-    }
-    const item = items.find((entry) => entry.id === selectedItem);
-    if (!item) return;
-    const alreadySelected =
-      cart.find((entry) => entry.itemId === selectedItem)?.quantidade ?? 0;
-    if (alreadySelected + amount > item.estoque_atual) {
-      toast.warning(
-        `Saldo disponível: ${item.estoque_atual} ${item.unidade}. Já selecionado: ${alreadySelected}.`,
-      );
-      return;
-    }
-    setCart((current) => {
-      const existing = current.find((entry) => entry.itemId === selectedItem);
-      if (existing) {
-        return current.map((entry) =>
-          entry.itemId === selectedItem
-            ? { ...entry, quantidade: entry.quantidade + amount }
-            : entry,
-        );
-      }
-      return [...current, { itemId: selectedItem, quantidade: amount }];
-    });
-    setSelectedItem("");
-    setQty("1");
-  };
-
-  const submit = async () => {
-    if (!colaboradorId) {
-      toast.warning("Selecione o colaborador que está retirando o material.");
-      return;
-    }
-    if (!dataEntrega) {
-      toast.warning("Informe a data da retirada.");
-      return;
-    }
-    if (cart.length === 0) {
-      toast.warning("Adicione pelo menos um item à saída.");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await registerEstoqueDelivery({
-        colaboradorId,
-        itens: cart,
-        observacao,
-        dataEntrega,
-      });
-      toast.success(
-        `Saída registrada para ${collaborator?.nome ?? "colaborador"} em ${fmtDate(dataEntrega)}.`,
-      );
-      await onSaved();
-    } catch (error: any) {
-      toast.error(error?.message ?? "Falha ao registrar retirada.");
-    } finally {
-      setSaving(false);
-    }
-  };
+  const selected = items.find((item) => item.id === itemId) ?? null;
+  const amount = Number(quantidade.replace(",", "."));
+  const valid = Boolean(
+    colaboradorId && itemId && dataEntrega && Number.isFinite(amount) && amount > 0 && selected && amount <= selected.estoque_atual,
+  );
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-h-[94vh] max-w-3xl overflow-y-auto p-0">
-        <div className="border-b border-border/45 bg-gradient-to-r from-sky-500/[0.07] via-transparent to-transparent px-5 py-4">
-          <DialogHeader>
-            <div className="flex items-start gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-sky-500/15 bg-sky-500/10 text-sky-600 shadow-sm">
-                <PackageMinus className="h-5 w-5" />
-              </span>
-              <div className="min-w-0">
-                <DialogTitle>Registrar saída do estoque</DialogTitle>
-                <DialogDescription className="mt-1">
-                  Pesquise o colaborador, adicione os itens e confirme. O saldo será baixado automaticamente.
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <FlowStep
-              number="1"
-              label="Colaborador"
-              complete={Boolean(colaboradorId)}
-            />
-            <FlowStep
-              number="2"
-              label="Itens"
-              complete={cart.length > 0}
-            />
-            <FlowStep
-              number="3"
-              label="Confirmar"
-              complete={ready}
-            />
-          </div>
+      <DialogContent className="max-w-xl">
+        <DialogHeader><DialogTitle>Registrar saída</DialogTitle><DialogDescription>Selecione colaborador, item e quantidade retirada.</DialogDescription></DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Colaborador *" className="sm:col-span-2">
+            <Select value={colaboradorId} onValueChange={setColaboradorId}>
+              <SelectTrigger><SelectValue placeholder="Selecione o colaborador" /></SelectTrigger>
+              <SelectContent className="max-h-64">{colaboradores.map((colab) => <SelectItem key={colab.id} value={colab.id}>{colab.nome}{colab.matricula ? ` · ${colab.matricula}` : ""}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Item *" className="sm:col-span-2">
+            <Select value={itemId} onValueChange={setItemId}>
+              <SelectTrigger><SelectValue placeholder="Selecione o item" /></SelectTrigger>
+              <SelectContent className="max-h-64">{items.filter((item) => item.estoque_atual > 0).map((item) => <SelectItem key={item.id} value={item.id}>{item.descricao} · {item.estoque_atual} {item.unidade}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Quantidade *"><Input inputMode="decimal" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} /></Field>
+          <Field label="Data *"><Input type="date" value={dataEntrega} onChange={(e) => setDataEntrega(e.target.value)} /></Field>
+          <Field label="Observação" className="sm:col-span-2"><Textarea rows={2} value={observacao} onChange={(e) => setObservacao(e.target.value)} /></Field>
         </div>
-
-        <div className="space-y-3 px-5 py-4">
-          <section className="rounded-2xl border border-border/50 bg-background/35 p-3.5">
-            <div className="mb-3 flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600">
-                <UserRound className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-xs font-semibold">Quem está retirando?</p>
-                <p className="text-[9px] text-muted-foreground">
-                  Digite nome, matrícula, função ou equipe.
-                </p>
-              </div>
-            </div>
-
-            {colaboradores.length > 0 ? (
-              <CollaboratorAutocomplete
-                colaboradores={colaboradores}
-                value={colaboradorId}
-                onValueChange={setColaboradorId}
-              />
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full justify-start border-amber-500/25 bg-amber-500/[0.05] text-amber-700 dark:text-amber-300"
-                onClick={onNewCollaborator}
-              >
-                <UserRoundPlus className="mr-2 h-4 w-4" />
-                Cadastre um colaborador antes da saída
-              </Button>
-            )}
-
-            {collaborator && (
-              <div className="mt-2.5 grid gap-2 rounded-xl border border-sky-500/15 bg-sky-500/[0.035] p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <p className="truncate text-xs font-semibold">{collaborator.nome}</p>
-                    <Badge variant="outline" className="rounded-full px-1.5 text-[7px]">
-                      {collaborator.situacao_sra || "ATIVO"}
-                    </Badge>
-                  </div>
-                  <p className="mt-1 truncate text-[9px] text-muted-foreground">
-                    Mat. {collaborator.matricula || "—"} · {collaborator.funcao || collaborator.cargo || "Função não informada"}
-                  </p>
-                  {collaborator.centro_resultado && (
-                    <p className="mt-0.5 truncate text-[8px] text-muted-foreground/80">
-                      {collaborator.centro_resultado}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2 text-[9px] text-muted-foreground"
-                  onClick={() => setColaboradorId("")}
-                >
-                  Trocar
-                </Button>
-              </div>
-            )}
-          </section>
-
-          <section className="rounded-2xl border border-border/50 bg-background/35 p-3.5">
-            <div className="mb-3 flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
-                <PackageOpen className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-xs font-semibold">O que será retirado?</p>
-                <p className="text-[9px] text-muted-foreground">
-                  Pesquise por nome, código, CA ou tamanho.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_90px_auto] sm:items-end">
-              <Field label="Item">
-                <ItemAutocomplete
-                  items={items}
-                  value={selectedItem}
-                  onValueChange={setSelectedItem}
-                  onlyInStock
-                  placeholder="Comece a digitar o item..."
-                />
-              </Field>
-
-              <Field label="Qtd.">
-                <Input
-                  inputMode="decimal"
-                  value={qty}
-                  onChange={(e) => setQty(e.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      addItem();
-                    }
-                  }}
-                  placeholder="1"
-                />
-              </Field>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 rounded-xl px-3"
-                onClick={addItem}
-              >
-                <Plus className="mr-1.5 h-4 w-4" />
-                Adicionar
-              </Button>
-            </div>
-
-            {itemToAdd && (
-              <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-muted/25 px-2.5 py-2 text-[8px] text-muted-foreground">
-                <span>Saldo disponível: <strong className="text-foreground">{itemToAdd.estoque_atual} {itemToAdd.unidade}</strong></span>
-                {itemToAdd.ca_numero && <span>CA {itemToAdd.ca_numero}</span>}
-                {itemToAdd.tamanho && <span>Tam. {itemToAdd.tamanho}</span>}
-              </div>
-            )}
-
-            <div className="mt-3 space-y-1.5">
-              {cart.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border/60 py-5 text-center">
-                  <PackageOpen className="mx-auto h-5 w-5 text-muted-foreground/45" />
-                  <p className="mt-1.5 text-[10px] font-medium text-muted-foreground">
-                    Nenhum item adicionado
-                  </p>
-                  <p className="mt-0.5 text-[8px] text-muted-foreground/70">
-                    Pesquise um item acima e clique em Adicionar.
-                  </p>
-                </div>
-              ) : (
-                cart.map((entry) => {
-                  const item = items.find((candidate) => candidate.id === entry.itemId);
-                  return (
-                    <div
-                      key={entry.itemId}
-                      className="flex items-center gap-2 rounded-xl border border-border/45 bg-background/50 px-3 py-2.5"
-                    >
-                      {item ? (
-                        <MaterialIcon item={item} size="sm" />
-                      ) : (
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted/35 text-muted-foreground">
-                          <PackageCheck className="h-3.5 w-3.5" />
-                        </span>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[10px] font-semibold">
-                          {item?.descricao}
-                        </p>
-                        <p className="mt-0.5 text-[8px] text-muted-foreground">
-                          {item?.codigo ? `Cód. ${item.codigo} · ` : ""}
-                          CA {item?.ca_numero || "—"} · saldo {item?.estoque_atual} {item?.unidade}
-                        </p>
-                      </div>
-                      <Badge variant="outline" className="rounded-full">
-                        {entry.quantidade} {item?.unidade}
-                      </Badge>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-500"
-                        title="Remover item"
-                        onClick={() =>
-                          setCart((current) =>
-                            current.filter((candidate) => candidate.itemId !== entry.itemId),
-                          )
-                        }
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </section>
-
-          <section className="grid gap-3 rounded-2xl border border-border/50 bg-background/35 p-3.5 sm:grid-cols-2">
-            <Field label="Data da retirada *">
-              <div className="relative">
-                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="date"
-                  className="pl-9"
-                  value={dataEntrega}
-                  onChange={(e) => setDataEntrega(e.target.value)}
-                />
-              </div>
-            </Field>
-            <Field label="Motivo / observação">
-              <Input
-                value={observacao}
-                onChange={(e) => setObservacao(e.target.value)}
-                placeholder="Ex.: admissão, troca, reposição..."
-              />
-            </Field>
-          </section>
-        </div>
-
-        <div className="sticky bottom-0 flex flex-col gap-2 border-t border-border/50 bg-background/95 px-5 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className={cn("text-[10px] font-semibold", ready ? "text-emerald-600" : "text-muted-foreground")}>
-              {ready
-                ? `Pronto para registrar · ${cart.length} item(ns) · ${totalUnits.toLocaleString("pt-BR")} unidade(s)`
-                : !colaboradorId
-                  ? "Selecione o colaborador para continuar"
-                  : cart.length === 0
-                    ? "Adicione pelo menos um item à saída"
-                    : "Confira os dados antes de confirmar"}
-            </p>
-            <p className="mt-0.5 text-[8px] text-muted-foreground/70">
-              O botão permanece disponível e informa o que falta preencher.
-            </p>
+        {selected && (
+          <div className="flex items-center justify-between rounded-xl border border-border/50 bg-background/35 px-3 py-2.5">
+            <span className="text-[10px] text-muted-foreground">Disponível: {selected.estoque_atual} {selected.unidade}</span>
+            <span className="text-sm font-semibold">Após: {Math.max(0, selected.estoque_atual - (Number.isFinite(amount) ? amount : 0)).toLocaleString("pt-BR")} {selected.unidade}</span>
           </div>
-
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button
-              disabled={saving}
-              className={cn(
-                "min-w-[150px]",
-                ready && "bg-sky-600 text-white hover:bg-sky-700",
-              )}
-              onClick={() => void submit()}
-            >
-              {saving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : ready ? (
-                <Check className="mr-2 h-4 w-4" />
-              ) : (
-                <ClipboardCheck className="mr-2 h-4 w-4" />
-              )}
-              Confirmar saída
-            </Button>
-          </div>
-        </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button disabled={saving || !valid} onClick={async () => {
+            if (!valid) return;
+            setSaving(true);
+            try {
+              await registerEstoqueDelivery({
+                colaboradorId,
+                itens: [{ itemId, quantidade: amount }],
+                observacao,
+                dataEntrega,
+              });
+              toast.success("Saída registrada.");
+              await onSaved();
+            } catch (error: any) {
+              toast.error(error?.message ?? "Falha ao registrar saída.");
+            } finally {
+              setSaving(false);
+            }
+          }}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar saída
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function FlowStep({
-  number,
-  label,
-  complete,
-}: {
-  number: string;
-  label: string;
-  complete: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-2 rounded-xl border px-2.5 py-2 transition-colors",
-        complete
-          ? "border-emerald-500/20 bg-emerald-500/[0.05]"
-          : "border-border/45 bg-background/35",
-      )}
-    >
-      <span
-        className={cn(
-          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold",
-          complete
-            ? "bg-emerald-500/12 text-emerald-600"
-            : "bg-muted/40 text-muted-foreground",
-        )}
-      >
-        {complete ? <Check className="h-3.5 w-3.5" /> : number}
-      </span>
-      <span className="truncate text-[9px] font-medium">{label}</span>
-    </div>
-  );
-}
-
-function CollaboratorAutocomplete({
-  colaboradores,
-  value,
-  onValueChange,
-}: {
-  colaboradores: EstoqueColaborador[];
-  value: string;
-  onValueChange: (value: string) => void;
-}) {
-  const selected = colaboradores.find((item) => item.id === value) ?? null;
-  const [query, setQuery] = useState("");
-  const [focused, setFocused] = useState(false);
+function CollaboratorDialog({ target, onClose, onSaved }: { target: EstoqueColaborador | "new" | null; onClose: () => void; onSaved: () => Promise<void> }) {
+  const collaborator = target && target !== "new" ? target : null;
+  const [form, setForm] = useState<EstoqueColaboradorInput>({ nome: "", ativo: true });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (selected && !focused) {
-      setQuery(selected.nome);
-    } else if (!value && !focused) {
-      setQuery("");
-    }
-  }, [focused, selected, value]);
-
-  const suggestions = useMemo(() => {
-    const q = query.trim().toLocaleLowerCase("pt-BR");
-    const source = q
-      ? colaboradores.filter((colab) =>
-          [
-            colab.nome,
-            colab.matricula,
-            colab.funcao,
-            colab.cargo,
-            colab.centro_resultado,
-            colab.setor_negocio,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLocaleLowerCase("pt-BR")
-            .includes(q),
-        )
-      : colaboradores;
-
-    return source.slice(0, 40);
-  }, [colaboradores, query]);
+    if (!target) return;
+    setForm(collaborator ? {
+      nome: collaborator.nome,
+      matricula: collaborator.matricula,
+      setor: collaborator.setor,
+      cargo: collaborator.cargo,
+      unidade: collaborator.unidade,
+      ativo: collaborator.ativo,
+    } : { nome: "", ativo: true });
+  }, [collaborator, target]);
 
   return (
-    <div
-      className="relative"
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-          setFocused(false);
-        }
-      }}
-    >
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          className="h-10 rounded-xl pl-9 pr-10"
-          placeholder="Digite nome, matrícula, função ou equipe..."
-          onFocus={() => setFocused(true)}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setFocused(true);
-            if (value) onValueChange("");
-          }}
-        />
-        {selected && (
-          <Check className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500" />
-        )}
-      </div>
-
-      {focused && (
-        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[80] overflow-hidden rounded-xl border border-border/60 bg-popover shadow-xl">
-          <div className="flex items-center justify-between border-b border-border/40 px-2.5 py-1.5 text-[8px] text-muted-foreground">
-            <span>Sugestões</span>
-            <span>Role para ver mais</span>
-          </div>
-          <div className="max-h-44 overflow-y-auto overscroll-contain p-1">
-            {suggestions.length > 0 ? (
-              suggestions.map((colab) => (
-                <button
-                  key={colab.id}
-                  type="button"
-                  className="flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-accent/70 focus:bg-accent/70 focus:outline-none"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => {
-                    onValueChange(colab.id);
-                    setQuery(colab.nome);
-                    setFocused(false);
-                  }}
-                >
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-sky-500/[0.08] text-sky-600">
-                    <UserRound className="h-3.5 w-3.5" />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1.5">
-                      <span className="truncate text-[10px] font-semibold">{colab.nome}</span>
-                      {colab.situacao_sra && colab.situacao_sra !== "NORMAL" && (
-                        <Badge variant="outline" className="shrink-0 rounded-full px-1.5 text-[7px]">
-                          {colab.situacao_sra}
-                        </Badge>
-                      )}
-                    </span>
-                    <span className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[8px] text-muted-foreground">
-                      {colab.matricula && <span>Mat. {colab.matricula}</span>}
-                      {(colab.funcao || colab.cargo) && (
-                        <span className="inline-flex items-center gap-1">
-                          <BriefcaseBusiness className="h-2.5 w-2.5" />
-                          {colab.funcao || colab.cargo}
-                        </span>
-                      )}
-                    </span>
-                    {colab.centro_resultado && (
-                      <span className="mt-0.5 flex min-w-0 items-center gap-1 text-[7px] text-muted-foreground/75">
-                        <Building2 className="h-2.5 w-2.5 shrink-0" />
-                        <span className="truncate">{colab.centro_resultado}</span>
-                      </span>
-                    )}
-                  </span>
-                </button>
-              ))
-            ) : (
-              <div className="px-3 py-4 text-center">
-                <Search className="mx-auto h-4 w-4 text-muted-foreground/50" />
-                <p className="mt-1.5 text-[9px] font-medium">Nenhum colaborador encontrado</p>
-                <p className="mt-0.5 text-[8px] text-muted-foreground">
-                  Tente nome, matrícula ou função.
-                </p>
-              </div>
-            )}
-          </div>
+    <Dialog open={Boolean(target)} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader><DialogTitle>{collaborator ? "Editar colaborador" : "Novo colaborador"}</DialogTitle><DialogDescription>Cadastro utilizado para rastrear as retiradas.</DialogDescription></DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Nome" className="sm:col-span-2"><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></Field>
+          <Field label="Matrícula"><Input value={form.matricula ?? ""} onChange={(e) => setForm({ ...form, matricula: e.target.value })} /></Field>
+          <Field label="Setor / equipe"><Input value={form.setor ?? ""} onChange={(e) => setForm({ ...form, setor: e.target.value })} /></Field>
+          <Field label="Cargo"><Input value={form.cargo ?? ""} onChange={(e) => setForm({ ...form, cargo: e.target.value })} /></Field>
+          <Field label="Unidade"><Input value={form.unidade ?? ""} onChange={(e) => setForm({ ...form, unidade: e.target.value })} /></Field>
+          <Field label="Status">
+            <Select value={form.ativo === false ? "INATIVO" : "ATIVO"} onValueChange={(value) => setForm({ ...form, ativo: value === "ATIVO" })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="ATIVO">Ativo</SelectItem><SelectItem value="INATIVO">Inativo</SelectItem></SelectContent>
+            </Select>
+          </Field>
         </div>
-      )}
-    </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button disabled={saving || !form.nome.trim()} onClick={async () => {
+            setSaving(true);
+            try {
+              await saveEstoqueColaborador(form, collaborator?.id);
+              toast.success(collaborator ? "Colaborador atualizado." : "Colaborador cadastrado.");
+              await onSaved();
+            } catch (error: any) {
+              toast.error(error?.message ?? "Falha ao salvar colaborador.");
+            } finally {
+              setSaving(false);
+            }
+          }}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-function ItemAutocomplete({
-  items,
-  value,
-  onValueChange,
-  placeholder = "Digite para pesquisar...",
-  onlyInStock = false,
-}: {
-  items: EstoqueItem[];
-  value: string;
-  onValueChange: (value: string) => void;
-  placeholder?: string;
-  onlyInStock?: boolean;
-}) {
-  const selected = items.find((item) => item.id === value) ?? null;
-  const [query, setQuery] = useState("");
-  const [focused, setFocused] = useState(false);
-
-  useEffect(() => {
-    if (selected && !focused) {
-      setQuery(selected.descricao);
-    } else if (!value && !focused) {
-      setQuery("");
-    }
-  }, [focused, selected, value]);
-
-  const suggestions = useMemo(() => {
-    const q = query.trim().toLocaleLowerCase("pt-BR");
-    return items
-      .filter((item) => !onlyInStock || item.estoque_atual > 0)
-      .filter((item) => {
-        if (!q) return true;
-        return [
-          item.descricao,
-          item.codigo,
-          item.ca_numero,
-          item.tamanho,
-          item.categoria,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLocaleLowerCase("pt-BR")
-          .includes(q);
-      })
-      .slice(0, 40);
-  }, [items, onlyInStock, query]);
-
-  return (
-    <div
-      className="relative"
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-          setFocused(false);
-        }
-      }}
-    >
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          className="h-10 rounded-xl pl-9 pr-10"
-          placeholder={placeholder}
-          onFocus={() => setFocused(true)}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setFocused(true);
-            if (value) onValueChange("");
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") setFocused(false);
-          }}
-        />
-        {selected && (
-          <Check className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500" />
-        )}
-      </div>
-
-      {focused && (
-        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[80] overflow-hidden rounded-xl border border-border/60 bg-popover shadow-xl">
-          <div className="flex items-center justify-between border-b border-border/40 px-2.5 py-1.5 text-[8px] text-muted-foreground">
-            <span>Sugestões</span>
-            <span>Role para ver mais</span>
-          </div>
-          <div className="max-h-44 overflow-y-auto overscroll-contain p-1">
-            {suggestions.length > 0 ? (
-              suggestions.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition hover:bg-accent/70 focus:bg-accent/70 focus:outline-none"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => {
-                    onValueChange(item.id);
-                    setQuery(item.descricao);
-                    setFocused(false);
-                  }}
-                >
-                  <MaterialIcon item={item} size="sm" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[10px] font-semibold">{item.descricao}</span>
-                    <span className="mt-0.5 flex flex-wrap gap-x-2 text-[8px] text-muted-foreground">
-                      {item.codigo && <span>Cód. {item.codigo}</span>}
-                      {item.ca_numero && <span>CA {item.ca_numero}</span>}
-                      {item.tamanho && <span>Tam. {item.tamanho}</span>}
-                    </span>
-                  </span>
-                  <span className={cn(
-                    "shrink-0 rounded-full border px-2 py-1 text-[8px] font-semibold",
-                    item.estoque_atual > 0
-                      ? "border-emerald-500/20 bg-emerald-500/[0.04] text-emerald-600"
-                      : "border-rose-500/20 bg-rose-500/[0.04] text-rose-600",
-                  )}>
-                    {item.estoque_atual} {item.unidade}
-                  </span>
-                </button>
-              ))
-            ) : (
-              <div className="px-3 py-4 text-center">
-                <Search className="mx-auto h-4 w-4 text-muted-foreground/50" />
-                <p className="mt-1.5 text-[9px] font-medium">Nenhum item encontrado</p>
-                <p className="mt-0.5 text-[8px] text-muted-foreground">
-                  Tente descrição, código, CA ou tamanho.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SraInfo({
-  label,
-  value,
-}: {
-  label: string;
-  value?: string | null;
-}) {
-  return (
-    <div className="min-w-0">
-      <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
-        {label}
-      </p>
-      <p className="mt-0.5 truncate text-[10px] font-medium" title={value || "—"}>
-        {value || "—"}
-      </p>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  children,
-  className,
-}: {
-  label: string;
-  children: ReactNode;
-  className?: string;
-}) {
+function Field({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
   return (
     <div className={className}>
-      <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {label}
-      </Label>
+      <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</Label>
       <div className="mt-1">{children}</div>
     </div>
   );
