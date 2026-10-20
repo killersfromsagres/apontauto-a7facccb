@@ -1,0 +1,57 @@
+name: Apply shared programming patch
+
+on:
+  push:
+    branches:
+      - Apont-Auto
+    paths:
+      - .github/workflows/apply-shared-programming.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-validate:
+    if: github.event.head_commit.message == 'chore: run shared programming patch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VITE_SUPABASE_URL: https://fbhpdqykoptxnrbdcspr.supabase.co
+      VITE_SUPABASE_PROJECT_ID: fbhpdqykoptxnrbdcspr
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_660hxNRSWPXuCne6oba5iQ_5DEZthmB
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: Apont-Auto
+          fetch-depth: 0
+
+      - name: Apply patch
+        run: node .github/patch-shared-programming.mjs
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Build
+        run: npm run build
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Tests
+        run: npm test -- --passWithNoTests
+
+      - name: Commit implementation
+        run: |
+          git config user.name "OpenAI automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/features/relatorio-diario/daily-execution-report.tsx src/routes/_authenticated/programacao.tsx
+          git diff --cached --check
+          git commit -m "feat: compartilhar programacao entre usuarios"
+          git push origin HEAD:Apont-Auto
