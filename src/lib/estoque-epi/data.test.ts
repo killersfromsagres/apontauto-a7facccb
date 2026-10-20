@@ -1,16 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  estoqueStatus,
-  inventoryValue,
-  type EstoqueItem,
-} from "./data";
+import { inventoryValue, type EstoqueItem } from "./data";
 
-function item(
-  estoqueAtual: number,
-  estoqueIdeal: number | null,
-  estoqueMinimo: number | null,
-): EstoqueItem {
+function item(estoqueAtual: number, valorUnitario = 10): EstoqueItem {
   return {
     id: "item-1",
     codigo: "001",
@@ -20,25 +12,24 @@ function item(
     ca_numero: "12345",
     unidade: "UN",
     estoque_atual: estoqueAtual,
-    estoque_ideal: estoqueIdeal,
-    estoque_minimo: estoqueMinimo,
-    valor_unitario: 10,
+    valor_unitario: valorUnitario,
     ativo: true,
     created_at: "2026-09-30T12:00:00Z",
     updated_at: "2026-09-30T12:00:00Z",
   };
 }
 
-describe("estoqueStatus", () => {
-  it("distingue zerado, crítico, comprar, ideal e acima", () => {
-    expect(estoqueStatus(item(0, 10, 3))).toBe("ZERADO");
-    expect(estoqueStatus(item(2, 10, 3))).toBe("CRÍTICO");
-    expect(estoqueStatus(item(6, 10, 3))).toBe("COMPRAR");
-    expect(estoqueStatus(item(10, 10, 3))).toBe("IDEAL");
-    expect(estoqueStatus(item(14, 10, 3))).toBe("ACIMA");
+describe("controle de estoque por quantidade", () => {
+  it("calcula o valor físico somente pela quantidade atual e valor unitário", () => {
+    expect(inventoryValue(item(7))).toBe(70);
+    expect(inventoryValue(item(0))).toBe(0);
+    expect(inventoryValue(item(3, 12.5))).toBe(37.5);
   });
 
-  it("calcula o valor físico do estoque", () => {
-    expect(inventoryValue(item(7, 10, 3))).toBe(70);
+  it("não depende de estoque mínimo ou ideal", () => {
+    const current = item(4);
+    expect(current).not.toHaveProperty("estoque_minimo");
+    expect(current).not.toHaveProperty("estoque_ideal");
+    expect(current.estoque_atual).toBe(4);
   });
 });
