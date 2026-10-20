@@ -42,6 +42,7 @@ import { equipeHex } from "@/lib/corretiva/equipe";
 import { cn } from "@/lib/utils";
 
 const ROWS_KEY = "apontauto:relatorio-diario:programacao:v1";
+const ROWS_MIGRATED_KEY = "apontauto:relatorio-diario:programacao-cloud-migrated:v1";
 const TARGET_KEY = "apontauto:relatorio-diario:meta-equipe:v2";
 const AUTHOR_KEY = "apontauto:relatorio-diario:responsavel:v1";
 const NOTE_KEY = "apontauto:relatorio-diario:observacao-programacao:v1";
@@ -275,6 +276,7 @@ export function DailyExecutionReport() {
   const [note, setNote] = useState("");
   const [loadingPortfolio, setLoadingPortfolio] = useState(false);
   const [loadingExecutions, setLoadingExecutions] = useState(false);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [importing, setImporting] = useState(false);
   const [committing, setCommitting] = useState(false);
   const [completingId, setCompletingId] = useState<string | null>(null);
@@ -328,15 +330,80 @@ export function DailyExecutionReport() {
     }
   }, []);
 
+  const loadSharedSchedule = useCallback(async (notify = false, migrateLocal = false) => {
+    setLoadingSchedule(true);
+    const cachedRows = mergeSchedules(
+      [],
+      safeRead<ScheduledMaintenance[]>(ROWS_KEY, []),
+    );
+
+    try {
+      const { data, error } = await (supabase as any)
+        .from("relatorio_diario_programacao_rows")
+        .select("payload,atividade_data")
+        .order("atividade_data", { ascending: true })
+        .limit(20000);
+
+      if (error) throw error;
+
+      let nextRows = mergeSchedules(
+        [],
+        ((data ?? []) as Array<{ payload?: ScheduledMaintenance | null }>)
+          .map((record) => record.payload)
+          .filter((row): row is ScheduledMaintenance => Boolean(row?.id && row?.date)),
+      );
+
+      const migrationDone = window.localStorage.getItem(ROWS_MIGRATED_KEY) === "1";
+      if (!nextRows.length && migrateLocal && !migrationDone && cachedRows.length) {
+        const { error: migrationError } = await (supabase as any).rpc(
+          "save_relatorio_diario_programacao",
+          { _rows: cachedRows, _replace: false },
+        );
+        if (migrationError) throw migrationError;
+        nextRows = cachedRows;
+        toast.success("Programação deste computador migrada para a base compartilhada.");
+      }
+
+      window.localStorage.setItem(ROWS_MIGRATED_KEY, "1");
+      window.localStorage.setItem(ROWS_KEY, JSON.stringify(nextRows));
+      setRows(nextRows);
+      if (notify) {
+        toast.success(
+          nextRows.length
+            ? `Programação compartilhada atualizada: ${nextRows.length} OS.`
+            : "A programação compartilhada está vazia.",
+        );
+      }
+      return nextRows;
+    } catch (error: any) {
+      console.error("[RelatorioDiario] Falha ao carregar programação compartilhada:", error);
+      if (cachedRows.length) {
+        setRows(cachedRows);
+        if (notify) {
+          toast.warning("Nuvem indisponível. Exibindo a última programação salva neste computador.");
+        }
+      } else if (notify) {
+        toast.error(error?.message || "Não foi possível carregar a programação compartilhada.");
+      }
+      return null;
+    } finally {
+      setLoadingSchedule(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const storedRows = mergeSchedules([], safeRead<ScheduledMaintenance[]>(ROWS_KEY, []));
-    setRows(storedRows);
+    const cachedRows = mergeSchedules([], safeRead<ScheduledMaintenance[]>(ROWS_KEY, []));
+    setRows(cachedRows);
     const storedTarget = Number(window.localStorage.getItem(TARGET_KEY) ?? "2");
     setTargetPerTeam(Number.isFinite(storedTarget) ? Math.min(10, Math.max(1, storedTarget)) : 2);
     setAuthor(window.localStorage.getItem(AUTHOR_KEY) ?? "");
     setNote(window.localStorage.getItem(NOTE_KEY) ?? "");
-    void Promise.all([loadPortfolio(false), loadExecutions(false)]);
-  }, [loadExecutions, loadPortfolio]);
+    void Promise.all([
+      loadSharedSchedule(false, true),
+      loadPortfolio(false),
+      loadExecutions(false),
+    ]);
+  }, [loadExecutions, loadPortfolio, loadSharedSchedule]);
 
   useEffect(() => {
     window.localStorage.setItem(ROWS_KEY, JSON.stringify(rows));
@@ -355,23 +422,50 @@ export function DailyExecutionReport() {
   }, [note]);
 
   useEffect(() => {
+    let scheduleTimer: ReturnType<typeof setTimeout> | null = null;
+    let executionTimer: ReturnType<typeof setTimeout> | null = null;
+    const refreshSharedSchedule = () => {
+      if (scheduleTimer) clearTimeout(scheduleTimer);
+      scheduleTimer = setTimeout(() => void loadSharedSchedule(false, false), 180);
+    };
+    const refreshExecutions = () => {
+      if (executionTimer) clearTimeout(executionTimer);
+      executionTimer = setTimeout(() => void loadExecutions(false), 120);
+    };
+
     const channel = supabase
-      .channel("relatorio-diario-programacao-real")
+      .channel("relatorio-diario-sync-real")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "corretiva_os" },
         () => void loadPortfolio(false),
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "relatorio_diario_programacao_rows" },
+        refreshSharedSchedule,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "relatorio_diario_execucoes" },
+        refreshExecutions,
+      )
       .subscribe();
 
-    const refreshExecutions = () => void loadExecutions(false);
-    window.addEventListener("focus", refreshExecutions);
+    const refreshAll = () => {
+      void loadSharedSchedule(false, false);
+      void loadPortfolio(false);
+      void loadExecutions(false);
+    };
+    window.addEventListener("focus", refreshAll);
 
     return () => {
-      window.removeEventListener("focus", refreshExecutions);
+      if (scheduleTimer) clearTimeout(scheduleTimer);
+      if (executionTimer) clearTimeout(executionTimer);
+      window.removeEventListener("focus", refreshAll);
       void supabase.removeChannel(channel);
     };
-  }, [loadExecutions, loadPortfolio]);
+  }, [loadExecutions, loadPortfolio, loadSharedSchedule]);
 
   const planning = useMemo(
     () =>
@@ -440,15 +534,28 @@ export function DailyExecutionReport() {
       const imported = results.flatMap((result) => result.rows);
       if (!imported.length) throw new Error("Nenhuma OS programada foi encontrada nas planilhas.");
 
-      setRows((current) =>
-        shouldReplaceSchedule(current, imported)
-          ? mergeSchedules([], imported)
-          : mergeSchedules(current, imported),
+      const replaceCurrent = shouldReplaceSchedule(rows, imported);
+      const nextRows = replaceCurrent
+        ? mergeSchedules([], imported)
+        : mergeSchedules(rows, imported);
+
+      const { error: sharedError } = await (supabase as any).rpc(
+        "save_relatorio_diario_programacao",
+        { _rows: imported, _replace: replaceCurrent },
       );
+      if (sharedError) {
+        throw new Error(
+          `A planilha foi lida, mas não pôde ser compartilhada: ${sharedError.message || "erro de sincronização"}.`,
+        );
+      }
+
+      setRows(nextRows);
+      window.localStorage.setItem(ROWS_KEY, JSON.stringify(nextRows));
+      window.localStorage.setItem(ROWS_MIGRATED_KEY, "1");
 
       const importedDates = Array.from(new Set(imported.map((row) => row.date))).sort();
       if (importedDates.length) setSelectedDate(importedDates[0]);
-      toast.success(`${imported.length} OS da programação semanal carregadas.`);
+      toast.success(`${imported.length} OS carregadas na programação compartilhada.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Falha ao importar as planilhas.");
     } finally {
@@ -556,11 +663,29 @@ export function DailyExecutionReport() {
     }
   }
 
-  function clearImportedBase() {
-    if (!window.confirm("Limpar somente as planilhas semanais importadas desta tela? Os registros de conclusão permanecerão salvos no servidor.")) return;
-    setRows([]);
-    window.localStorage.removeItem(ROWS_KEY);
-    toast.success("Programação importada removida desta tela.");
+  async function clearImportedBase() {
+    if (
+      !window.confirm(
+        "Limpar a programação semanal compartilhada? Ela será removida para todos os usuários e computadores com acesso ao Relatório Diário. Os registros de conclusão permanecerão salvos.",
+      )
+    ) return;
+
+    setLoadingSchedule(true);
+    try {
+      const { error } = await (supabase as any).rpc(
+        "save_relatorio_diario_programacao",
+        { _rows: [], _replace: true },
+      );
+      if (error) throw error;
+      setRows([]);
+      window.localStorage.removeItem(ROWS_KEY);
+      window.localStorage.setItem(ROWS_MIGRATED_KEY, "1");
+      toast.success("Programação compartilhada removida para todos os usuários autorizados.");
+    } catch (error: any) {
+      toast.error(error?.message || "Não foi possível limpar a programação compartilhada.");
+    } finally {
+      setLoadingSchedule(false);
+    }
   }
 
   async function generatePdf() {
@@ -833,7 +958,7 @@ export function DailyExecutionReport() {
   }
 
   const hasSchedule = rows.length > 0;
-  const syncing = loadingPortfolio || loadingExecutions;
+  const syncing = loadingPortfolio || loadingExecutions || loadingSchedule;
 
   return (
     <main className="mx-auto w-full max-w-[1500px] space-y-3 px-3 py-3 sm:px-5 lg:px-6 lg:py-4">
@@ -851,7 +976,7 @@ export function DailyExecutionReport() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => void Promise.all([loadPortfolio(true), loadExecutions(false)])}
+                onClick={() => void Promise.all([loadSharedSchedule(true, false), loadPortfolio(true), loadExecutions(false)])}
                 disabled={syncing}
                 className="gap-2 border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white"
               >
@@ -903,7 +1028,7 @@ export function DailyExecutionReport() {
             </span>
             <span className="min-w-0">
               <span className="block text-sm font-semibold">{hasSchedule ? "Atualizar programação semanal" : "Importar programação semanal"}</span>
-              <span className="mt-1 block text-[11px] leading-4 text-muted-foreground">Planilhas .xlsx/.xls. A agenda é combinada com as corretivas abertas.</span>
+              <span className="mt-1 block text-[11px] leading-4 text-muted-foreground">Planilhas .xlsx/.xls. A programação fica compartilhada na nuvem e aparece para todos os usuários autorizados.</span>
             </span>
           </button>
 

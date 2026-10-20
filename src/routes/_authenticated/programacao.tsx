@@ -42,6 +42,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { downloadBlob } from "@/lib/download";
 import { generateBlankTemplate } from "@/lib/preventiva/blank-templates";
 import { weeksBetween, type WeekBucket, type WeekInfo } from "@/lib/preventiva/capacity";
@@ -148,6 +149,9 @@ interface GeneratedFile {
 }
 
 const TITULO_PADRAO = "GRUPO GPS • SHERWIN WILLIAMS / DEMARCHI";
+const PROGRAMACAO_IMPORT_BUCKET = "programacao-importacoes";
+const XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+const sharedImportPath = (slot: SlotId) => `shared/${slot}.xlsx`;
 const norm = (value: unknown) =>
   String(value ?? "")
     .trim()
@@ -278,6 +282,8 @@ function ProgramacaoPage() {
   const [alerts, setAlerts] = useState<FileAlert[]>([]);
   const [statusMessages, setStatusMessages] = useState<string[]>([]);
   const [historico, setHistorico] = useState<HistoricoItem[]>([]);
+  const [loadingSharedFiles, setLoadingSharedFiles] = useState(false);
+  const [syncingSlot, setSyncingSlot] = useState<SlotId | null>(null);
   const [startDate, setStartDate] = useState<Date>(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -291,7 +297,102 @@ function ProgramacaoPage() {
     }
   }, []);
 
-  useEffect(() => void reloadHistorico(), [reloadHistorico]);
+  const loadSharedSlotFiles = useCallback(async (notify = false) => {
+    setLoadingSharedFiles(true);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("programacao_importacoes")
+        .select("slot,filename,storage_path,updated_at")
+        .order("slot", { ascending: true });
+      if (error) throw error;
+
+      const next: Record<SlotId, File | null> = {
+        CCH: null,
+        REFRIG: null,
+        ELETRICA: null,
+      };
+
+      for (const row of data ?? []) {
+        const slot = String(row.slot ?? "") as SlotId;
+        if (!SLOTS.some((item) => item.id === slot)) continue;
+        const storagePath = String(row.storage_path ?? "");
+        if (!storagePath) continue;
+
+        const { data: blob, error: downloadError } = await supabase.storage
+          .from(PROGRAMACAO_IMPORT_BUCKET)
+          .download(storagePath);
+        if (downloadError || !blob) {
+          throw downloadError || new Error("Arquivo compartilhado não encontrado.");
+        }
+
+        const updatedAt = new Date(String(row.updated_at ?? "")).getTime();
+        next[slot] = new File(
+          [blob],
+          String(row.filename || `${slot}.xlsx`),
+          {
+            type: blob.type || XLSX_CONTENT_TYPE,
+            lastModified: Number.isFinite(updatedAt) ? updatedAt : Date.now(),
+          },
+        );
+      }
+
+      setSlotFiles(next);
+      if (notify) toast.success("Planilhas compartilhadas atualizadas.");
+      return next;
+    } catch (error: any) {
+      console.error("[Programacao] Falha ao carregar planilhas compartilhadas:", error);
+      if (notify) {
+        toast.error(error?.message || "Não foi possível carregar as planilhas compartilhadas.");
+      }
+      return null;
+    } finally {
+      setLoadingSharedFiles(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void Promise.all([reloadHistorico(), loadSharedSlotFiles(false)]);
+  }, [loadSharedSlotFiles, reloadHistorico]);
+
+  useEffect(() => {
+    let importTimer: ReturnType<typeof setTimeout> | null = null;
+    let historyTimer: ReturnType<typeof setTimeout> | null = null;
+    const refreshImports = () => {
+      if (importTimer) clearTimeout(importTimer);
+      importTimer = setTimeout(() => void loadSharedSlotFiles(false), 180);
+    };
+    const refreshHistory = () => {
+      if (historyTimer) clearTimeout(historyTimer);
+      historyTimer = setTimeout(() => void reloadHistorico(), 180);
+    };
+
+    const channel = supabase
+      .channel("programacao-compartilhada")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "programacao_importacoes" },
+        refreshImports,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "programacao_arquivos" },
+        refreshHistory,
+      )
+      .subscribe();
+
+    const refreshAll = () => {
+      void loadSharedSlotFiles(false);
+      void reloadHistorico();
+    };
+    window.addEventListener("focus", refreshAll);
+
+    return () => {
+      if (importTimer) clearTimeout(importTimer);
+      if (historyTimer) clearTimeout(historyTimer);
+      window.removeEventListener("focus", refreshAll);
+      void supabase.removeChannel(channel);
+    };
+  }, [loadSharedSlotFiles, reloadHistorico]);
 
   const hasAnyFile = useMemo(
     () => Object.values(slotFiles).some(Boolean),
@@ -312,13 +413,86 @@ function ProgramacaoPage() {
     return [...groups.entries()];
   }, [historico]);
 
-  const setSlot = useCallback((slot: SlotId, file: File | null) => {
+  const setSlot = useCallback(async (slot: SlotId, file: File | null) => {
+    if (syncingSlot) {
+      toast.info("Aguarde a sincronização da planilha atual.");
+      return;
+    }
     if (file && !file.name.toLowerCase().endsWith(".xlsx")) {
       toast.error("Envie um arquivo .xlsx");
       return;
     }
-    setSlotFiles((current) => ({ ...current, [slot]: file }));
-  }, []);
+
+    const storagePath = sharedImportPath(slot);
+    const previousFile = slotFiles[slot];
+    setSyncingSlot(slot);
+    try {
+      if (!file) {
+        const { error: storageError } = await supabase.storage
+          .from(PROGRAMACAO_IMPORT_BUCKET)
+          .remove([storagePath]);
+        if (storageError) throw storageError;
+
+        const { error: metadataError } = await (supabase as any)
+          .from("programacao_importacoes")
+          .delete()
+          .eq("slot", slot);
+        if (metadataError) {
+          if (previousFile) {
+            await supabase.storage
+              .from(PROGRAMACAO_IMPORT_BUCKET)
+              .upload(storagePath, previousFile, {
+                contentType: previousFile.type || XLSX_CONTENT_TYPE,
+                upsert: true,
+              });
+          }
+          throw metadataError;
+        }
+
+        setSlotFiles((current) => ({ ...current, [slot]: null }));
+        toast.success(`${slot}: planilha compartilhada removida.`);
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+      if (!userId) throw new Error("Sessão não encontrada.");
+
+      const { error: uploadError } = await supabase.storage
+        .from(PROGRAMACAO_IMPORT_BUCKET)
+        .upload(storagePath, file, {
+          contentType: file.type || XLSX_CONTENT_TYPE,
+          upsert: true,
+        });
+      if (uploadError) throw uploadError;
+
+      const now = new Date().toISOString();
+      const { error: metadataError } = await (supabase as any)
+        .from("programacao_importacoes")
+        .upsert(
+          {
+            slot,
+            filename: file.name,
+            storage_path: storagePath,
+            file_size: file.size,
+            uploaded_by: userId,
+            uploaded_at: now,
+            updated_at: now,
+          },
+          { onConflict: "slot" },
+        );
+      if (metadataError) throw metadataError;
+
+      setSlotFiles((current) => ({ ...current, [slot]: file }));
+      toast.success(`${slot}: planilha compartilhada com todos os usuários autorizados.`);
+    } catch (error: any) {
+      console.error(`[Programacao] Falha ao sincronizar ${slot}:`, error);
+      toast.error(error?.message || "Não foi possível sincronizar a planilha.");
+      await loadSharedSlotFiles(false);
+    } finally {
+      setSyncingSlot(null);
+    }
+  }, [loadSharedSlotFiles, slotFiles, syncingSlot]);
 
   const setTeamMinutes = useCallback((equipe: Equipe, minutes: 30 | 60) => {
     setTempoPorEquipe((current) => ({ ...current, [equipe]: minutes }));
@@ -784,15 +958,17 @@ function ProgramacaoPage() {
               step="01"
               icon={Layers3}
               title="Planilhas mensais por equipe"
-              description="Envie as planilhas de preventivas e confirme o tempo padrão por OS. A leitura e a distribuição existentes permanecem automáticas."
+              description="Envie as planilhas de preventivas e confirme o tempo padrão por OS. Os arquivos ficam compartilhados na nuvem e aparecem automaticamente para todos os usuários autorizados, em qualquer computador."
               aside={
                 <Badge
                   variant="outline"
                   className="rounded-full border-primary/20 bg-primary/[0.04] px-3 py-1 text-[10px] font-semibold"
                 >
-                  {attachedCount === 0
-                    ? "Aguardando arquivos"
-                    : `${attachedCount} de 3 grupos preparados`}
+                  {loadingSharedFiles
+                    ? "Sincronizando nuvem"
+                    : attachedCount === 0
+                      ? "Aguardando arquivos"
+                      : `${attachedCount} de 3 grupos compartilhados`}
                 </Badge>
               }
             />
@@ -1055,7 +1231,7 @@ function ProgramacaoPage() {
                 <History className="mb-3 h-6 w-6 text-muted-foreground/50" />
                 <p className="text-sm font-medium">Nenhuma programação no histórico</p>
                 <p className="mt-1 max-w-md text-xs leading-5 text-muted-foreground">
-                  Quando você gerar uma programação, a planilha será salva na nuvem da sua conta para download e impressão futura.
+                  Quando uma programação for gerada, a planilha ficará no histórico compartilhado para download e impressão por todos os usuários autorizados.
                 </p>
               </div>
             ) : (
@@ -1302,7 +1478,7 @@ function SlotUpload({
               )}
             >
               {file ? <CheckCircle2 className="h-2.5 w-2.5" /> : <Upload className="h-2.5 w-2.5" />}
-              {file ? "Arquivo anexado" : "Aguardando arquivo"}
+              {file ? "Arquivo compartilhado" : "Aguardando arquivo"}
             </span>
           </div>
           <p className="mt-1.5 text-[10px] leading-4 text-muted-foreground">{slot.hint}</p>
@@ -1355,7 +1531,7 @@ function SlotUpload({
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[11px] font-semibold" title={file.name}>{file.name}</p>
-              <p className="mt-0.5 text-[9px] text-muted-foreground">Planilha pronta para processamento</p>
+              <p className="mt-0.5 text-[9px] text-muted-foreground">Sincronizada e disponível em outros usuários/computadores</p>
             </div>
             <button
               type="button"
