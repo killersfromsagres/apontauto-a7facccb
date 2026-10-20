@@ -54,7 +54,8 @@ const SHERWIN_WILLIAMS_LOGO_URL =
 const GRUPO_GPS_LOGO_URL =
   "/__l5e/assets-v1/d386a336-b420-4782-9d48-85d30cbb6fee/grupo-gps.png";
 
-type CompletionFilter = "todos" | "concluidas" | "pendentes";
+type CompletionFilter = "todos" | "concluidas" | "verificacao" | "pendentes";
+type RowCompletionState = "pendente" | "pendente_verificacao" | "concluida";
 
 type CompletionRecord = {
   item_key: string;
@@ -142,17 +143,29 @@ const buildCorrectiveByOs = (rows: WeeklyCorrectiveSourceRow[]) => {
   return map;
 };
 
+const rowCompletionState = (
+  row: WeeklyPlanningRow,
+  executionMap: Map<string, CompletionRecord>,
+  correctiveByOs: Map<string, WeeklyCorrectiveSourceRow>,
+): RowCompletionState => {
+  const manualExecution = executionMap.has(row.id);
+
+  if (isCorrectiveActivity(row)) {
+    const canonical = correctiveByOs.get(correctiveOsKey(row.os));
+    if (canonical) {
+      if (isCompletedCorrectiveStatus(canonical.status)) return "concluida";
+      return manualExecution ? "pendente_verificacao" : "pendente";
+    }
+  }
+
+  return manualExecution ? "concluida" : "pendente";
+};
+
 const rowIsCompleted = (
   row: WeeklyPlanningRow,
   executionMap: Map<string, CompletionRecord>,
   correctiveByOs: Map<string, WeeklyCorrectiveSourceRow>,
-) => {
-  if (isCorrectiveActivity(row)) {
-    const canonical = correctiveByOs.get(correctiveOsKey(row.os));
-    if (canonical) return isCompletedCorrectiveStatus(canonical.status);
-  }
-  return executionMap.has(row.id);
-};
+) => rowCompletionState(row, executionMap, correctiveByOs) !== "pendente";
 
 const blobToDataUrl = (blob: Blob) =>
   new Promise<string>((resolve, reject) => {
@@ -499,10 +512,12 @@ export function DailyExecutionReport() {
   const visibleRows = useMemo(() => {
     const q = search.trim().toLocaleLowerCase("pt-BR");
     return dayRows.filter((row) => {
-      const completed = rowIsCompleted(row, completions, correctiveByOs);
+      const completionState = rowCompletionState(row, completions, correctiveByOs);
+      const completed = completionState !== "pendente";
       if (teamFilter !== "todos" && (row.team || "Sem equipe") !== teamFilter) return false;
       if (completionFilter === "concluidas" && !completed) return false;
-      if (completionFilter === "pendentes" && completed) return false;
+      if (completionFilter === "verificacao" && completionState !== "pendente_verificacao") return false;
+      if (completionFilter === "pendentes" && completionState !== "pendente") return false;
       if (!q) return true;
       return [row.os, row.name, row.team, row.building, row.floor, row.space, row.asset, row.equipment]
         .join(" ")
@@ -520,7 +535,20 @@ export function DailyExecutionReport() {
     () => dayRows.filter((row) => rowIsCompleted(row, completions, correctiveByOs)).length,
     [completions, correctiveByOs, dayRows],
   );
-  const selectedPending = Math.max(0, dayRows.length - selectedCompleted);
+  const selectedPendingVerification = useMemo(
+    () =>
+      dayRows.filter(
+        (row) => rowCompletionState(row, completions, correctiveByOs) === "pendente_verificacao",
+      ).length,
+    [completions, correctiveByOs, dayRows],
+  );
+  const selectedPending = useMemo(
+    () =>
+      dayRows.filter(
+        (row) => rowCompletionState(row, completions, correctiveByOs) === "pendente",
+      ).length,
+    [completions, correctiveByOs, dayRows],
+  );
   const completionRate = dayRows.length ? Math.round((selectedCompleted / dayRows.length) * 100) : 0;
 
   async function handleFiles(files: FileList | File[] | null) {
@@ -608,8 +636,8 @@ export function DailyExecutionReport() {
     const canonicalCorrective = isCorrectiveActivity(row)
       ? correctiveByOs.get(correctiveOsKey(row.os))
       : undefined;
-    if (canonicalCorrective) {
-      toast.info(`A OS ${row.os} é sincronizada automaticamente com o status do Corretiva Novo.`);
+    if (canonicalCorrective && isCompletedCorrectiveStatus(canonicalCorrective.status)) {
+      toast.info(`A OS ${row.os} já está concluída e verificada pelo Corretiva Novo.`);
       return;
     }
 
@@ -628,7 +656,11 @@ export function DailyExecutionReport() {
           next.delete(row.id);
           return next;
         });
-        toast.success(`OS ${row.os} voltou para pendente no relatório diário.`);
+        toast.success(
+          canonicalCorrective
+            ? `OS ${row.os} voltou para pendente e deixou de aguardar verificação.`
+            : `OS ${row.os} voltou para pendente no relatório diário.`,
+        );
         return;
       }
 
@@ -655,7 +687,11 @@ export function DailyExecutionReport() {
         next.set(row.id, data as CompletionRecord);
         return next;
       });
-      toast.success(`OS ${row.os} marcada como concluída.`);
+      toast.success(
+        canonicalCorrective
+          ? `OS ${row.os} marcada como concluída no Relatório Diário. Agora está pendente de verificação no Corretiva Novo.`
+          : `OS ${row.os} marcada como concluída.`,
+      );
     } catch (error: any) {
       toast.error(error?.message || "Não foi possível atualizar a execução desta atividade.");
     } finally {
@@ -726,15 +762,19 @@ export function DailyExecutionReport() {
       ]);
 
       const freshCorrectiveByOs = buildCorrectiveByOs(freshPortfolio);
-      const isDone = (row: WeeklyPlanningRow) =>
-        rowIsCompleted(row, freshCompletions, freshCorrectiveByOs);
+      const completionStateOf = (row: WeeklyPlanningRow) =>
+        rowCompletionState(row, freshCompletions, freshCorrectiveByOs);
+      const isDone = (row: WeeklyPlanningRow) => completionStateOf(row) !== "pendente";
 
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       const width = doc.internal.pageSize.getWidth();
       const height = doc.internal.pageSize.getHeight();
       const margin = 10;
       const completed = pdfRows.filter(isDone).length;
-      const pending = pdfRows.length - completed;
+      const pendingVerification = pdfRows.filter(
+        (row) => completionStateOf(row) === "pendente_verificacao",
+      ).length;
+      const pending = pdfRows.filter((row) => completionStateOf(row) === "pendente").length;
       const rate = pdfRows.length ? Math.round((completed / pdfRows.length) * 100) : 0;
       const generatedAt = new Date().toLocaleString("pt-BR");
 
@@ -775,6 +815,7 @@ export function DailyExecutionReport() {
       const metricGap = 3.5;
       const metricW = (width - margin * 2 - metricGap * 3) / 4;
       const metricH = 14.5;
+      void pendingVerification;
       const metrics = [
         {
           label: "ATIVIDADES",
@@ -860,16 +901,23 @@ export function DailyExecutionReport() {
       doc.circle(legendX, infoValueY - 0.9, 1, "F");
       doc.setTextColor(71, 85, 105);
       doc.text("Concluído", legendX + 2.4, infoValueY);
-      doc.setFillColor(217, 119, 6);
+      doc.setFillColor(2, 132, 199);
       doc.circle(legendX + 20, infoValueY - 0.9, 1, "F");
-      doc.text("Pendente", legendX + 22.4, infoValueY);
+      doc.text("A verificar", legendX + 22.4, infoValueY);
+      doc.setFillColor(217, 119, 6);
+      doc.circle(legendX + 43, infoValueY - 0.9, 1, "F");
+      doc.text("Pendente", legendX + 45.4, infoValueY);
 
       autoTable(doc, {
         startY: infoY + infoH + 3,
         margin: { left: margin, right: margin, top: 35, bottom: 12 },
         head: [["Status", "OS", "Tipo", "Equipe", "Local", "Atividade executada / programada", "Ativo", "SLA"]],
         body: pdfRows.map((row) => [
-          isDone(row) ? "CONCLUÍDO" : "PENDENTE",
+          completionStateOf(row) === "concluida"
+            ? "CONCLUÍDO"
+            : completionStateOf(row) === "pendente_verificacao"
+              ? "A VERIFICAR"
+              : "PENDENTE",
           row.os,
           row.activity,
           row.team || "—",
@@ -913,12 +961,20 @@ export function DailyExecutionReport() {
           if (cell.section !== "body") return;
           const row = pdfRows[cell.row.index];
           if (!row) return;
-          if (isDone(row)) {
+          const completionState = completionStateOf(row);
+          if (completionState === "concluida") {
             cell.cell.styles.fillColor = [240, 253, 247];
             cell.cell.styles.textColor = [30, 41, 59];
             if (cell.column.index === 0) {
               cell.cell.styles.fillColor = [209, 250, 229];
               cell.cell.styles.textColor = [5, 150, 105];
+            }
+          } else if (completionState === "pendente_verificacao") {
+            cell.cell.styles.fillColor = [239, 246, 255];
+            cell.cell.styles.textColor = [30, 41, 59];
+            if (cell.column.index === 0) {
+              cell.cell.styles.fillColor = [219, 234, 254];
+              cell.cell.styles.textColor = [2, 132, 199];
             }
           } else if (cell.column.index === 0) {
             cell.cell.styles.fillColor = [254, 249, 195];
@@ -969,7 +1025,7 @@ export function DailyExecutionReport() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">Controle diário de execução</p>
               <h1 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">Relatório Diário • Atividades executadas</h1>
               <p className="mt-1 max-w-4xl text-xs leading-5 text-slate-300">
-                Corretivas são sincronizadas automaticamente com o Corretiva Novo; o PDF é validado novamente antes da emissão.
+                Corretivas podem ser concluídas aqui. Enquanto o Corretiva Novo ainda não confirmar a conclusão, elas ficam como pendentes de verificação; ao concluir no Corretiva Novo, a confirmação é automática.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -1116,7 +1172,7 @@ export function DailyExecutionReport() {
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                   <div>
                     <h2 className="text-sm font-semibold">Atividades de {formatDateBr(selectedDate)}</h2>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">Corretivas oficiais seguem automaticamente o status do Corretiva Novo; demais atividades permanecem com controle manual.</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">Você pode marcar corretivas como concluídas aqui. Elas ficam pendentes de verificação até o Corretiva Novo confirmar; conclusões feitas no Corretiva Novo entram como verificadas automaticamente.</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <div className="relative min-w-[210px] flex-1">
@@ -1145,6 +1201,7 @@ export function DailyExecutionReport() {
                     >
                       <option value="todos">Todos status</option>
                       <option value="concluidas">Concluídas</option>
+                      <option value="verificacao">Pendente de verificação</option>
                       <option value="pendentes">Pendentes</option>
                     </select>
                   </div>
@@ -1160,7 +1217,11 @@ export function DailyExecutionReport() {
                         ? correctiveByOs.get(correctiveOsKey(row.os))
                         : undefined;
                       const syncedCorrective = Boolean(canonicalCorrective);
-                      const completed = rowIsCompleted(row, completions, correctiveByOs);
+                      const completionState = rowCompletionState(row, completions, correctiveByOs);
+                      const completed = completionState !== "pendente";
+                      const pendingVerification = completionState === "pendente_verificacao";
+                      const verifiedCorrective =
+                        syncedCorrective && completionState === "concluida";
                       const waitingProgramming = row.supplementalCorrective && !row.programmedCorrective;
                       return (
                         <div
@@ -1187,18 +1248,13 @@ export function DailyExecutionReport() {
                           <div className="flex items-center justify-end gap-2">
                             {waitingProgramming ? (
                               <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-[9px] font-semibold text-amber-700 dark:text-amber-300">AGUARDA PROGRAMAÇÃO</span>
-                            ) : syncedCorrective ? (
+                            ) : verifiedCorrective ? (
                               <span
-                                className={cn(
-                                  "inline-flex min-w-[150px] items-center justify-center gap-1.5 rounded-md border px-2.5 py-2 text-[10px] font-semibold",
-                                  completed
-                                    ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                                    : "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-                                )}
-                                title="Status sincronizado automaticamente com o Corretiva Novo"
+                                className="inline-flex min-w-[150px] items-center justify-center gap-1.5 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-2 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300"
+                                title="Conclusão confirmada automaticamente pelo Corretiva Novo"
                               >
-                                {completed ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
-                                {completed ? "Concluída • sincronizada" : "Pendente • sincronizada"}
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                Concluída • verificada
                               </span>
                             ) : (
                               <Button
@@ -1209,9 +1265,21 @@ export function DailyExecutionReport() {
                                 onClick={() => void toggleCompleted(row)}
                                 className={cn(
                                   "h-8 min-w-[150px] justify-center gap-1.5 px-2.5 text-[10px]",
-                                  completed && "bg-emerald-600 text-white hover:bg-emerald-700",
+                                  pendingVerification &&
+                                    "border-sky-500/35 bg-sky-600 text-white hover:bg-sky-700",
+                                  completed &&
+                                    !pendingVerification &&
+                                    "bg-emerald-600 text-white hover:bg-emerald-700",
                                 )}
-                                title={completed ? "Clique para voltar a atividade para pendente" : "Marcar atividade como concluída"}
+                                title={
+                                  pendingVerification
+                                    ? "Concluída no Relatório Diário e aguardando verificação do Corretiva Novo. Clique para desfazer."
+                                    : completed
+                                      ? "Clique para voltar a atividade para pendente"
+                                      : syncedCorrective
+                                        ? "Marcar corretiva como concluída no Relatório Diário; ficará pendente de verificação"
+                                        : "Marcar atividade como concluída"
+                                }
                               >
                                 {completingId === row.id ? (
                                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1220,7 +1288,11 @@ export function DailyExecutionReport() {
                                 ) : (
                                   <Circle className="h-3.5 w-3.5" />
                                 )}
-                                {completed ? `Concluída${completionTime(record) ? ` • ${completionTime(record)}` : ""}` : "Marcar concluída"}
+                                {pendingVerification
+                                  ? "Concluída • verificar"
+                                  : completed
+                                    ? `Concluída${completionTime(record) ? ` • ${completionTime(record)}` : ""}`
+                                    : "Marcar concluída"}
                               </Button>
                             )}
                           </div>
@@ -1243,6 +1315,7 @@ export function DailyExecutionReport() {
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <Stat label="Total" value={dayRows.length} />
                   <Stat label="Concluídas" value={selectedCompleted} tone="done" />
+                  <Stat label="A verificar" value={selectedPendingVerification} tone="rate" />
                   <Stat label="Pendentes" value={selectedPending} tone="pending" />
                   <Stat label="Execução" value={`${completionRate}%`} tone="rate" />
                 </div>
