@@ -6,6 +6,7 @@ import {
   type ScheduledMaintenance,
 } from "./daily-maintenance";
 import {
+  isCompletedCorrectiveStatus,
   normalizeReportTeam,
   toLocalIsoDate,
   type CorrectiveReportSourceRow,
@@ -25,7 +26,11 @@ export type WeeklyPlanningRow = ScheduledMaintenance & {
   supplementalCorrective?: boolean;
   programmedCorrective?: boolean;
   sourceCorrectiveId?: string;
-  planningOrigin?: "planilha-semanal" | "encaixe-corretiva" | "corretiva-programada";
+  planningOrigin?:
+    | "planilha-semanal"
+    | "encaixe-corretiva"
+    | "corretiva-programada"
+    | "corretiva-concluida";
 };
 
 export type WeeklyPlanningDaySummary = {
@@ -211,6 +216,65 @@ function sourceToPlanningRow(
   };
 }
 
+function correctiveVersion(row: WeeklyCorrectiveSourceRow) {
+  for (const candidate of [row.updated_at, row.fim, row.data_programada, row.data_criacao]) {
+    const timestamp = new Date(String(candidate ?? "")).getTime();
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
+  return 0;
+}
+
+function completedWorkText(source: WeeklyCorrectiveSourceRow) {
+  const observation = String(source.observacao_conclusao ?? "").trim();
+  return observation || "Conclusão registrada sem observação.";
+}
+
+function completedActivityLabel(source: WeeklyCorrectiveSourceRow, fallback = "") {
+  const name = String(source.nome_os ?? "").trim();
+  const equipment = String(source.equipamento ?? "").trim();
+  const original = fallback.trim() || name || equipment || "Chamado corretivo";
+  return `${original} • Realizado: ${completedWorkText(source)}`;
+}
+
+function sourceToCompletedPlanningRow(
+  source: WeeklyCorrectiveSourceRow,
+  date: string,
+): WeeklyPlanningRow {
+  const os = normalizeOs(source.numero_os);
+  const rawName = String(source.nome_os ?? "").trim();
+  const equipment = String(source.equipamento ?? "").trim();
+  const team = normalizeReportTeam(source.equipe, `${rawName} ${equipment}`);
+  const sla = toLocalIsoDate(source.data_sla) || String(source.data_sla ?? "").trim();
+  const sourceCorrectiveId = String(source.id ?? "").trim();
+
+  return {
+    id: `relatorio-diario:concluido:${date}:${os || sourceCorrectiveId || rawName}`,
+    date,
+    os: os || sourceCorrectiveId,
+    name: completedActivityLabel(source),
+    building: String(source.predio ?? "").trim(),
+    floor: String(source.andar ?? "").trim(),
+    space: String(source.local ?? "").trim(),
+    activity: "Corretiva",
+    sla,
+    team,
+    area: inferMaintenanceArea(team, "Corretiva Novo", `${rawName} ${equipment}`),
+    asset: String(source.ativo ?? "").trim(),
+    equipment,
+    observation: completedWorkText(source),
+    sourceFile: "Corretiva Novo • concluída no dia",
+    completedAt: date,
+    completionSource: "corretiva-novo",
+    programmingSource: "extra-dia",
+    extraCorrective: true,
+    supplementalCorrective: false,
+    // Evita que uma conclusão real seja tratada como sugestão pendente pela tela.
+    programmedCorrective: true,
+    sourceCorrectiveId: sourceCorrectiveId || undefined,
+    planningOrigin: "corretiva-concluida",
+  };
+}
+
 function summarizePlanningDay(date: string, rows: WeeklyPlanningRow[]): WeeklyPlanningDaySummary {
   const dayRows = rows.filter((row) => row.date === date);
   const correctives = dayRows.filter((row) => row.activity === "Corretiva");
@@ -268,6 +332,46 @@ export function buildWeeklyPlanning({
     baseRows.map((row) => normalizeOs(row.os).toUpperCase()).filter(Boolean),
   );
 
+  // Consolida a versão canônica por OS antes de olhar conclusões. Assim uma OS
+  // reaberta não reaparece como concluída por causa de um registro antigo.
+  const canonicalByOs = new Map<string, WeeklyCorrectiveSourceRow>();
+  correctiveRows.forEach((row) => {
+    const key = normalizeOs(row.numero_os).trim().toUpperCase();
+    if (!key) return;
+    const current = canonicalByOs.get(key);
+    if (!current || correctiveVersion(row) >= correctiveVersion(current)) {
+      canonicalByOs.set(key, row);
+    }
+  });
+
+  const completedCorrectiveRows: WeeklyPlanningRow[] = [];
+  canonicalByOs.forEach((source, osKey) => {
+    if (!isCompletedCorrectiveStatus(source.status)) return;
+    const completedDate = toLocalIsoDate(source.fim || source.updated_at);
+    if (!completedDate || !dateSet.has(completedDate)) return;
+
+    const sameDayScheduled = baseRows.find(
+      (row) =>
+        row.activity === "Corretiva" &&
+        row.date === completedDate &&
+        normalizeOs(row.os).trim().toUpperCase() === osKey,
+    );
+
+    if (sameDayScheduled) {
+      sameDayScheduled.name = completedActivityLabel(
+        source,
+        sameDayScheduled.name || sameDayScheduled.equipment,
+      );
+      sameDayScheduled.observation = completedWorkText(source);
+      sameDayScheduled.completedAt = completedDate;
+      sameDayScheduled.completionSource = "corretiva-novo";
+      sameDayScheduled.extraCorrective = false;
+      return;
+    }
+
+    completedCorrectiveRows.push(sourceToCompletedPlanningRow(source, completedDate));
+  });
+
   const alreadyProgrammedRows = correctiveRows
     .filter((row) => isCorrectiveProgrammedForWeek(row, periodStart, periodEnd))
     .map((row) => {
@@ -308,8 +412,13 @@ export function buildWeeklyPlanning({
     if (!teamLabels.has(key)) teamLabels.set(key, label);
   });
 
-  const result = [...baseRows, ...alreadyProgrammedRows];
-  const usedOs = new Set<string>(programmedOs);
+  const result = [...baseRows, ...alreadyProgrammedRows, ...completedCorrectiveRows];
+  const usedOs = new Set<string>([
+    ...programmedOs,
+    ...completedCorrectiveRows
+      .map((row) => normalizeOs(row.os).toUpperCase())
+      .filter(Boolean),
+  ]);
   const orderedTeamKeys = Array.from(candidatesByTeam.keys()).sort((a, b) =>
     (teamLabels.get(a) ?? a).localeCompare(teamLabels.get(b) ?? b, "pt-BR"),
   );
