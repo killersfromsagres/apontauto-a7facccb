@@ -630,10 +630,6 @@ export function DailyExecutionReport() {
 
   async function toggleCompleted(row: WeeklyPlanningRow) {
     if (completingId) return;
-    if (row.supplementalCorrective && !row.programmedCorrective) {
-      toast.warning("Confirme este encaixe como Programado antes de marcar a atividade como concluída.");
-      return;
-    }
 
     const canonicalCorrective = isCorrectiveActivity(row)
       ? correctiveByOs.get(correctiveOsKey(row.os))
@@ -1177,7 +1173,7 @@ export function DailyExecutionReport() {
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                   <div>
                     <h2 className="text-sm font-semibold">Atividades de {formatDateBr(selectedDate)}</h2>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">A conclusão é sincronizada nos dois sentidos. Se concluir primeiro no Corretiva Novo, a OS entra aqui como concluída e pendente de verificação; clique para verificar. Se concluir primeiro aqui, ela aguarda a confirmação do Corretiva Novo.</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">Todas as corretivas exibidas podem ser marcadas como concluídas, inclusive encaixes ainda não confirmados como Programado. A conclusão é sincronizada nos dois sentidos: se concluir primeiro no Corretiva Novo, a OS entra aqui como concluída e pendente de verificação; se concluir primeiro aqui, ela aguarda a confirmação do Corretiva Novo.</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <div className="relative min-w-[210px] flex-1">
@@ -1231,7 +1227,6 @@ export function DailyExecutionReport() {
                       const manualCompleted = Boolean(record);
                       const verifiedCorrective =
                         syncedCorrective && completionState === "concluida";
-                      const waitingProgramming = row.supplementalCorrective && !row.programmedCorrective;
                       return (
                         <div
                           key={row.id}
@@ -1255,9 +1250,7 @@ export function DailyExecutionReport() {
                             <p className="mt-0.5 text-[9px] text-muted-foreground">{planningStatus(row)}{row.sla ? ` • SLA ${formatDateBr(row.sla)}` : ""}</p>
                           </div>
                           <div className="flex items-center justify-end gap-2">
-                            {waitingProgramming ? (
-                              <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-[9px] font-semibold text-amber-700 dark:text-amber-300">AGUARDA PROGRAMAÇÃO</span>
-                            ) : verifiedCorrective ? (
+                            {verifiedCorrective ? (
                               <span
                                 className="inline-flex min-w-[150px] items-center justify-center gap-1.5 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-2 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300"
                                 title="Conclusão confirmada no Corretiva Novo e verificada no Relatório Diário"
