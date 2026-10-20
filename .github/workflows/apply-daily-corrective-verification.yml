@@ -59,5 +59,7 @@ jobs:
           git add src/features/relatorio-diario/daily-execution-report.tsx
           git diff --cached --check
           git commit -m "feat: permitir conclusao de corretivas com verificacao"
+          git reset --hard HEAD
+          git clean -fd
           git pull --rebase origin Apont-Auto
           git push origin HEAD:Apont-Auto
