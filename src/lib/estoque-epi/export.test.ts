@@ -15,8 +15,6 @@ const snapshot: EstoqueSnapshot = {
       ca_numero: "48761",
       unidade: "UN",
       estoque_atual: 8,
-      estoque_ideal: 10,
-      estoque_minimo: 3,
       valor_unitario: 5,
       ativo: true,
       created_at: "2026-09-30T12:00:00Z",
@@ -117,16 +115,12 @@ const snapshot: EstoqueSnapshot = {
 };
 
 describe("generateEstoqueWorkbook", () => {
-  it("gera planilha completa com estoque, movimentações, retiradas e colaboradores", async () => {
+  it("gera planilha baseada somente na quantidade atual", async () => {
     const file = await generateEstoqueWorkbook(snapshot);
     expect(file.filename).toContain("CONTROLE DE ESTOQUE - DEMARCHI SHERWIN WILLIAMS");
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(await file.blob.arrayBuffer());
-
-    const summary = workbook.getWorksheet("RESUMO")!;
-    expect(summary.getCell("A1").text).toBe("DEMARCHI • SHERWIN WILLIAMS");
-    expect(summary.getCell("A3").text).toContain("CONTROLE DE ESTOQUE");
 
     expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual([
       "RESUMO",
@@ -136,12 +130,23 @@ describe("generateEstoqueWorkbook", () => {
       "COLABORADORES",
     ]);
 
+    const summary = workbook.getWorksheet("RESUMO")!;
+    expect(summary.getCell("A3").text).toContain("quantidade física");
+
     const stock = workbook.getWorksheet("ESTOQUE")!;
     expect(stock.getCell("G5").text).toBe("Entradas");
     expect(stock.getCell("H5").text).toBe("Saídas");
+    expect(stock.getCell("I5").text).toBe("Quantidade atual");
     expect(stock.getCell("I6").value).toBe(8);
-    expect(stock.getCell("Q6").value).toBe(50);
-    expect(stock.getCell("R6").value).toBe(10);
+    expect(stock.getCell("K6").value).toBe(40);
+    expect(stock.getCell("L6").value).toBe(50);
+    expect(stock.getCell("M6").value).toBe(10);
+
+    const headers = stock.getRow(5).values as unknown[];
+    expect(headers).not.toContain("Mínimo");
+    expect(headers).not.toContain("Ideal");
+    expect(headers).not.toContain("% do ideal");
+    expect(headers).not.toContain("Sugestão de compra");
 
     const withdrawals = workbook.getWorksheet("RETIRADAS")!;
     expect(withdrawals.getCell("B6").text).toBe("Colaborador Teste");
