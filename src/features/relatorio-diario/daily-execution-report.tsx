@@ -331,13 +331,11 @@ function sourceToDailyRow(
 function buildDailyRows({
   date,
   scheduleRows,
-  planningRows,
   portfolio,
   completions,
 }: {
   date: string;
   scheduleRows: ScheduledMaintenance[];
-  planningRows: WeeklyPlanningRow[];
   portfolio: CorrectiveCatalogSource[];
   completions: Map<string, CompletionRecord>;
 }) {
@@ -346,14 +344,12 @@ function buildDailyRows({
     .filter((row) => row.date === date && isPreventiveActivity(row))
     .map((row) => ({ ...row, planningOrigin: "planilha-semanal" as const }));
 
-  const scheduledCorrectives = reportCorrectivesForDate(planningRows, date).map((row) => {
-    const source = canonicalByOs.get(correctiveOsKey(row.os));
-    return source ? sourceToDailyRow(source, date, row.id, row) : ({ ...row } as DailyReportRow);
-  });
-
-  const correctiveRows = [...scheduledCorrectives];
-  const knownItemKeys = new Set(correctiveRows.map((row) => row.id));
-  const knownOs = new Set(correctiveRows.map((row) => correctiveOsKey(row.os)).filter(Boolean));
+  // Corretivas programadas servem apenas como referência no catálogo.
+  // Elas entram no Relatório Diário/PDF somente depois de o usuário clicar
+  // em "Adicionar e concluir", o que cria um registro de execução do dia.
+  const correctiveRows: DailyReportRow[] = [];
+  const knownItemKeys = new Set<string>();
+  const knownOs = new Set<string>();
 
   completions.forEach((record) => {
     if (record.atividade_data !== date || activityKey(record.atividade) !== "corretiva") return;
@@ -759,7 +755,6 @@ export function DailyExecutionReport() {
       buildDailyRows({
         date: selectedDate,
         scheduleRows: rows,
-        planningRows: planning.rows,
         portfolio,
         completions,
       }),
@@ -830,7 +825,7 @@ export function DailyExecutionReport() {
 
   const daySummary = useCallback(
     (date: string) => {
-      const dayRows = buildDailyRows({ date, scheduleRows: rows, planningRows: planning.rows, portfolio, completions });
+      const dayRows = buildDailyRows({ date, scheduleRows: rows, portfolio, completions });
       return {
         total: dayRows.length,
         done: dayRows.filter((row) => rowCompletionState(row, completions, correctiveByOs) !== "pendente").length,
@@ -1033,21 +1028,46 @@ export function DailyExecutionReport() {
     workDrafts[row.id] ?? completions.get(row.id)?.descricao ?? "";
 
   async function addCorrectiveToDailyReport(row: DailyReportRow, source?: CorrectiveCatalogSource) {
-    if (savingKey) return;
+    if (savingKey === row.id || completions.has(row.id)) return;
     const description =
       draftValue(row).trim() ||
       String(source?.observacao_conclusao ?? "").trim() ||
       String(row.name ?? "").trim() ||
       String(row.equipment ?? "").trim() ||
-      "Concluída no Relatório Diário";
+      "Concluída via Relatório Diário";
+    const optimistic: CompletionRecord = {
+      item_key: row.id,
+      atividade_data: row.date,
+      os: row.os || "",
+      atividade: "Corretiva",
+      equipe: row.team || null,
+      descricao: description,
+      concluida_em: new Date().toISOString(),
+      concluida_por: null,
+    };
 
     setSavingKey(row.id);
+    setWorkDrafts((current) => ({ ...current, [row.id]: description }));
+    // Resposta imediata ao clique: a OS já aparece como concluída e entra no
+    // relatório/PDF. Se o banco falhar, o estado otimista é revertido.
+    setCompletions((current) => {
+      const next = new Map(current);
+      next.set(row.id, optimistic);
+      return next;
+    });
+
     try {
       await upsertExecution(row, description);
-      setWorkDrafts((current) => ({ ...current, [row.id]: description }));
-      toast.success(`OS ${row.os} adicionada à planilha e marcada como concluída no Relatório Diário.`);
+      toast.success(
+        `OS ${row.os} adicionada e concluída via Relatório Diário. Ela já aparece no Corretiva Histórico com essa origem.`,
+      );
     } catch (error: any) {
-      toast.error(error?.message || "Não foi possível adicionar esta corretiva à planilha do dia.");
+      setCompletions((current) => {
+        const next = new Map(current);
+        next.delete(row.id);
+        return next;
+      });
+      toast.error(error?.message || "Não foi possível adicionar e concluir esta corretiva. A alteração foi desfeita.");
     } finally {
       setSavingKey(null);
     }
@@ -1101,15 +1121,9 @@ export function DailyExecutionReport() {
       if (!freshPortfolio || !freshCompletions) {
         throw new Error("Não foi possível validar os dados atuais antes de gerar o PDF.");
       }
-      const freshPlanning = buildWeeklyPlanning({
-        scheduledRows: rows,
-        correctiveRows: freshPortfolio,
-        targetCorrectivesPerTeamPerDay: 1,
-      });
       const pdfRows = buildDailyRows({
         date: selectedDate,
         scheduleRows: rows,
-        planningRows: freshPlanning.rows,
         portfolio: freshPortfolio,
         completions: freshCompletions,
       });
@@ -1569,7 +1583,7 @@ export function DailyExecutionReport() {
                     {loadingPortfolio && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
                   </div>
                   <p className="mt-1 max-w-4xl text-[10px] leading-4 text-muted-foreground">
-                    Pesquisa rápida do Corretiva Novo. “Adicionar à planilha” inclui a OS no dia selecionado e já marca a execução como concluída somente no Relatório Diário.
+                    Pesquisa rápida do Corretiva Novo. A programação não inclui a OS automaticamente no relatório: somente “Adicionar e concluir” coloca a corretiva no dia selecionado e registra a conclusão via Relatório Diário.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-[10px]">
@@ -1641,7 +1655,7 @@ export function DailyExecutionReport() {
                               </span>
                               <span className="rounded-full border border-border bg-muted/25 px-1.5 py-0.5 text-[8px] font-medium">{formatSourceStatus(source.status)}</span>
                               {scheduled && <span className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.06] px-1.5 py-0.5 text-[8px] font-semibold text-emerald-700 dark:text-emerald-300">Programada</span>}
-                              {record && <span className="rounded-full border border-emerald-500/25 bg-emerald-500/[0.08] px-1.5 py-0.5 text-[8px] font-bold text-emerald-700 dark:text-emerald-300">Na planilha • concluída</span>}
+                              {record && <span className="rounded-full border border-sky-500/25 bg-sky-500/[0.08] px-1.5 py-0.5 text-[8px] font-bold text-sky-700 dark:text-sky-300">Na planilha • concluída via Relatório Diário</span>}
                             </div>
                             <p className="mt-1 truncate text-[11px] font-semibold" title={effectiveRow.name}>{effectiveRow.name || "Chamado sem descrição"}</p>
                             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[9px] text-muted-foreground">
@@ -1684,8 +1698,8 @@ export function DailyExecutionReport() {
                                 onClick={() => void addCorrectiveToDailyReport(effectiveRow, source)}
                                 className="h-8 gap-1.5 bg-sky-600 px-3 text-[10px] font-semibold text-white hover:bg-sky-700"
                               >
-                                {savingKey === effectiveRow.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSpreadsheet className="h-3.5 w-3.5" />}
-                                Adicionar à planilha
+                                {savingKey === effectiveRow.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                                {savingKey === effectiveRow.id ? "Adicionando..." : "Adicionar e concluir"}
                               </Button>
                             )}
                           </div>
@@ -1726,7 +1740,7 @@ export function DailyExecutionReport() {
 
             <aside className="rounded-2xl border border-border bg-card p-3 shadow-sm">
               <div className="flex items-center gap-2"><ClipboardCheck className="h-4 w-4 text-muted-foreground" /><h2 className="text-sm font-semibold">Relatório em PDF</h2></div>
-              <p className="mt-1 text-[10px] leading-4 text-muted-foreground">Inclui as preventivas fixas e as corretivas programadas ou adicionadas ao relatório deste dia.</p>
+              <p className="mt-1 text-[10px] leading-4 text-muted-foreground">Inclui as preventivas fixas e somente as corretivas adicionadas e concluídas via Relatório Diário neste dia.</p>
               <label className="mt-3 block text-[10px] font-medium text-muted-foreground">Responsável</label>
               <Input className="mt-1 h-9 text-xs" value={author} onChange={(event) => setAuthor(event.target.value)} placeholder="Nome do responsável" />
               <label className="mt-2.5 block text-[10px] font-medium text-muted-foreground">Observação do dia</label>

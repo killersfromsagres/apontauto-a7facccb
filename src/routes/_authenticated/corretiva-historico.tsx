@@ -530,7 +530,7 @@ function HistoricoPage() {
                 ))}
               </div>
               <p className="max-w-3xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                O selo azul identifica a origem “Relatório Diário”. Uma OS somente registrada ali pode aparecer aqui mesmo ainda aberta no Corretiva Novo, mas não entra no Excel de finalizados até o status oficial ser concluído ou cancelado.
+                O selo azul “Concluída via Relatório Diário” identifica exatamente a origem da conclusão. A OS pode aparecer aqui ainda aberta no Corretiva Novo; o status oficial continua separado e ela só entra no Excel de finalizados quando o Corretiva Novo for concluído ou cancelado.
               </p>
             </div>
 
@@ -686,6 +686,11 @@ function HistoricoPage() {
                             >
                               {dailyOnly ? `${sourceStatusLabel(os.status)} no Corretiva Novo` : cancelada ? "Cancelada" : "Finalizada"}
                             </Badge>
+                            {dailyRecord && (
+                              <Badge variant="outline" className="rounded-lg border-sky-500/30 bg-sky-500/10 text-[9px] font-bold text-sky-700 dark:text-sky-300">
+                                <FileSpreadsheet className="mr-1 h-3 w-3" /> Concluída via Relatório Diário
+                              </Badge>
+                            )}
                             {os.equipe && (
                               <Badge variant="outline" className={cn("rounded-lg text-[9px]", teamStyle.badge)}>
                                 <span className={cn("mr-1 h-1.5 w-1.5 rounded-full", teamStyle.dot)} />{os.equipe}
@@ -712,6 +717,11 @@ function HistoricoPage() {
                             </span>
                             {completedAt && <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><CalendarClock className="h-3.5 w-3.5" />{completedAt}</span>}
                           </span>
+                          {dailyRecord && (
+                            <span className="mt-1.5 block text-[10px] font-semibold text-sky-700 dark:text-sky-300">
+                              Origem da conclusão: Relatório Diário • {formatDateTime(dailyRecord.concluida_em) || dailyRecord.atividade_data}
+                            </span>
+                          )}
                         </span>
                         <ChevronRight className="mt-3 hidden h-4 w-4 shrink-0 text-muted-foreground/55 group-hover:text-primary sm:block" />
                       </button>
@@ -727,7 +737,7 @@ function HistoricoPage() {
                             className="h-9 gap-1.5 rounded-lg border-sky-500/30 bg-sky-500/10 px-2.5 text-[10px] font-semibold text-sky-700 hover:bg-sky-500/15 dark:text-sky-300"
                           >
                             <FileSpreadsheet className="h-3.5 w-3.5" />
-                            Concluído no Relatório Diário
+                            Ver conclusão do relatório
                           </Button>
                         )}
                         {os.status === "concluida" && isAdmin && (
