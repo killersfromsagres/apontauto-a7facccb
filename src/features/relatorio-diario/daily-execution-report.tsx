@@ -36,7 +36,10 @@ import {
   isOperationalCorrective,
   normalizeDailyFilterText,
 } from "@/features/relatorio-diario/lib/daily-report-correctives";
-import { isCompletedCorrectiveStatus, shouldReplaceSchedule } from "@/features/relatorio-diario/lib/corrective-report";
+import {
+  isCompletedCorrectiveStatus,
+  shouldReplaceSchedule,
+} from "@/features/relatorio-diario/lib/corrective-report";
 import {
   buildWeeklyPlanning,
   type WeeklyCorrectiveSourceRow,
@@ -121,6 +124,7 @@ const activityKey = (value: unknown) => normalizeDailyFilterText(value);
 const isCorrectiveActivity = (row: { activity?: unknown }) => activityKey(row.activity) === "corretiva";
 const isPreventiveActivity = (row: { activity?: unknown }) => activityKey(row.activity) === "preventiva";
 const correctiveOsKey = (value: unknown) => normalizeOs(value).trim().toUpperCase();
+const executionDayOsKey = (date: string, os: unknown) => `${date}|${correctiveOsKey(os)}`;
 
 const locationLabel = (row: { building?: string; floor?: string; space?: string }) =>
   [row.building, row.floor, row.space].filter(Boolean).join(" • ") || "Local não informado";
@@ -145,6 +149,20 @@ const buildCorrectiveByOs = (rows: CorrectiveCatalogSource[]) => {
   return map;
 };
 
+const buildExecutionByDayOs = (records: Map<string, CompletionRecord>) => {
+  const map = new Map<string, CompletionRecord>();
+  records.forEach((record) => {
+    if (activityKey(record.atividade) !== "corretiva") return;
+    const key = executionDayOsKey(record.atividade_data, record.os);
+    if (key.endsWith("|")) return;
+    const current = map.get(key);
+    const currentTime = new Date(current?.concluida_em ?? "").getTime() || 0;
+    const nextTime = new Date(record.concluida_em).getTime() || 0;
+    if (!current || nextTime >= currentTime) map.set(key, record);
+  });
+  return map;
+};
+
 const rowCompletionState = (
   row: WeeklyPlanningRow,
   executionMap: Map<string, CompletionRecord>,
@@ -155,8 +173,10 @@ const rowCompletionState = (
     const canonical = correctiveByOs.get(correctiveOsKey(row.os));
     if (canonical) {
       const canonicalCompleted = isCompletedCorrectiveStatus(canonical.status);
-      if (canonicalCompleted && manualExecution) return "concluida";
-      if (canonicalCompleted || manualExecution) return "pendente_verificacao";
+      // Registrar no Relatório Diário conclui esta linha no relatório, mas não
+      // altera o status oficial do chamado no Corretiva Novo.
+      if (manualExecution) return "concluida";
+      if (canonicalCompleted) return "pendente_verificacao";
       return "pendente";
     }
   }
@@ -525,7 +545,7 @@ export function DailyExecutionReport() {
     let scheduleTimer: ReturnType<typeof setTimeout> | null = null;
     let executionTimer: ReturnType<typeof setTimeout> | null = null;
     const channel = supabase
-      .channel("relatorio-diario-operacional-v2")
+      .channel("relatorio-diario-operacional-v3")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "corretiva_os" },
@@ -573,6 +593,7 @@ export function DailyExecutionReport() {
     [portfolio, rows],
   );
   const correctiveByOs = useMemo(() => buildCorrectiveByOs(portfolio), [portfolio]);
+  const executionByDayOs = useMemo(() => buildExecutionByDayOs(completions), [completions]);
   const dates = planning.days.map((day) => day.date);
 
   useEffect(() => {
@@ -600,10 +621,7 @@ export function DailyExecutionReport() {
       }),
     [completions, planning.rows, portfolio, rows, selectedDate],
   );
-  const reportCorrectives = useMemo(
-    () => dailyRows.filter(isCorrectiveActivity),
-    [dailyRows],
-  );
+  const reportCorrectives = useMemo(() => dailyRows.filter(isCorrectiveActivity), [dailyRows]);
 
   const operationalCatalog = useMemo(
     () => Array.from(correctiveByOs.values()).filter(isOperationalCorrective),
@@ -640,14 +658,7 @@ export function DailyExecutionReport() {
         team: correctiveTeamFilter,
         status: sourceStatusFilter,
       }),
-    [
-      buildingFilter,
-      correctiveSearch,
-      correctiveTeamFilter,
-      operationalCatalog,
-      requesterFilter,
-      sourceStatusFilter,
-    ],
+    [buildingFilter, correctiveSearch, correctiveTeamFilter, operationalCatalog, requesterFilter, sourceStatusFilter],
   );
 
   const scheduledByOs = useMemo(() => {
@@ -662,7 +673,7 @@ export function DailyExecutionReport() {
   const selectedPerformed = dailyRows.filter(
     (row) => rowCompletionState(row, completions, correctiveByOs) !== "pendente",
   ).length;
-  const selectedVerified = dailyRows.filter(
+  const selectedCompleted = dailyRows.filter(
     (row) => rowCompletionState(row, completions, correctiveByOs) === "concluida",
   ).length;
   const selectedAwaiting = dailyRows.filter(
@@ -675,18 +686,10 @@ export function DailyExecutionReport() {
 
   const daySummary = useCallback(
     (date: string) => {
-      const dayRows = buildDailyRows({
-        date,
-        scheduleRows: rows,
-        planningRows: planning.rows,
-        portfolio,
-        completions,
-      });
+      const dayRows = buildDailyRows({ date, scheduleRows: rows, planningRows: planning.rows, portfolio, completions });
       return {
         total: dayRows.length,
-        done: dayRows.filter(
-          (row) => rowCompletionState(row, completions, correctiveByOs) !== "pendente",
-        ).length,
+        done: dayRows.filter((row) => rowCompletionState(row, completions, correctiveByOs) !== "pendente").length,
       };
     },
     [completions, correctiveByOs, planning.rows, portfolio, rows],
@@ -702,9 +705,7 @@ export function DailyExecutionReport() {
       const imported = results.flatMap((result) => result.rows);
       if (!imported.length) throw new Error("Nenhuma OS programada foi encontrada nas planilhas.");
       const replaceCurrent = shouldReplaceSchedule(rows, imported);
-      const nextRows = replaceCurrent
-        ? stableMergeSchedules([], imported)
-        : stableMergeSchedules(rows, imported);
+      const nextRows = replaceCurrent ? stableMergeSchedules([], imported) : stableMergeSchedules(rows, imported);
       const { error } = await (supabase as any).rpc("save_relatorio_diario_programacao", {
         _rows: imported,
         _replace: replaceCurrent,
@@ -785,26 +786,22 @@ export function DailyExecutionReport() {
   const draftValue = (row: WeeklyPlanningRow) =>
     workDrafts[row.id] ?? completions.get(row.id)?.descricao ?? "";
 
-  async function markCorrective(row: DailyReportRow, source?: CorrectiveCatalogSource) {
+  async function addCorrectiveToDailyReport(row: DailyReportRow, source?: CorrectiveCatalogSource) {
     if (savingKey) return;
-    const fallback = String(source?.observacao_conclusao ?? "").trim();
-    const description = draftValue(row).trim() || fallback;
-    if (!description) {
-      toast.warning("Informe em “O que foi feito” o serviço executado antes de marcar a corretiva.");
-      return;
-    }
+    const description =
+      draftValue(row).trim() ||
+      String(source?.observacao_conclusao ?? "").trim() ||
+      String(row.name ?? "").trim() ||
+      String(row.equipment ?? "").trim() ||
+      "Concluída no Relatório Diário";
+
     setSavingKey(row.id);
     try {
       await upsertExecution(row, description);
       setWorkDrafts((current) => ({ ...current, [row.id]: description }));
-      const canonicalCompleted = Boolean(source && isCompletedCorrectiveStatus(source.status));
-      toast.success(
-        canonicalCompleted
-          ? `OS ${row.os} verificada no Relatório Diário.`
-          : `OS ${row.os} registrada no Relatório Diário e aguardando confirmação no Corretiva Novo.`,
-      );
+      toast.success(`OS ${row.os} adicionada à planilha e marcada como concluída no Relatório Diário.`);
     } catch (error: any) {
-      toast.error(error?.message || "Não foi possível registrar esta corretiva.");
+      toast.error(error?.message || "Não foi possível adicionar esta corretiva à planilha do dia.");
     } finally {
       setSavingKey(null);
     }
@@ -877,8 +874,7 @@ export function DailyExecutionReport() {
         loadPdfLogo(GRUPO_GPS_LOGO_URL),
       ]);
       const freshCorrectiveByOs = buildCorrectiveByOs(freshPortfolio);
-      const stateOf = (row: WeeklyPlanningRow) =>
-        rowCompletionState(row, freshCompletions, freshCorrectiveByOs);
+      const stateOf = (row: WeeklyPlanningRow) => rowCompletionState(row, freshCompletions, freshCorrectiveByOs);
       const performed = pdfRows.filter((row) => stateOf(row) !== "pendente").length;
       const pending = pdfRows.filter((row) => stateOf(row) === "pendente").length;
       const rate = pdfRows.length ? Math.round((performed / pdfRows.length) * 100) : 0;
@@ -970,7 +966,8 @@ export function DailyExecutionReport() {
         margin: { left: margin, right: margin, top: 35, bottom: 12 },
         head: [["Status", "OS", "Tipo", "Equipe", "Local", "Atividade / O que foi feito", "Ativo", "SLA"]],
         body: pdfRows.map((row) => {
-          const execution = freshCompletions.get(row.id);
+          const execution = freshCompletions.get(row.id) ??
+            buildExecutionByDayOs(freshCompletions).get(executionDayOsKey(row.date, row.os));
           const original = row.originalCorrectiveName || row.name || row.equipment || "—";
           const activityText = isCorrectiveActivity(row) && execution?.descricao
             ? `Executado: ${execution.descricao}${normalizeDailyFilterText(execution.descricao) !== normalizeDailyFilterText(original) ? `\nChamado: ${original}` : ""}`
@@ -1085,7 +1082,7 @@ export function DailyExecutionReport() {
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300">Controle diário de execução</p>
               <h1 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">Relatório Diário • Preventivas e Corretivas</h1>
               <p className="mt-1 max-w-4xl text-xs leading-5 text-slate-300">
-                As preventivas permanecem fixas na ordem da programação de segunda a sexta. As corretivas vêm diretamente do Corretiva Novo, com equipe, cor, prédio, solicitante e registro do serviço executado.
+                Preventivas fixas por dia e catálogo corretivo compacto. Adicionar uma corretiva à planilha conclui somente o Relatório Diário; o chamado original permanece com seu status no Corretiva Novo.
               </p>
             </div>
             <Button
@@ -1192,12 +1189,12 @@ export function DailyExecutionReport() {
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                   <h2 className="text-sm font-semibold">Preventivas fixas • {formatDateBr(selectedDate)}</h2>
                 </div>
-                <p className="mt-1 text-[10px] text-muted-foreground">Lista fixa do dia, na sequência da programação compartilhada. Marque cada atividade quando concluída.</p>
+                <p className="mt-1 text-[10px] text-muted-foreground">Lista fixa do dia na sequência da programação compartilhada.</p>
               </div>
               <span className="rounded-full border border-border bg-muted/30 px-2.5 py-1 text-[10px] font-semibold">{fixedPreventives.length} preventivas</span>
             </div>
 
-            <div className="max-h-[520px] overflow-auto">
+            <div className="max-h-[480px] overflow-auto">
               {fixedPreventives.length ? (
                 <div className="divide-y divide-border">
                   {fixedPreventives.map((row, index) => {
@@ -1206,27 +1203,27 @@ export function DailyExecutionReport() {
                       <div
                         key={row.id}
                         className={cn(
-                          "grid gap-2 border-l-[3px] px-3 py-2.5 lg:grid-cols-[46px_90px_145px_minmax(0,1fr)_170px] lg:items-center",
+                          "grid gap-2 border-l-[3px] px-3 py-2 lg:grid-cols-[42px_90px_145px_minmax(0,1fr)_155px] lg:items-center",
                           completed && "bg-emerald-500/[0.06]",
                         )}
                         style={{ borderLeftColor: completed ? "#10b981" : equipeHex(row.team) }}
                       >
-                        <span className="text-center text-[10px] font-semibold text-muted-foreground">#{index + 1}</span>
-                        <span className="font-mono text-xs font-semibold">{row.os}</span>
-                        <div className="flex items-center gap-2 text-[11px] font-semibold">
-                          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: equipeHex(row.team) }} />
+                        <span className="text-center text-[9px] font-semibold text-muted-foreground">#{index + 1}</span>
+                        <span className="font-mono text-[11px] font-semibold">{row.os}</span>
+                        <div className="flex items-center gap-2 text-[10px] font-semibold">
+                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: equipeHex(row.team) }} />
                           {row.team || "Sem equipe"}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-medium">{row.name || row.equipment || "Preventiva sem descrição"}</p>
-                          <p className="mt-0.5 truncate text-[10px] text-muted-foreground">{locationLabel(row)}</p>
+                          <p className="truncate text-[11px] font-medium">{row.name || row.equipment || "Preventiva sem descrição"}</p>
+                          <p className="mt-0.5 truncate text-[9px] text-muted-foreground">{locationLabel(row)}</p>
                         </div>
                         <Button
                           size="sm"
                           variant={completed ? "default" : "outline"}
                           disabled={savingKey === row.id}
                           onClick={() => void togglePreventive(row)}
-                          className={cn("h-8 gap-1.5 text-[10px]", completed && "bg-emerald-600 text-white hover:bg-emerald-700")}
+                          className={cn("h-7 gap-1.5 text-[9px]", completed && "bg-emerald-600 text-white hover:bg-emerald-700")}
                         >
                           {savingKey === row.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : completed ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
                           {completed ? "Concluída" : "Marcar concluída"}
@@ -1242,115 +1239,134 @@ export function DailyExecutionReport() {
           </section>
 
           <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-            <div className="border-b border-border p-3 sm:p-4">
-              <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+            <div className="border-b border-border p-3">
+              <div className="flex flex-col gap-2 xl:flex-row xl:items-start xl:justify-between">
                 <div>
                   <div className="flex items-center gap-2">
                     <Wrench className="h-4 w-4 text-sky-500" />
-                    <h2 className="text-sm font-semibold">Corretivas • Corretiva Novo</h2>
+                    <h2 className="text-sm font-semibold">Catálogo de corretivas</h2>
                     {loadingPortfolio && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
                   </div>
-                  <p className="mt-1 max-w-3xl text-[10px] leading-4 text-muted-foreground">Pesquise qualquer chamado, confira a equipe exatamente como está no Corretiva Novo e registre “O que foi feito”. Corretivas fora da programação também podem entrar no relatório do dia sem alterar o status do chamado original.</p>
+                  <p className="mt-1 max-w-4xl text-[10px] leading-4 text-muted-foreground">
+                    Pesquisa rápida do Corretiva Novo. “Adicionar à planilha” inclui a OS no dia selecionado e já marca a execução como concluída somente no Relatório Diário.
+                  </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-[10px]">
-                  <span className="rounded-full border border-sky-500/20 bg-sky-500/[0.06] px-2.5 py-1 font-semibold text-sky-700 dark:text-sky-300">{filteredCorrectives.length} encontrada(s)</span>
-                  <span className="rounded-full border border-border bg-muted/20 px-2.5 py-1">{reportCorrectives.length} no relatório do dia</span>
+                  <span className="rounded-full border border-sky-500/20 bg-sky-500/[0.06] px-2 py-0.5 font-semibold text-sky-700 dark:text-sky-300">{filteredCorrectives.length} encontrada(s)</span>
+                  <span className="rounded-full border border-border bg-muted/20 px-2 py-0.5">{reportCorrectives.length} no dia</span>
                 </div>
               </div>
 
-              <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-[minmax(220px,1.4fr)_180px_minmax(180px,1fr)_180px_180px_auto]">
+              <div className="mt-2 grid gap-2 md:grid-cols-2 xl:grid-cols-[minmax(220px,1.4fr)_170px_minmax(180px,1fr)_170px_160px_auto]">
                 <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input value={correctiveSearch} onChange={(event) => setCorrectiveSearch(event.target.value)} placeholder="OS, descrição, ativo, local..." className="h-9 pl-9 text-xs" />
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input value={correctiveSearch} onChange={(event) => setCorrectiveSearch(event.target.value)} placeholder="OS, descrição, ativo, local..." className="h-8 pl-9 text-[11px]" />
                 </div>
-                <select value={buildingFilter} onChange={(event) => setBuildingFilter(event.target.value)} className="h-9 rounded-md border border-input bg-background px-2.5 text-xs">
+                <select value={buildingFilter} onChange={(event) => setBuildingFilter(event.target.value)} className="h-8 rounded-md border border-input bg-background px-2 text-[11px]">
                   <option value="todos">Todos os prédios</option>
                   {buildingOptions.map((building) => <option key={building} value={building}>{building}</option>)}
                 </select>
                 <div className="relative">
-                  <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input value={requesterFilter} onChange={(event) => setRequesterFilter(event.target.value)} placeholder="Nome do solicitante" className="h-9 pl-9 text-xs" />
+                  <UserRound className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input value={requesterFilter} onChange={(event) => setRequesterFilter(event.target.value)} placeholder="Nome do solicitante" className="h-8 pl-9 text-[11px]" />
                 </div>
-                <select value={correctiveTeamFilter} onChange={(event) => setCorrectiveTeamFilter(event.target.value)} className="h-9 rounded-md border border-input bg-background px-2.5 text-xs">
-                  <option value="todos">Todas as equipes</option>
+                <select value={correctiveTeamFilter} onChange={(event) => setCorrectiveTeamFilter(event.target.value)} className="h-8 rounded-md border border-input bg-background px-2 text-[11px]">
+                  <option value="todos">Todas equipes</option>
                   {teamOptions.map((team) => <option key={team} value={team}>{team}</option>)}
                 </select>
-                <select value={sourceStatusFilter} onChange={(event) => setSourceStatusFilter(event.target.value)} className="h-9 rounded-md border border-input bg-background px-2.5 text-xs">
-                  <option value="todos">Todos os status</option>
+                <select value={sourceStatusFilter} onChange={(event) => setSourceStatusFilter(event.target.value)} className="h-8 rounded-md border border-input bg-background px-2 text-[11px]">
+                  <option value="todos">Todos status</option>
                   {statusOptions.map((status) => <option key={status} value={status}>{formatSourceStatus(status)}</option>)}
                 </select>
-                <Button type="button" size="sm" variant="outline" disabled={!filtersActive} onClick={clearCorrectiveFilters} className="h-9 gap-1.5 text-xs">
-                  <X className="h-3.5 w-3.5" /> Limpar filtros
+                <Button type="button" size="sm" variant="outline" disabled={!filtersActive} onClick={clearCorrectiveFilters} className="h-8 gap-1 px-2 text-[10px]">
+                  <X className="h-3 w-3" /> Limpar
                 </Button>
               </div>
             </div>
 
-            <div className="max-h-[850px] overflow-auto">
+            <div className="max-h-[760px] overflow-auto">
               {filteredCorrectives.length ? (
-                <div className="divide-y divide-border">
+                <div className="divide-y divide-border/70">
                   {filteredCorrectives.slice(0, CATALOG_RENDER_LIMIT).map((source) => {
                     const osKey = correctiveOsKey(source.numero_os);
                     const scheduled = scheduledByOs.get(osKey);
-                    const itemKey = dailyCorrectiveItemKey(rows, selectedDate, source.numero_os);
-                    const row = sourceToDailyRow(source, selectedDate, scheduled?.id || itemKey, scheduled);
-                    const record = completions.get(row.id);
-                    const state = rowCompletionState(row, completions, correctiveByOs);
-                    const canonicalCompleted = isCompletedCorrectiveStatus(source.status);
-                    const text = draftValue(row);
-                    const teamColor = equipeHex(row.team);
+                    const existingExecution = executionByDayOs.get(executionDayOsKey(selectedDate, source.numero_os));
+                    const itemKey = existingExecution?.item_key || scheduled?.id || dailyCorrectiveItemKey(rows, selectedDate, source.numero_os);
+                    const row = sourceToDailyRow(source, selectedDate, itemKey, scheduled);
+                    const record = completions.get(row.id) ?? existingExecution;
+                    const effectiveRow = record && record.item_key !== row.id
+                      ? sourceToDailyRow(source, selectedDate, record.item_key, scheduled)
+                      : row;
+                    const state = rowCompletionState(effectiveRow, completions, correctiveByOs);
+                    const text = workDrafts[effectiveRow.id] ?? record?.descricao ?? "";
+                    const teamColor = equipeHex(effectiveRow.team);
+
                     return (
-                      <div key={`${source.id ?? row.os}:${row.id}`} className={cn("border-l-[4px] px-3 py-3 sm:px-4", record && "bg-sky-500/[0.025]")} style={{ borderLeftColor: teamColor }}>
-                        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_390px]">
+                      <div
+                        key={`${source.id ?? effectiveRow.os}:${effectiveRow.id}`}
+                        className={cn("border-l-[3px] px-3 py-2", record && "bg-emerald-500/[0.035]")}
+                        style={{ borderLeftColor: record ? "#10b981" : teamColor }}
+                      >
+                        <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_335px_168px] xl:items-center">
                           <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-mono text-xs font-bold">OS {row.os}</span>
-                              <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold" style={{ borderColor: `${teamColor}55`, backgroundColor: `${teamColor}12`, color: teamColor }}>
-                                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: teamColor }} />
-                                {row.team || "Sem equipe"}
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="font-mono text-[11px] font-bold">OS {effectiveRow.os}</span>
+                              <span
+                                className="inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold"
+                                style={{ borderColor: `${teamColor}55`, backgroundColor: `${teamColor}12`, color: teamColor }}
+                              >
+                                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: teamColor }} />
+                                {effectiveRow.team || "Sem equipe"}
                               </span>
-                              <span className="rounded-full border border-border bg-muted/25 px-2 py-0.5 text-[9px] font-medium">{formatSourceStatus(source.status)}</span>
-                              {scheduled && <span className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.06] px-2 py-0.5 text-[9px] font-semibold text-emerald-700 dark:text-emerald-300">Programada no dia</span>}
-                              {record && <span className="rounded-full border border-sky-500/20 bg-sky-500/[0.06] px-2 py-0.5 text-[9px] font-semibold text-sky-700 dark:text-sky-300">No relatório do dia</span>}
+                              <span className="rounded-full border border-border bg-muted/25 px-1.5 py-0.5 text-[8px] font-medium">{formatSourceStatus(source.status)}</span>
+                              {scheduled && <span className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.06] px-1.5 py-0.5 text-[8px] font-semibold text-emerald-700 dark:text-emerald-300">Programada</span>}
+                              {record && <span className="rounded-full border border-emerald-500/25 bg-emerald-500/[0.08] px-1.5 py-0.5 text-[8px] font-bold text-emerald-700 dark:text-emerald-300">Na planilha • concluída</span>}
                             </div>
-                            <p className="mt-2 text-xs font-medium leading-5">{row.name || "Chamado sem descrição"}</p>
-                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
+                            <p className="mt-1 truncate text-[11px] font-semibold" title={effectiveRow.name}>{effectiveRow.name || "Chamado sem descrição"}</p>
+                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[9px] text-muted-foreground">
                               <span className="inline-flex items-center gap-1"><Building2 className="h-3 w-3" /> {String(source.predio ?? "").trim() || "Prédio não informado"}</span>
                               <span>{[source.andar, source.local].filter(Boolean).join(" • ") || "Local não informado"}</span>
                               <span className="inline-flex items-center gap-1"><UserRound className="h-3 w-3" /> {String(source.solicitante ?? "").trim() || "Solicitante não informado"}</span>
                               {source.data_sla && <span>SLA {formatDateBr(String(source.data_sla))}</span>}
                             </div>
-                            {(source.ativo || source.equipamento) && <p className="mt-1.5 text-[9px] text-muted-foreground">{[source.ativo, source.equipamento].filter(Boolean).join(" • ")}</p>}
                           </div>
 
-                          <div className="rounded-xl border border-border bg-background/60 p-2.5">
+                          <div className="min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <label className="text-[10px] font-semibold">O que foi feito</label>
-                              <span className={cn("text-[9px] font-semibold", state === "concluida" ? "text-emerald-600" : state === "pendente_verificacao" ? "text-sky-600" : "text-muted-foreground")}>
-                                {state === "concluida" ? "Concluída • verificada" : state === "pendente_verificacao" ? "Aguardando verificação" : "Pendente"}
+                              <label className="text-[9px] font-semibold text-muted-foreground">O que foi feito</label>
+                              <span className={cn("text-[8px] font-semibold", state === "concluida" ? "text-emerald-600" : state === "pendente_verificacao" ? "text-sky-600" : "text-muted-foreground")}>
+                                {state === "concluida" ? "Concluída no relatório" : state === "pendente_verificacao" ? "Concluída no Corretiva Novo" : "Pendente"}
                               </span>
                             </div>
                             <textarea
                               value={text}
-                              onChange={(event) => setWorkDrafts((current) => ({ ...current, [row.id]: event.target.value }))}
-                              rows={2}
-                              className="mt-1.5 w-full resize-y rounded-md border border-input bg-background px-2.5 py-2 text-xs leading-4"
-                              placeholder={String(source.observacao_conclusao ?? "").trim() ? `Sugestão do Corretiva Novo: ${String(source.observacao_conclusao).trim()}` : "Descreva o serviço executado neste dia"}
+                              onChange={(event) => setWorkDrafts((current) => ({ ...current, [effectiveRow.id]: event.target.value }))}
+                              rows={1}
+                              className="mt-1 h-8 w-full resize-none rounded-md border border-input bg-background px-2 py-1.5 text-[10px] leading-4"
+                              placeholder={String(source.observacao_conclusao ?? "").trim() ? `Sugestão: ${String(source.observacao_conclusao).trim()}` : "Serviço executado (opcional)"}
                             />
-                            <div className="mt-2 flex flex-wrap justify-end gap-2">
-                              {record ? (
-                                <>
-                                  <Button type="button" size="sm" variant="outline" disabled={savingKey === row.id} onClick={() => void undoCorrective(row)} className="h-8 text-[10px]">Desfazer registro</Button>
-                                  <Button type="button" size="sm" disabled={savingKey === row.id} onClick={() => void saveCorrectiveDescription(row)} className="h-8 gap-1.5 text-[10px]">
-                                    {savingKey === row.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Salvar texto
-                                  </Button>
-                                </>
-                              ) : (
-                                <Button type="button" size="sm" disabled={savingKey === row.id} onClick={() => void markCorrective(row, source)} className="h-8 gap-1.5 bg-sky-600 text-[10px] text-white hover:bg-sky-700">
-                                  {savingKey === row.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                                  {canonicalCompleted ? "Verificar no relatório" : "Registrar como realizada"}
+                          </div>
+
+                          <div className="flex items-center justify-end gap-1.5">
+                            {record ? (
+                              <>
+                                <Button type="button" size="sm" variant="outline" disabled={savingKey === effectiveRow.id} onClick={() => void undoCorrective(effectiveRow)} className="h-7 px-2 text-[9px]">Desfazer</Button>
+                                <Button type="button" size="sm" disabled={savingKey === effectiveRow.id} onClick={() => void saveCorrectiveDescription(effectiveRow)} className="h-7 gap-1 px-2 text-[9px]">
+                                  {savingKey === effectiveRow.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />} Salvar
                                 </Button>
-                              )}
-                            </div>
+                              </>
+                            ) : (
+                              <Button
+                                type="button"
+                                size="sm"
+                                disabled={savingKey === effectiveRow.id}
+                                onClick={() => void addCorrectiveToDailyReport(effectiveRow, source)}
+                                className="h-8 gap-1.5 bg-sky-600 px-3 text-[10px] font-semibold text-white hover:bg-sky-700"
+                              >
+                                {savingKey === effectiveRow.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSpreadsheet className="h-3.5 w-3.5" />}
+                                Adicionar à planilha
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1384,12 +1400,12 @@ export function DailyExecutionReport() {
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${completionRate}%` }} /></div>
                 <span className="text-xs font-semibold">{completionRate}%</span>
               </div>
-              <p className="mt-2 text-[10px] text-muted-foreground">{selectedVerified} atividade(s) com verificação completa. Corretivas registradas aqui não alteram automaticamente o status no Corretiva Novo.</p>
+              <p className="mt-2 text-[10px] text-muted-foreground">{selectedCompleted} atividade(s) concluída(s) diretamente no Relatório Diário. Registrar aqui não altera o status no Corretiva Novo.</p>
             </div>
 
             <aside className="rounded-2xl border border-border bg-card p-3 shadow-sm">
               <div className="flex items-center gap-2"><ClipboardCheck className="h-4 w-4 text-muted-foreground" /><h2 className="text-sm font-semibold">Relatório em PDF</h2></div>
-              <p className="mt-1 text-[10px] leading-4 text-muted-foreground">O PDF inclui as preventivas fixas e somente as corretivas programadas ou adicionadas ao relatório deste dia.</p>
+              <p className="mt-1 text-[10px] leading-4 text-muted-foreground">Inclui as preventivas fixas e as corretivas programadas ou adicionadas ao relatório deste dia.</p>
               <label className="mt-3 block text-[10px] font-medium text-muted-foreground">Responsável</label>
               <Input className="mt-1 h-9 text-xs" value={author} onChange={(event) => setAuthor(event.target.value)} placeholder="Nome do responsável" />
               <label className="mt-2.5 block text-[10px] font-medium text-muted-foreground">Observação do dia</label>
