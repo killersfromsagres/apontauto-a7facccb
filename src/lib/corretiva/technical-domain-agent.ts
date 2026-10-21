@@ -43,10 +43,10 @@ export const HVAC_OBJECT =
   /\b(ar condicionado|ar condicionados|split|splits|fancoil|fan coil|fan coils|cassete|cassettes|condensadoras?|evaporadoras?|chiller|chillers|vrf|vrv|hvac|compressores? frigorificos?|gas refrigerante|serpentinas?|camaras? frias?|freezers?|geladeiras?|refrigeradores?)\b/;
 
 const LOCK_OBJECT =
-  /\b(fechaduras?|miolos?(?: de fechadura)?|cadeados?|copias? de chaves?|chaves? quebradas?|destrancar|porta travada|porta trancada|trincos?|linguetas?|macanetas?|cilindros?(?: de fechadura)?|molas? de porta|dobradicas?|barras? antipanico|puxadores?)\b/;
+  /\b(fechaduras?|miolos?(?: de fechadura)?|cadeados?|copias? de chaves?|chaves? quebradas?|novas? chaves?|chaves? novas?|confeccao de chaves?|destrancar|porta travada|porta trancada|trincos?|linguetas?|macanetas?|cilindros?(?: de fechadura)?|molas? de porta|dobradicas?|barras? antipanico|puxadores?)\b/;
 
 const LOCK_HARDWARE_REQUEST =
-  /\b(copia|copiar|confeccionar|fazer|trocar|substituir|reparar|ajustar|regular|instalar|fixar)(?:\s+[a-z0-9]+){0,6}\s+(chaves?|fechaduras?|miolos?|macanetas?|trincos?|linguetas?|cilindros?|dobradicas?|molas?(?:\s+hidraulicas?)?(?:\s+de)?\s+porta|barras? antipanico|puxadores?)\b|\b(portas?)(?:\s+[a-z0-9]+){0,5}\s+(nao fecha|nao fechando|travada|trancada|emperrada|desalinhada)\b|\bmolas? hidraulicas? (?:da|de) porta\b/;
+  /\b(copia|copiar|duplicar|duplicacao|confeccao|confeccionar|fazer|trocar|substituir|reparar|ajustar|regular|instalar|fixar)(?:\s+[a-z0-9]+){0,6}\s+(chaves?|fechaduras?|miolos?|macanetas?|trincos?|linguetas?|cilindros?|dobradicas?|molas?(?:\s+hidraulicas?)?(?:\s+de)?\s+porta|barras? antipanico|puxadores?)\b|\b(portas?)(?:\s+[a-z0-9]+){0,5}\s+(nao fecha|nao fechando|travada|trancada|emperrada|desalinhada)\b|\bmolas? hidraulicas? (?:da|de) porta\b/;
 
 const ELECTRICAL_HARD_REQUEST =
   /\b(trocar|substituir|instalar|reparar|adequar|corrigir|verificar|manutencao)(?:\s+[a-z0-9]+){0,7}\s+(lampadas?|luminarias?|tomadas?|interruptores?|disjuntores?|refletores?|reatores?|fotocelulas?|sensores? de presenca|quadros? eletricos?|paineis? eletricos?|fiacao|cabeamento eletrico|pontos? de energia|pontos? eletricos?)\b|\b(sem luz|falta de energia|curto circuito|tomada queimada|lampada queimada|luminaria queimada)\b/;
@@ -55,10 +55,16 @@ const PAINT_OBJECT =
   /\b(pintura|pintar|repintura|repintar|tintas?|verniz|retoques? de pintura|demarcacao de piso|sinalizacao de piso|faixas? amarelas?|pintura de piso|pintura de parede)\b/;
 
 const CIVIL_OBJECT =
-  /\b(alvenaria|drywall|gesso|reboco|trincas?|rachaduras?|azulejos?|revestimentos?|calcadas?|telhados?|telhas?|concreto|argamassa|guarda corpo|guarda corpos|corrimaos?|esquadrias?|marcenaria|vidros?|persianas?|forros?|pisos?|buracos?|mobiliario|armarios?|mesas?|cadeiras?)\b/;
+  /\b(alvenaria|drywall|gesso|reboco|trincas?|rachaduras?|azulejos?|revestimentos?|calcadas?|telhados?|telhas?|concreto|argamassa|guarda corpo|guarda corpos|corrimaos?|esquadrias?|marcenaria|vidros?|persianas?|forros?|pisos?|buracos?|mobiliario|armarios?|mesas?|cadeiras?|prateleiras?|papeleiras?|porta copos?|suportes? de papel|suportes? para papel|insulfilm|pelicula de janela|pelicula nas? janelas?)\b/;
+
+const CIVIL_FIXTURE_REQUEST =
+  /\b(fixacao|fixar|instalar|instalacao|trocar|troca|substituir|substituicao|consertar|conserto|reparar|reparo)(?:\s+[a-z0-9]+){0,8}\s+(prateleiras?|papeleiras?|porta copos?|suportes? de papel|suportes? para papel|dispensers?|insulfilm|peliculas?)(?:\s+[a-z0-9]+){0,5}\b|\b(insulfilm|peliculas?)(?:\s+[a-z0-9]+){0,5}\s+janelas?\b/;
 
 const CLEANING_OBJECT =
   /\b(limpeza geral|higienizacao geral|lavagem|varricao|desinfeccao|sujeira|residuos?|coleta de residuos|conservacao)\b/;
+
+const CLEANING_REQUEST =
+  /\b(limpeza|higienizacao|lavagem)(?:\s+(?:de|do|da|dos|das))?(?:\s+[a-z0-9]+){0,5}\s+(banheiros?|sanitarios?|vestiarios?|salas?|pisos?|paredes?)\b/;
 
 const OBSTRUCTION =
   /\b(desentupimento|desentupir|entupimentos?|entupid[oa]s?|hidrojateamento|hidrojato|obstrucao|obstruid[oa]s?)\b/;
@@ -175,6 +181,8 @@ export function analyzeCorrectiveTechnicalDomain(
   const hasWiringRequest = ELECTRICAL_WIRING_REQUEST.test(primaryText);
   const hasLockHardware = LOCK_OBJECT.test(primaryText) || LOCK_HARDWARE_REQUEST.test(primaryText);
   const hasElectricalHardRequest = ELECTRICAL_HARD_REQUEST.test(primaryText);
+  const hasCivilFixture = CIVIL_FIXTURE_REQUEST.test(primaryText);
+  const hasCleaningRequest = CLEANING_REQUEST.test(primaryText);
 
   if (HVAC_SHORT_REQUEST.test(primaryText)) {
     scores.Refrigeração += 220;
@@ -192,7 +200,7 @@ export function analyzeCorrectiveTechnicalDomain(
     scores.Hidráulica = Math.min(scores.Hidráulica, 24);
     scores.Civil = Math.min(scores.Civil, 30);
     scores.Elétrica = Math.min(scores.Elétrica, 30);
-    evidence.unshift("agente técnico: ferragem/fechamento de porta é Chaveiro");
+    evidence.unshift("agente técnico: ferragem, chave ou fechamento de porta é Chaveiro");
   }
 
   if (hasElectricalHardRequest && !hasHvac) {
@@ -206,6 +214,20 @@ export function analyzeCorrectiveTechnicalDomain(
     scores.Elétrica += 150;
     scores.Civil = Math.min(scores.Civil, 22);
     evidence.unshift("agente técnico: organização/adequação de fios ou cabeamento");
+  }
+
+  if (hasCivilFixture && !hasHydraulic && !hasElectrical && !hasHvac && !hasLockHardware) {
+    scores.Civil += 190;
+    scores.Hidráulica = Math.min(scores.Hidráulica, 18);
+    scores.Chaveiro = Math.min(scores.Chaveiro, 24);
+    evidence.unshift("agente técnico: fixação/reparo de acessório ou mobiliário é Civil");
+  }
+
+  if (hasCleaningRequest && !hasHydraulic && !hasElectrical && !hasHvac) {
+    scores.Limpeza += 170;
+    scores.Hidráulica = Math.min(scores.Hidráulica, 18);
+    scores.Civil = Math.min(scores.Civil, 24);
+    evidence.unshift("agente técnico: pedido explícito de limpeza é Limpeza");
   }
 
   if (SHOWER_HYDRAULIC.test(primaryText)) {
