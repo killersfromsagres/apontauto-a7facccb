@@ -39,12 +39,8 @@ import {
 type Row = PreventivaRow | CorretivaRow;
 type Mode = "backorder" | "corretiva" | "backorder-mensal";
 
-type ExistingCorrectiveState = {
-  equipe: string;
-  status: string;
-};
-
-const EXISTING_ASSIGNMENT_BATCH_SIZE = 200;
+const EXISTING_LOOKUP_BATCH_SIZE = 250;
+const INSERT_BATCH_SIZE = 150;
 
 /**
  * Estados finais do enum `corretiva_os_status` que a limpeza nunca apaga.
@@ -59,48 +55,41 @@ function contar(rows: Row[]): Array<[string, number]> {
   return [...map.entries()].sort((a, b) => b[1] - a[1]);
 }
 
-function normalizeTeam(value: string | null | undefined) {
-  return String(value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
+async function loadExistingCorrectiveNumbers(rows: Row[]) {
+  const numeroOs = Array.from(
+    new Set(rows.map((row) => String(row.numero_os ?? "").trim()).filter(Boolean)),
+  );
+  const existing = new Set<string>();
 
-function normalizeStatus(value: unknown) {
-  return String(value ?? "").trim().toLowerCase();
-}
-
-function isTerminalCorrectiveStatus(value: unknown) {
-  const status = normalizeStatus(value);
-  return status === "concluida" || status === "concluido" || status === "cancelada" || status === "cancelado";
-}
-
-async function loadExistingCorrectiveState(rows: Row[]) {
-  const numeroOs = Array.from(new Set(rows.map((row) => row.numero_os).filter(Boolean)));
-  const existing = new Map<string, ExistingCorrectiveState>();
-
-  for (let index = 0; index < numeroOs.length; index += EXISTING_ASSIGNMENT_BATCH_SIZE) {
-    const batch = numeroOs.slice(index, index + EXISTING_ASSIGNMENT_BATCH_SIZE);
+  for (let index = 0; index < numeroOs.length; index += EXISTING_LOOKUP_BATCH_SIZE) {
+    const batch = numeroOs.slice(index, index + EXISTING_LOOKUP_BATCH_SIZE);
     const { data, error } = await supabase
       .from("corretiva_os")
-      .select("numero_os, equipe, status")
+      .select("numero_os")
       .in("numero_os", batch);
 
     if (error) throw error;
 
     for (const item of data ?? []) {
       const numero = String(item.numero_os ?? "").trim();
-      if (!numero) continue;
-
-      existing.set(numero, {
-        equipe: String(item.equipe ?? "").trim(),
-        status: String(item.status ?? "").trim(),
-      });
+      if (numero) existing.add(numero);
     }
   }
 
   return existing;
+}
+
+function buildImportPayload(row: Row, mode: Mode) {
+  return {
+    ...row,
+    updated_at: new Date().toISOString(),
+    tipo_importacao: mode === "backorder-mensal" ? "backorder_mensal" : "padrao",
+    data_criacao: row.data_criacao || null,
+    predio: (row as any).predio || (row as any).localizacao || "",
+    andar: (row as any).andar || "",
+    local: (row as any).local || (row as any).ambiente || "",
+    solicitante: (row as any).solicitante || (row as any).nome_solicitante || "",
+  };
 }
 
 export function PreventivaImportDialog({
@@ -117,6 +106,8 @@ export function PreventivaImportDialog({
   const [saving, setSaving] = useState(false);
   const [rows, setRows] = useState<Row[]>([]);
   const [fileName, setFileName] = useState("");
+  const [sheetCount, setSheetCount] = useState(0);
+  const [existingCount, setExistingCount] = useState(0);
   const [clearOpen, setClearOpen] = useState(false);
   const [clearConfirmation, setClearConfirmation] = useState("");
   const [clearing, setClearing] = useState(false);
@@ -132,20 +123,60 @@ export function PreventivaImportDialog({
         ? "corretivas/backorder"
         : "backorder";
 
+  const resetImport = () => {
+    setRows([]);
+    setFileName("");
+    setSheetCount(0);
+    setExistingCount(0);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
   const onFile = async (f: File | null) => {
     setRows([]);
     setFileName(f?.name ?? "");
+    setSheetCount(0);
+    setExistingCount(0);
     if (!f) return;
     setParsing(true);
+
     try {
       const parsedBase =
         mode === "corretiva" || mode === "backorder-mensal"
           ? await lerCorretivaFile(f)
           : await lerPreventivaFile(f);
-      const parsed =
-        mode === "corretiva"
-          ? await refineImportedCorrectiveRowsWithAi(parsedBase as CorretivaRow[])
-          : parsedBase;
+
+      setSheetCount(parsedBase.length);
+
+      if (mode === "corretiva") {
+        // Atualizar preservando histórico é deliberadamente insert-only:
+        // primeiro compara a planilha com o banco e ignora tudo que já existe.
+        // Só as OS ausentes passam pela classificação e podem ser gravadas.
+        const existing = await loadExistingCorrectiveNumbers(parsedBase);
+        const onlyNew = (parsedBase as CorretivaRow[]).filter(
+          (row) => !existing.has(String(row.numero_os ?? "").trim()),
+        );
+        const skipped = parsedBase.length - onlyNew.length;
+        setExistingCount(skipped);
+
+        if (onlyNew.length === 0) {
+          setRows([]);
+          toast.success(
+            `Planilha analisada: ${parsedBase.length} OS já existem. Nenhum chamado do sistema será modificado.`,
+          );
+          return;
+        }
+
+        // A leitura inteligente fica muito mais rápida porque a IA recebe somente
+        // os chamados realmente novos, não centenas de OS já cadastradas.
+        const classified = await refineImportedCorrectiveRowsWithAi(onlyNew);
+        setRows(classified);
+        toast.success(
+          `Planilha analisada: ${classified.length} OS nova(s) pronta(s) para incluir; ${skipped} já existente(s) ignorada(s).`,
+        );
+        return;
+      }
+
+      const parsed = parsedBase;
       if (parsed.length === 0) toast.warning("Nenhuma linha válida encontrada.");
       else
         toast.success(
@@ -153,6 +184,7 @@ export function PreventivaImportDialog({
         );
       setRows(parsed);
     } catch (e: any) {
+      console.error("[Import] Falha ao analisar planilha:", e);
       toast.error(e?.message ?? "Falha ao ler planilha");
     } finally {
       setParsing(false);
@@ -160,100 +192,82 @@ export function PreventivaImportDialog({
   };
 
   const importar = async () => {
-    if (rows.length === 0) return toast.warning("Escolha uma planilha válida.");
+    if (rows.length === 0) {
+      return toast.warning(
+        mode === "corretiva"
+          ? "Não há OS nova para incluir. Os chamados já existentes foram preservados."
+          : "Escolha uma planilha válida.",
+      );
+    }
     setSaving(true);
 
     try {
-      // Em Corretivas, o estado atual do banco é a fonte da verdade durante reimportações.
-      // Além da equipe, estados finais (concluída/cancelada) são preservados para impedir
-      // que uma nova planilha reabra chamados já encerrados.
-      const existingState =
-        mode === "corretiva"
-          ? await loadExistingCorrectiveState(rows)
-          : new Map<string, ExistingCorrectiveState>();
+      if (mode === "corretiva") {
+        // Revalida imediatamente antes da gravação para cobrir concorrência entre
+        // usuários. Mesmo nesse caso, `ignoreDuplicates` faz INSERT ... ON CONFLICT
+        // DO NOTHING; nenhuma coluna de uma OS existente é alterada.
+        const nowExisting = await loadExistingCorrectiveNumbers(rows);
+        const newRows = rows.filter(
+          (row) => !nowExisting.has(String(row.numero_os ?? "").trim()),
+        );
 
-      let protectedAssignments = 0;
-      let preventedOverwrites = 0;
-      let protectedFinalStatuses = 0;
-
-      const payload = rows.map((row) => {
-        const current = existingState.get(row.numero_os);
-        const existingTeam = current?.equipe ?? "";
-        const incomingTeam = String(row.equipe ?? "").trim();
-        const terminalStatus = isTerminalCorrectiveStatus(current?.status) ? current?.status : null;
-
-        if (existingTeam) {
-          protectedAssignments++;
-          if (normalizeTeam(existingTeam) !== normalizeTeam(incomingTeam)) {
-            preventedOverwrites++;
-          }
+        if (newRows.length === 0) {
+          toast.success("Nenhuma OS nova para incluir. O banco permaneceu sem alterações.");
+          setOpen(false);
+          resetImport();
+          onDone();
+          return;
         }
 
-        if (terminalStatus) protectedFinalStatuses++;
+        let inserted = 0;
+        for (let index = 0; index < newRows.length; index += INSERT_BATCH_SIZE) {
+          const batch = newRows.slice(index, index + INSERT_BATCH_SIZE).map((row) => ({
+            ...buildImportPayload(row, mode),
+            // `status` é obrigatório no banco. Defini-lo em todas as novas linhas
+            // elimina o erro de NOT NULL do antigo upsert misto.
+            status: "aberta",
+            tipo_importacao: "padrao",
+          }));
 
-        return {
-          ...row,
-          equipe: existingTeam || row.equipe,
-          ...(terminalStatus ? { status: terminalStatus } : {}),
-          updated_at: new Date().toISOString(),
-          tipo_importacao: mode === "backorder-mensal" ? "backorder_mensal" : "padrao",
-          data_criacao: row.data_criacao || null,
-          predio: (row as any).predio || (row as any).localizacao || "",
-          andar: (row as any).andar || "",
-          local: (row as any).local || (row as any).ambiente || "",
-          solicitante: (row as any).solicitante || (row as any).nome_solicitante || "",
-        };
-      });
+          const { error, count } = await supabase.from("corretiva_os").upsert(batch as any, {
+            onConflict: "numero_os",
+            ignoreDuplicates: true,
+            count: "exact",
+          });
 
-      console.log("[Import] Payload para upsert:", payload.length, "linhas", {
-        protectedAssignments,
-        preventedOverwrites,
-        protectedFinalStatuses,
-      });
+          if (error) throw error;
+          inserted += count ?? batch.length;
+        }
 
+        const skippedDuringSave = rows.length - newRows.length;
+        toast.success(
+          `${inserted} OS nova(s) incluída(s). ${existingCount + skippedDuringSave} OS já existente(s) ficaram totalmente intactas.`,
+        );
+        setOpen(false);
+        resetImport();
+        onDone();
+        return;
+      }
+
+      const payload = rows.map((row) => buildImportPayload(row, mode));
       const { error, count } = await supabase.from("corretiva_os").upsert(payload as any, {
         onConflict: "numero_os",
         count: "exact",
       });
 
-      if (error) {
-        console.error("[Import] Erro ao importar:", error);
-        return toast.error(
-          "Não foi possível salvar as OS no banco de dados. Verifique a conexão e permissões.",
-        );
-      }
+      if (error) throw error;
 
-      const protectionParts: string[] = [];
-      if (protectedAssignments > 0) {
-        protectionParts.push(
-          `${protectedAssignments} designação(ões) existente(s) preservada(s)${
-            preventedOverwrites > 0
-              ? `, evitando ${preventedOverwrites} sobrescrita(s) de equipe`
-              : ""
-          }`,
-        );
-      }
-      if (protectedFinalStatuses > 0) {
-        protectionParts.push(
-          `${protectedFinalStatuses} chamado(s) concluído(s)/cancelado(s) mantido(s) no histórico`,
-        );
-      }
-      const protectionMessage =
-        mode === "corretiva" && protectionParts.length > 0
-          ? ` ${protectionParts.join("; ")}.`
-          : "";
-
-      toast.success(
-        `${count ?? rows.length} ${label} processadas sem duplicidade.${protectionMessage}`,
-      );
+      toast.success(`${count ?? rows.length} ${label} processadas sem duplicidade.`);
       setOpen(false);
-      setRows([]);
-      setFileName("");
+      resetImport();
       onDone();
-    } catch (error) {
-      console.error("[Import] Falha ao proteger dados existentes:", error);
+    } catch (error: any) {
+      console.error("[Import] Erro ao importar:", error);
+      const detail = String(error?.message ?? error?.details ?? "").trim();
       toast.error(
-        "Atualização cancelada por segurança: não foi possível confirmar equipes e estados já registrados. Nenhum status final foi sobrescrito.",
+        detail
+          ? `Não foi possível incluir as novas OS: ${detail}`
+          : "Não foi possível incluir as novas OS. Nenhum chamado já existente foi alterado.",
       );
     } finally {
       setSaving(false);
@@ -320,6 +334,7 @@ export function PreventivaImportDialog({
   };
 
   const counts = contar(rows);
+  const hasCorrectiveAnalysis = mode === "corretiva" && Boolean(fileName) && sheetCount > 0;
 
   return (
     <>
@@ -366,11 +381,10 @@ export function PreventivaImportDialog({
             <p className="text-xs text-muted-foreground">
               {mode === "corretiva" ? (
                 <>
-                  Novas OS são classificadas lendo a descrição completa, equipamento, ativo e
-                  contexto do chamado; casos ambíguos recebem uma segunda leitura automática. Ao
-                  atualizar uma planilha já importada, a equipe atualmente designada e os chamados
-                  já concluídos ou cancelados são preservados, evitando perder correções, realocações
-                  e o histórico de encerramento.
+                  <strong>Atualização somente de novos chamados.</strong> A planilha é comparada com
+                  o banco primeiro. Toda OS que já existe é ignorada e não tem status, equipe,
+                  descrição, datas ou histórico modificados. Somente as OS ausentes passam pela
+                  leitura inteligente e ficam disponíveis para inclusão.
                 </>
               ) : (
                 <>
@@ -391,7 +405,22 @@ export function PreventivaImportDialog({
 
             {parsing && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Lendo planilha…
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {mode === "corretiva"
+                  ? "Comparando a planilha com os chamados existentes…"
+                  : "Lendo planilha…"}
+              </div>
+            )}
+
+            {hasCorrectiveAnalysis && (
+              <div className="rounded-lg border border-border/50 bg-muted/20 p-3 text-xs">
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary">{sheetCount} na planilha</Badge>
+                  <Badge variant="outline">{existingCount} já existentes — ignoradas</Badge>
+                  <Badge variant="outline" className="border-emerald-500/30 text-emerald-300">
+                    {rows.length} novas para incluir
+                  </Badge>
+                </div>
               </div>
             )}
 
@@ -436,7 +465,11 @@ export function PreventivaImportDialog({
 
             <Button className="w-full h-11" onClick={importar} disabled={saving || rows.length === 0}>
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Importar {rows.length > 0 ? `${rows.length} ${label}` : ""}
+              {mode === "corretiva"
+                ? rows.length > 0
+                  ? `Incluir ${rows.length} OS nova(s)`
+                  : "Nenhuma OS nova para incluir"
+                : `Importar ${rows.length > 0 ? `${rows.length} ${label}` : ""}`}
             </Button>
           </div>
         </DialogContent>
