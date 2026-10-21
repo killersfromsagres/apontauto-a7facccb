@@ -34,7 +34,7 @@ import { recordTermsAcceptance } from "@/lib/auth/terms";
 const logo = { url: "/apontauto-logo.png" };
 const NETWORK_ERROR_MESSAGE =
   "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.";
-const AUTH_TIMEOUT_MS = 6500;
+const AUTH_TIMEOUT_MS = 20000;
 
 function loginToEmail(value: string) {
   const raw = value.trim().toLowerCase();
@@ -75,28 +75,30 @@ async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs = AUTH_TIMEOUT_
 async function signInWithRetry(email: string, password: string) {
   let lastError: unknown;
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  // Do not race sign-in against an artificial client timeout. Promise.race
+  // does not cancel the underlying Supabase request and could therefore show
+  // "Não foi possível conectar" even when authentication completed moments
+  // later. Retry only real network failures reported by fetch/Supabase.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      const result = await withTimeout(
-        supabase.auth.signInWithPassword({ email, password }),
-      );
+      const result = await supabase.auth.signInWithPassword({ email, password });
 
       if (!result.error) return result.data;
       lastError = result.error;
-
-      if (attempt === 0 && isNetworkFailure(result.error)) {
-        await delay(280);
-        continue;
-      }
-      throw result.error;
+      if (!isNetworkFailure(result.error)) throw result.error;
     } catch (error) {
       lastError = error;
-      if (attempt === 0 && isNetworkFailure(error)) {
-        await delay(280);
-        continue;
-      }
-      throw error;
+      if (!isNetworkFailure(error)) throw error;
     }
+
+    // If a response was lost after Supabase persisted a valid session, accept
+    // that local session instead of presenting a false connection failure.
+    const { data: local } = await supabase.auth.getSession();
+    if (local.session?.user) {
+      return { user: local.session.user, session: local.session };
+    }
+
+    if (attempt < 2) await delay(650 * (attempt + 1));
   }
 
   throw lastError ?? new Error(NETWORK_ERROR_MESSAGE);
