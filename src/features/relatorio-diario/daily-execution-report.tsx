@@ -129,6 +129,42 @@ const executionDayOsKey = (date: string, os: unknown) => `${date}|${correctiveOs
 const locationLabel = (row: { building?: string; floor?: string; space?: string }) =>
   [row.building, row.floor, row.space].filter(Boolean).join(" • ") || "Local não informado";
 
+const normalizePdfTeam = (value: unknown) =>
+  String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+const preventivePdfTeamPriority = (value: unknown) => {
+  const team = normalizePdfTeam(value);
+  if (team.includes("civil")) return 0;
+  if (team.includes("hidraul")) return 1;
+  if (team.includes("climat") || team.includes("refriger")) {
+    if (/(^|\s)1(\s|$)/.test(team)) return 2;
+    if (/(^|\s)2(\s|$)/.test(team)) return 3;
+    if (/(^|\s)3(\s|$)/.test(team)) return 4;
+  }
+  if (team.includes("eletric")) return 5;
+  return 6;
+};
+
+const orderPdfRows = <T extends WeeklyPlanningRow>(rows: T[]) =>
+  rows
+    .map((row, index) => ({
+      row,
+      index,
+      category: isPreventiveActivity(row) ? 0 : isCorrectiveActivity(row) ? 2 : 1,
+      teamPriority: isPreventiveActivity(row) ? preventivePdfTeamPriority(row.team) : 0,
+    }))
+    .sort((a, b) =>
+      a.category - b.category ||
+      a.teamPriority - b.teamPriority ||
+      a.index - b.index,
+    )
+    .map(({ row }) => row);
+
 const rowTimestamp = (row?: CorrectiveCatalogSource) => {
   if (!row) return 0;
   for (const candidate of [row.updated_at, row.fim, row.data_programada, row.data_criacao]) {
@@ -868,6 +904,7 @@ export function DailyExecutionReport() {
         completions: freshCompletions,
       });
       if (!pdfRows.length) return toast.error("Não há atividades para este dia.");
+      const orderedPdfRows = orderPdfRows(pdfRows);
 
       const [sherwinLogo, gpsLogo] = await Promise.all([
         loadPdfLogo(SHERWIN_WILLIAMS_LOGO_URL),
@@ -965,7 +1002,7 @@ export function DailyExecutionReport() {
         startY: infoY + infoH + 3,
         margin: { left: margin, right: margin, top: 35, bottom: 12 },
         head: [["Status", "OS", "Tipo", "Equipe", "Local", "Atividade / O que foi feito", "Ativo", "SLA"]],
-        body: pdfRows.map((row) => {
+        body: orderedPdfRows.map((row) => {
           const execution = freshCompletions.get(row.id) ??
             buildExecutionByDayOs(freshCompletions).get(executionDayOsKey(row.date, row.os));
           const original = row.originalCorrectiveName || row.name || row.equipment || "—";
@@ -1014,7 +1051,7 @@ export function DailyExecutionReport() {
         },
         didParseCell: (cell) => {
           if (cell.section !== "body") return;
-          const row = pdfRows[cell.row.index];
+          const row = orderedPdfRows[cell.row.index];
           if (!row) return;
           const state = stateOf(row);
           if (state === "concluida") {
