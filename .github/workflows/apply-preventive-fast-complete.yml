@@ -23,8 +23,11 @@ jobs:
         with:
           ref: Apont-Auto
 
-      - name: Apply patch
+      - name: Apply preventive patch
         run: python .github/patch_preventive_fast_complete.py
+
+      - name: Fix PDF TypeScript color calls
+        run: python .github/patch_pdf_ts_colors.py
 
       - name: Setup Node
         uses: actions/setup-node@v4
