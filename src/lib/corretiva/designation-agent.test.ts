@@ -27,6 +27,51 @@ describe("agente de designação de corretivas", () => {
     expect(result.ambiguo).toBe(false);
   });
 
+  it("entende novas chaves em sanitário como Chaveiro e não Hidráulica", () => {
+    const result = analyzeCorrectiveOrder({
+      nome_os: "Novas chaves para o sanitario masculino",
+      local: "BANHEIRO MASCULINO - SANITÁRIO MASCULINO",
+      equipe: "Hidráulica",
+    });
+
+    expect(result.equipe).toBe("Chaveiro");
+    expect(result.confianca).toBe("alta");
+    expect(result.ambiguo).toBe(false);
+  });
+
+  it("entende fixação de prateleira em banheiro como Civil", () => {
+    const result = analyzeCorrectiveOrder({
+      nome_os: "Local: Prédio B290 - Banheiro Masculino Motivo: Fixação de uma prateleira.",
+      local: "BANHEIRO MASCULINO - BANHEIRO MASC. / A.C.",
+      equipe: "Hidráulica",
+    });
+
+    expect(result.equipe).toBe("Civil");
+    expect(result.confianca).toBe("alta");
+  });
+
+  it("entende troca de suporte para papel em sanitário como Civil", () => {
+    const result = analyzeCorrectiveOrder({
+      nome_os: "Troca de 4 suporte para papel higiênico nos sanitários Z-500",
+      local: "BANHEIRO MASCULINO - SANITÁRIO MASCULINO",
+      equipe: "Hidráulica",
+    });
+
+    expect(result.equipe).toBe("Civil");
+    expect(result.confianca).toBe("alta");
+  });
+
+  it("entende instalação de insulfilm em janela de vestiário como Civil", () => {
+    const result = analyzeCorrectiveOrder({
+      nome_os: "Por favor instalar insulfilm nas janela do vestiário masculino",
+      local: "BANHEIRO MASCULINO - DF VEST. MASC.-BASF",
+      equipe: "Hidráulica",
+    });
+
+    expect(result.equipe).toBe("Civil");
+    expect(result.confianca).toBe("alta");
+  });
+
   it("mantém chuveiro com vazamento no domínio da Hidráulica", () => {
     const result = analyzeCorrectiveOrder({
       nome_os: "Chuveiro vazando e registro pingando no vestiário",
