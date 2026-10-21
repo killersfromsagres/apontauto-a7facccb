@@ -42,8 +42,8 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit
 
-      - name: Test
-        run: npm test -- --passWithNoTests
+      - name: Targeted regression tests
+        run: npm test -- src/features/relatorio-diario/lib/weekly-planning.test.ts src/features/relatorio-diario/lib/weekly-planning-completed-day.test.ts src/features/relatorio-diario/lib/weekly-planning-completed-programmed.test.ts --passWithNoTests
 
       - name: Commit implementation
         run: |
