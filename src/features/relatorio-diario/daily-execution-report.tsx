@@ -427,6 +427,8 @@ export function DailyExecutionReport() {
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [importing, setImporting] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [savingPreventives, setSavingPreventives] = useState<Set<string>>(() => new Set());
+  const [savingAllPreventives, setSavingAllPreventives] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [dragging, setDragging] = useState(false);
 
@@ -802,20 +804,122 @@ export function DailyExecutionReport() {
   }
 
   async function togglePreventive(row: WeeklyPlanningRow) {
-    if (savingKey) return;
-    setSavingKey(row.id);
+    if (savingAllPreventives || savingPreventives.has(row.id)) return;
+
+    const previous = completions.get(row.id);
+    const completing = !previous;
+    const optimistic: CompletionRecord = {
+      item_key: row.id,
+      atividade_data: row.date,
+      os: row.os || "",
+      atividade: row.activity,
+      equipe: row.team || null,
+      descricao: row.name || row.equipment || null,
+      concluida_em: previous?.concluida_em || new Date().toISOString(),
+      concluida_por: previous?.concluida_por ?? null,
+    };
+
+    setSavingPreventives((current) => {
+      const next = new Set(current);
+      next.add(row.id);
+      return next;
+    });
+
+    // Atualização otimista: o clique aparece na tela imediatamente.
+    setCompletions((current) => {
+      const next = new Map(current);
+      if (completing) next.set(row.id, optimistic);
+      else next.delete(row.id);
+      return next;
+    });
+
     try {
-      if (completions.has(row.id)) {
+      if (completing) {
+        await upsertExecution(row, optimistic.descricao);
+        toast.success(`Preventiva ${row.os} marcada como concluída.`);
+      } else {
         await deleteExecution(row);
         toast.success(`Preventiva ${row.os} voltou para pendente.`);
-      } else {
-        await upsertExecution(row, row.name || row.equipment || null);
-        toast.success(`Preventiva ${row.os} marcada como concluída.`);
       }
     } catch (error: any) {
-      toast.error(error?.message || "Não foi possível atualizar esta preventiva.");
+      // Se o servidor falhar, restaura exatamente o estado anterior.
+      setCompletions((current) => {
+        const next = new Map(current);
+        if (previous) next.set(row.id, previous);
+        else next.delete(row.id);
+        return next;
+      });
+      toast.error(error?.message || "Não foi possível atualizar esta preventiva. A alteração foi desfeita.");
     } finally {
-      setSavingKey(null);
+      setSavingPreventives((current) => {
+        const next = new Set(current);
+        next.delete(row.id);
+        return next;
+      });
+    }
+  }
+
+  async function markAllPreventivesCompleted() {
+    if (savingAllPreventives || !fixedPreventives.length) return;
+    const pendingRows = fixedPreventives.filter((row) => !completions.has(row.id));
+    if (!pendingRows.length) {
+      toast.info("Todas as preventivas deste dia já estão concluídas.");
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const optimisticRecords = pendingRows.map<CompletionRecord>((row) => ({
+      item_key: row.id,
+      atividade_data: row.date,
+      os: row.os || "",
+      atividade: row.activity,
+      equipe: row.team || null,
+      descricao: row.name || row.equipment || null,
+      concluida_em: now,
+      concluida_por: null,
+    }));
+    const ids = new Set(pendingRows.map((row) => row.id));
+
+    setSavingAllPreventives(true);
+    setSavingPreventives((current) => new Set([...current, ...ids]));
+    setCompletions((current) => {
+      const next = new Map(current);
+      optimisticRecords.forEach((record) => next.set(record.item_key, record));
+      return next;
+    });
+
+    try {
+      const payload = optimisticRecords.map(({ concluida_por: _ignored, ...record }) => ({
+        ...record,
+        updated_at: now,
+      }));
+      const { data, error } = await (supabase as any)
+        .from("relatorio_diario_execucoes")
+        .upsert(payload, { onConflict: "item_key" })
+        .select("item_key,atividade_data,os,atividade,equipe,descricao,concluida_em,concluida_por");
+      if (error) throw error;
+
+      setCompletions((current) => {
+        const next = new Map(current);
+        ((data ?? []) as CompletionRecord[]).forEach((record) => next.set(record.item_key, record));
+        return next;
+      });
+      toast.success(`${pendingRows.length} preventiva(s) marcada(s) como concluída(s).`);
+    } catch (error: any) {
+      setCompletions((current) => {
+        const next = new Map(current);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+      toast.error(error?.message || "Não foi possível concluir todas as preventivas. Nenhuma alteração foi mantida.");
+      void loadExecutions(false);
+    } finally {
+      setSavingPreventives((current) => {
+        const next = new Set(current);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+      setSavingAllPreventives(false);
     }
   }
 
@@ -957,16 +1061,16 @@ export function DailyExecutionReport() {
       ] as const;
       metrics.forEach(([label, value, fill, accent], index) => {
         const x = margin + index * (metricW + metricGap);
-        doc.setFillColor(...fill);
+        doc.setFillColor(fill[0], fill[1], fill[2]);
         doc.setDrawColor(226, 232, 240);
         doc.roundedRect(x, metricY, metricW, 14.5, 1.4, 1.4, "FD");
-        doc.setFillColor(...accent);
+        doc.setFillColor(accent[0], accent[1], accent[2]);
         doc.roundedRect(x, metricY, 1.8, 14.5, 0.8, 0.8, "F");
         doc.setFont("helvetica", "bold");
         doc.setFontSize(6.2);
         doc.setTextColor(100, 116, 139);
         doc.text(label, x + 4.5, metricY + 4.5);
-        doc.setTextColor(...accent);
+        doc.setTextColor(accent[0], accent[1], accent[2]);
         doc.setFontSize(13);
         doc.text(value, x + 4.5, metricY + 11.8);
       });
@@ -1102,6 +1206,7 @@ export function DailyExecutionReport() {
   }
 
   const hasSchedule = rows.length > 0;
+  const pendingPreventivesCount = fixedPreventives.filter((row) => !completions.has(row.id)).length;
   const syncing = loadingPortfolio || loadingExecutions || loadingSchedule;
   const filtersActive =
     Boolean(correctiveSearch.trim()) ||
@@ -1228,7 +1333,25 @@ export function DailyExecutionReport() {
                 </div>
                 <p className="mt-1 text-[10px] text-muted-foreground">Lista fixa do dia na sequência da programação compartilhada.</p>
               </div>
-              <span className="rounded-full border border-border bg-muted/30 px-2.5 py-1 text-[10px] font-semibold">{fixedPreventives.length} preventivas</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-border bg-muted/30 px-2.5 py-1 text-[10px] font-semibold">
+                  {fixedPreventives.length} preventivas • {pendingPreventivesCount} pendente(s)
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => void markAllPreventivesCompleted()}
+                  disabled={!pendingPreventivesCount || savingAllPreventives}
+                  className="h-8 gap-1.5 bg-emerald-600 px-3 text-[10px] font-semibold text-white hover:bg-emerald-700 disabled:bg-emerald-600/50"
+                >
+                  {savingAllPreventives ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  )}
+                  {savingAllPreventives ? "Salvando todas..." : pendingPreventivesCount ? `Concluir todas (${pendingPreventivesCount})` : "Todas concluídas"}
+                </Button>
+              </div>
             </div>
 
             <div className="max-h-[480px] overflow-auto">
@@ -1236,6 +1359,7 @@ export function DailyExecutionReport() {
                 <div className="divide-y divide-border">
                   {fixedPreventives.map((row, index) => {
                     const completed = completions.has(row.id);
+                    const savingPreventive = savingPreventives.has(row.id);
                     return (
                       <div
                         key={row.id}
@@ -1258,12 +1382,15 @@ export function DailyExecutionReport() {
                         <Button
                           size="sm"
                           variant={completed ? "default" : "outline"}
-                          disabled={savingKey === row.id}
+                          disabled={savingPreventive || savingAllPreventives}
                           onClick={() => void togglePreventive(row)}
-                          className={cn("h-7 gap-1.5 text-[9px]", completed && "bg-emerald-600 text-white hover:bg-emerald-700")}
+                          className={cn(
+                            "h-7 gap-1.5 text-[9px] transition-all",
+                            completed && "bg-emerald-600 text-white hover:bg-emerald-700",
+                          )}
                         >
-                          {savingKey === row.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : completed ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
-                          {completed ? "Concluída" : "Marcar concluída"}
+                          {savingPreventive ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : completed ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
+                          {savingPreventive ? "Sincronizando..." : completed ? "Concluída" : "Marcar concluída"}
                         </Button>
                       </div>
                     );
