@@ -1,0 +1,54 @@
+name: Apply preventive fast complete
+
+on:
+  push:
+    branches:
+      - Apont-Auto
+    paths:
+      - .github/workflows/apply-preventive-fast-complete.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-build-and-commit:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: https://fbhpdqykoptxnrbdcspr.supabase.co
+      VITE_SUPABASE_PROJECT_ID: fbhpdqykoptxnrbdcspr
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_660hxNRSWPXuCne6oba5iQ_5DEZthmB
+    steps:
+      - name: Checkout Apont-Auto
+        uses: actions/checkout@v4
+        with:
+          ref: Apont-Auto
+
+      - name: Apply patch
+        run: python .github/patch_preventive_fast_complete.py
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Build production
+        run: npm run build
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Commit implementation
+        run: |
+          if git diff --quiet -- src/features/relatorio-diario/daily-execution-report.tsx; then
+            echo "No source changes to commit"
+            exit 0
+          fi
+          git config user.name "OpenAI automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/features/relatorio-diario/daily-execution-report.tsx
+          git commit -m "Melhora conclusão rápida das preventivas"
+          git push origin HEAD:Apont-Auto
