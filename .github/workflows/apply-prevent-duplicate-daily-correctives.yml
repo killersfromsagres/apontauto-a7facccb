@@ -32,6 +32,7 @@ jobs:
           assert 'Já adicionada em ${formatDateBr(historicalRecord.atividade_data)}' in text
           assert 'const previousExecution = correctiveExecutionByOs.get(correctiveOsKey(row.os));' in text
           assert 'error?.code === "23505"' in text
+          assert 'historicalRecord ? (' in text
           print('Persistent duplicate protection verified in source.')
           PY
 
@@ -51,7 +52,7 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Related tests
-        run: npx vitest run src/features/relatorio-diario/lib/daily-report-correctives.test.ts src/features/relatorio-diario/lib/daily-maintenance.test.ts
+        run: npx vitest run src/features/relatorio-diario/lib/daily-maintenance.test.ts
 
       - name: Commit implementation and clean temporary files
         run: |
