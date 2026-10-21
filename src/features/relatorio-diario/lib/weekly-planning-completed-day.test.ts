@@ -26,8 +26,8 @@ const scheduled = (
   sourceFile: "Programacao.xlsx",
 });
 
-describe("relatório diário - conclusões reais do Corretiva Novo", () => {
-  it("inclui no dia real da conclusão, preserva o que foi feito e evita duplicidade no mesmo dia", () => {
+describe("relatório diário - respeita o dia marcado", () => {
+  it("mantém uma corretiva no dia programado mesmo quando ela é concluída em outro dia", () => {
     const scheduledRows: ScheduledMaintenance[] = [
       scheduled("2026-10-05", "BASE", "Atividade base", "Preventiva"),
       scheduled("2026-10-06", "100", "Ajuste de porta"),
@@ -66,16 +66,6 @@ describe("relatório diário - conclusões reais do Corretiva Novo", () => {
         nome_os: "Troca de registro",
         observacao_conclusao: "Registro substituído e vazamento eliminado.",
       },
-      {
-        id: "reopened",
-        numero_os: "400",
-        status: "aberta",
-        fim: "2026-10-07T17:00:00-03:00",
-        updated_at: "2026-10-07T18:00:00-03:00",
-        equipe: "Civil",
-        nome_os: "Chamado reaberto",
-        observacao_conclusao: "Não deve aparecer como concluído.",
-      },
     ];
 
     const planning = buildWeeklyPlanning({
@@ -84,56 +74,51 @@ describe("relatório diário - conclusões reais do Corretiva Novo", () => {
       targetCorrectivesPerTeamPerDay: 1,
     });
 
-    const dayRows = planning.rows.filter((row) => row.date === "2026-10-07");
-    const os100 = dayRows.find((row) => row.os === "100");
-    const os200 = dayRows.find((row) => row.os === "200");
-    const os300 = dayRows.filter((row) => row.os === "300");
+    const os100 = planning.rows.filter((row) => row.os === "100");
+    expect(os100).toHaveLength(1);
+    expect(os100[0].date).toBe("2026-10-06");
+    expect(os100[0].completedAt).toBe("2026-10-07");
+    expect(os100[0].name).toContain("Realizado: Reguladas as dobradiças");
 
-    expect(os100?.completedAt).toBe("2026-10-07");
-    expect(os100?.name).toContain("Realizado: Reguladas as dobradiças");
-    expect(os100?.observation).toBe(
-      "Reguladas as dobradiças e testado o fechamento.",
-    );
-
-    expect(os200?.completedAt).toBe("2026-10-07");
-    expect(os200?.extraCorrective).toBe(true);
-    expect(os200?.name).toContain(
-      "Realizado: Rearmado o disjuntor e normalizada a alimentação.",
-    );
-
+    const os300 = planning.rows.filter((row) => row.os === "300");
     expect(os300).toHaveLength(1);
-    expect(os300[0].extraCorrective).toBe(false);
-    expect(os300[0].name).toContain(
-      "Realizado: Registro substituído e vazamento eliminado.",
-    );
+    expect(os300[0].date).toBe("2026-10-07");
+    expect(os300[0].name).toContain("Realizado: Registro substituído");
 
-    expect(dayRows.some((row) => row.os === "400")).toBe(false);
+    // Uma conclusão que nunca foi marcada/programada para a semana não é
+    // injetada automaticamente no relatório do dia da conclusão.
+    expect(planning.rows.some((row) => row.os === "200")).toBe(false);
   });
 
-  it("usa texto neutro quando a conclusão não possui observação", () => {
+  it("mantém a corretiva programada pelo sistema no dia marcado, não no dia da conclusão", () => {
     const planning = buildWeeklyPlanning({
       scheduledRows: [
-        scheduled("2026-10-05", "BASE", "Base", "Preventiva"),
-        scheduled("2026-10-09", "FIM", "Fim", "Preventiva"),
+        scheduled("2026-10-19", "BASE", "Base", "Preventiva"),
+        scheduled("2026-10-23", "FIM", "Fim", "Preventiva"),
       ],
       correctiveRows: [
         {
-          id: "sem-observacao",
+          id: "programada",
           numero_os: "500",
           status: "concluida",
-          fim: "2026-10-08T10:00:00-03:00",
-          equipe: "Chaveiro",
+          fim: "2026-10-21T10:00:00-03:00",
+          equipe: "Civil",
           nome_os: "Ajuste de fechadura",
+          observacao_conclusao: "Fechadura ajustada.",
+          programacao_status: "em_programacao",
+          programacao_periodo_inicio: "2026-10-19",
+          programacao_periodo_fim: "2026-10-23",
+          programacao_dia_indice: 0,
+          programacao_equipe: "Civil",
         },
       ],
       targetCorrectivesPerTeamPerDay: 1,
     });
 
-    const row = planning.rows.find(
-      (item) => item.date === "2026-10-08" && item.os === "500",
-    );
-
-    expect(row?.observation).toBe("Conclusão registrada sem observação.");
-    expect(row?.name).toContain("Realizado: Conclusão registrada sem observação.");
+    const rows500 = planning.rows.filter((row) => row.os === "500");
+    expect(rows500).toHaveLength(1);
+    expect(rows500[0].date).toBe("2026-10-19");
+    expect(rows500[0].completedAt).toBe("2026-10-21");
+    expect(planning.rows.some((row) => row.os === "500" && row.date === "2026-10-21")).toBe(false);
   });
 });

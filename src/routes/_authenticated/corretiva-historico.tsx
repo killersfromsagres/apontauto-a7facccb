@@ -18,6 +18,7 @@ import {
   MapPin,
   Package,
   PenLine,
+  RotateCcw,
   Search,
   UserRound,
   XCircle,
@@ -43,6 +44,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { toast } from "sonner";
 import {
   loadEquipe,
@@ -166,8 +168,10 @@ function HistoricoPage() {
   const [verificationFilter, setVerificationFilter] = useState<VerificationFilter>("pending");
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
   const [pendingOsId, setPendingOsId] = useState<string | null>(null);
+  const [reopeningOsId, setReopeningOsId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const queryClient = useQueryClient();
+  const { isAdmin } = useIsAdmin();
 
   useEffect(() => {
     setEquipe(loadEquipe());
@@ -309,6 +313,46 @@ function HistoricoPage() {
       }
     },
     [userId, verificacoes, pendingOsId, queryClient],
+  );
+
+  const handleReopen = useCallback(
+    async (os: OsRow) => {
+      if (!isAdmin || reopeningOsId || os.status !== "concluida") return;
+
+      const confirmed = window.confirm(
+        `Voltar a OS ${os.numero_os} para pendente? A conclusão será desfeita e o chamado voltará para a lista de corretivas abertas.`,
+      );
+      if (!confirmed) return;
+
+      setReopeningOsId(os.id);
+      try {
+        const { data, error } = await supabase
+          .from("corretiva_os")
+          .update({
+            status: "aberta",
+            updated_at: new Date().toISOString(),
+          } as any)
+          .eq("id", os.id)
+          .eq("status", "concluida")
+          .select("id")
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data) {
+          throw new Error("Este chamado não está mais concluído. Atualize o histórico e tente novamente.");
+        }
+
+        if (open?.id === os.id) setOpen(null);
+        await queryClient.invalidateQueries({ queryKey: ["corretiva-historico"] });
+        toast.success(`OS ${os.numero_os} voltou para pendente.`);
+      } catch (error: any) {
+        console.error("[CorretivaHistorico] Erro ao voltar OS para pendente:", error);
+        toast.error(error?.message || "Não foi possível voltar o chamado para pendente.");
+      } finally {
+        setReopeningOsId(null);
+      }
+    },
+    [isAdmin, open?.id, queryClient, reopeningOsId],
   );
 
   const filtered = useMemo(() => {
@@ -528,6 +572,7 @@ function HistoricoPage() {
                 const verifiedAt = registro ? formatDateTime(registro.verificadoEm) : null;
                 const verifiedBy = registro ? verificacaoAutorLabel(registro) : null;
                 const saving = pendingOsId === os.id;
+                const reopening = reopeningOsId === os.id;
                 const StatusIcon = cancelada ? XCircle : CheckCircle2;
                 const teamStyle = equipeStyles(os.equipe);
                 const selected = open?.id === os.id;
@@ -639,6 +684,24 @@ function HistoricoPage() {
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 sm:hidden">
                           Conferência
                         </span>
+                        {!cancelada && isAdmin && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            title="Voltar este chamado para o status Aberta"
+                            onClick={() => handleReopen(os)}
+                            disabled={Boolean(reopeningOsId)}
+                            className="h-9 gap-1.5 rounded-lg border-amber-500/30 bg-amber-500/10 px-2.5 text-xs font-semibold text-amber-700 shadow-none hover:bg-amber-500/15 dark:text-amber-300 active:scale-100"
+                          >
+                            {reopening ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <RotateCcw className="h-3.5 w-3.5" />
+                            )}
+                            Voltar para pendente
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           variant="outline"

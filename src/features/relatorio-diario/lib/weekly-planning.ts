@@ -344,34 +344,6 @@ export function buildWeeklyPlanning({
     }
   });
 
-  const completedCorrectiveRows: WeeklyPlanningRow[] = [];
-  canonicalByOs.forEach((source, osKey) => {
-    if (!isCompletedCorrectiveStatus(source.status)) return;
-    const completedDate = toLocalIsoDate(source.fim || source.updated_at);
-    if (!completedDate || !dateSet.has(completedDate)) return;
-
-    const sameDayScheduled = baseRows.find(
-      (row) =>
-        row.activity === "Corretiva" &&
-        row.date === completedDate &&
-        normalizeOs(row.os).trim().toUpperCase() === osKey,
-    );
-
-    if (sameDayScheduled) {
-      sameDayScheduled.name = completedActivityLabel(
-        source,
-        sameDayScheduled.name || sameDayScheduled.equipment,
-      );
-      sameDayScheduled.observation = completedWorkText(source);
-      sameDayScheduled.completedAt = completedDate;
-      sameDayScheduled.completionSource = "corretiva-novo";
-      sameDayScheduled.extraCorrective = false;
-      return;
-    }
-
-    completedCorrectiveRows.push(sourceToCompletedPlanningRow(source, completedDate));
-  });
-
   const alreadyProgrammedRows = correctiveRows
     .filter((row) => isCorrectiveProgrammedForWeek(row, periodStart, periodEnd))
     .map((row) => {
@@ -388,6 +360,32 @@ export function buildWeeklyPlanning({
   const programmedOs = new Set(
     alreadyProgrammedRows.map((row) => normalizeOs(row.os).toUpperCase()).filter(Boolean),
   );
+
+  const plannedRows = [...baseRows, ...alreadyProgrammedRows];
+
+  // O dia programado é a fonte da verdade para o Relatório Diário. Uma OS que
+  // foi marcada para segunda continua pertencendo à segunda mesmo se o técnico
+  // concluir o chamado na terça. A conclusão apenas enriquece a linha planejada;
+  // nunca cria uma nova linha no dia em que o status foi alterado.
+  canonicalByOs.forEach((source, osKey) => {
+    if (!isCompletedCorrectiveStatus(source.status)) return;
+
+    const planned = plannedRows.find(
+      (row) =>
+        row.activity === "Corretiva" &&
+        normalizeOs(row.os).trim().toUpperCase() === osKey,
+    );
+    if (!planned) return;
+
+    const completedDate = toLocalIsoDate(source.fim || source.updated_at);
+    planned.name = completedActivityLabel(
+      source,
+      planned.name || planned.equipment,
+    );
+    planned.observation = completedWorkText(source);
+    planned.completedAt = completedDate || undefined;
+    planned.completionSource = "corretiva-novo";
+  });
 
   const candidates = sortPlanningCandidates(
     correctiveRows.filter((row) => {
@@ -412,13 +410,8 @@ export function buildWeeklyPlanning({
     if (!teamLabels.has(key)) teamLabels.set(key, label);
   });
 
-  const result = [...baseRows, ...alreadyProgrammedRows, ...completedCorrectiveRows];
-  const usedOs = new Set<string>([
-    ...programmedOs,
-    ...completedCorrectiveRows
-      .map((row) => normalizeOs(row.os).toUpperCase())
-      .filter(Boolean),
-  ]);
+  const result = [...plannedRows];
+  const usedOs = new Set<string>(programmedOs);
   const orderedTeamKeys = Array.from(candidatesByTeam.keys()).sort((a, b) =>
     (teamLabels.get(a) ?? a).localeCompare(teamLabels.get(b) ?? b, "pt-BR"),
   );

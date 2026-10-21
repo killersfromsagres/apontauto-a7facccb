@@ -68,6 +68,15 @@ type CompletionRecord = {
   concluida_por?: string | null;
 };
 
+type CorrectiveProgrammingHistory = {
+  os_id: string;
+  periodo_inicio: string | null;
+  periodo_fim: string | null;
+  dia_indice: number | null;
+  equipe: string | null;
+  created_at: string;
+};
+
 type PdfLogo = {
   dataUrl: string;
   ratio: number;
@@ -301,16 +310,51 @@ export function DailyExecutionReport() {
   const loadPortfolio = useCallback(async (notify = false) => {
     setLoadingPortfolio(true);
     try {
-      const { data, error } = await supabase
-        .from("corretiva_os")
-        .select(
-          "id,numero_os,status,fim,observacao_conclusao,data_programada,data_criacao,data_sla,equipe,nome_os,equipamento,ativo,patrimonio,predio,andar,local,programacao_status,programacao_periodo_inicio,programacao_periodo_fim,programacao_dia_indice,programacao_equipe,programacao_tentativas,tipo_importacao,updated_at",
-        )
-        .order("updated_at", { ascending: false })
-        .limit(10000);
+      const [osResult, historyResult] = await Promise.all([
+        supabase
+          .from("corretiva_os")
+          .select(
+            "id,numero_os,status,fim,observacao_conclusao,data_programada,data_criacao,data_sla,equipe,nome_os,equipamento,ativo,patrimonio,predio,andar,local,programacao_status,programacao_periodo_inicio,programacao_periodo_fim,programacao_dia_indice,programacao_equipe,programacao_tentativas,tipo_importacao,updated_at",
+          )
+          .order("updated_at", { ascending: false })
+          .limit(10000),
+        (supabase as any).rpc("get_relatorio_diario_latest_programacao"),
+      ]);
 
-      if (error) throw error;
-      const next = (data ?? []) as WeeklyCorrectiveSourceRow[];
+      if (osResult.error) throw osResult.error;
+      if (historyResult.error) throw historyResult.error;
+
+      const latestProgramming = new Map<string, CorrectiveProgrammingHistory>();
+      ((historyResult.data ?? []) as CorrectiveProgrammingHistory[]).forEach((record) => {
+        const key = String(record.os_id ?? "").trim();
+        if (key && !latestProgramming.has(key)) latestProgramming.set(key, record);
+      });
+
+      const next = ((osResult.data ?? []) as WeeklyCorrectiveSourceRow[]).map((row) => {
+        if (!isCompletedCorrectiveStatus(row.status)) return row;
+        if (
+          row.programacao_status === "em_programacao" &&
+          row.programacao_periodo_inicio &&
+          row.programacao_periodo_fim &&
+          Number.isInteger(Number(row.programacao_dia_indice))
+        ) {
+          return row;
+        }
+
+        const historical = latestProgramming.get(String(row.id ?? "").trim());
+        if (!historical?.periodo_inicio || !historical.periodo_fim) return row;
+        const dayIndex = Number(historical.dia_indice);
+        if (!Number.isInteger(dayIndex) || dayIndex < 0 || dayIndex > 4) return row;
+
+        return {
+          ...row,
+          programacao_status: "em_programacao",
+          programacao_periodo_inicio: historical.periodo_inicio,
+          programacao_periodo_fim: historical.periodo_fim,
+          programacao_dia_indice: dayIndex,
+          programacao_equipe: historical.equipe || row.equipe,
+        };
+      });
       setPortfolio(next);
       if (notify) toast.success(`${next.length} corretiva(s) sincronizadas com o status atual.`);
       return next;
