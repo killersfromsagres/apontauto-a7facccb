@@ -5,12 +5,17 @@ import {
   CheckCircle2,
   Circle,
   ClipboardCheck,
+  Cloud,
+  CloudRain,
+  CloudSun,
   Download,
   FileSpreadsheet,
   Loader2,
   RefreshCcw,
   Save,
   Search,
+  Sun,
+  Thermometer,
   Upload,
   UserRound,
   Wrench,
@@ -53,6 +58,7 @@ const ROWS_KEY = "apontauto:relatorio-diario:programacao:v1";
 const ROWS_MIGRATED_KEY = "apontauto:relatorio-diario:programacao-cloud-migrated:v1";
 const AUTHOR_KEY = "apontauto:relatorio-diario:responsavel:v1";
 const NOTE_KEY = "apontauto:relatorio-diario:observacao-programacao:v1";
+const WEATHER_KEY = "apontauto:relatorio-diario:clima:v1";
 const CATALOG_RENDER_LIMIT = 300;
 
 const SHERWIN_WILLIAMS_LOGO_URL =
@@ -93,6 +99,45 @@ type CorrectiveProgrammingHistory = {
 };
 
 type PdfLogo = { dataUrl: string; ratio: number };
+
+type WeatherCondition = "ensolarado" | "parcialmente_nublado" | "nublado" | "chuva" | "chuva_forte";
+
+type DailyWeather = {
+  condition: WeatherCondition;
+  temperature: string;
+  rained: boolean;
+};
+
+const DEFAULT_WEATHER: DailyWeather = { condition: "ensolarado", temperature: "", rained: false };
+
+const WEATHER_OPTIONS: Array<{ value: WeatherCondition; label: string }> = [
+  { value: "ensolarado", label: "Ensolarado" },
+  { value: "parcialmente_nublado", label: "Parcialmente nublado" },
+  { value: "nublado", label: "Nublado" },
+  { value: "chuva", label: "Chovendo" },
+  { value: "chuva_forte", label: "Chuva forte" },
+];
+
+const weatherConditionLabel = (condition: WeatherCondition) =>
+  WEATHER_OPTIONS.find((option) => option.value === condition)?.label ?? "Clima não informado";
+
+const isRainyWeather = (condition: WeatherCondition) => condition === "chuva" || condition === "chuva_forte";
+
+const hexToRgb = (hex: string): [number, number, number] => {
+  const normalized = hex.replace("#", "").trim();
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) return [100, 116, 139];
+  return [
+    parseInt(normalized.slice(0, 2), 16),
+    parseInt(normalized.slice(2, 4), 16),
+    parseInt(normalized.slice(4, 6), 16),
+  ];
+};
+
+const tintRgb = (rgb: [number, number, number], amount = 0.88): [number, number, number] =>
+  rgb.map((channel) => Math.round(channel + (255 - channel) * amount)) as [number, number, number];
+
+const darkenRgb = (rgb: [number, number, number], amount = 0.62): [number, number, number] =>
+  rgb.map((channel) => Math.max(0, Math.round(channel * amount))) as [number, number, number];
 
 const todayIso = () => {
   const now = new Date();
@@ -408,6 +453,56 @@ function drawContainedLogo(
   );
 }
 
+function drawPdfWeatherIcon(doc: jsPDF, condition: WeatherCondition, x: number, y: number) {
+  const rainy = isRainyWeather(condition);
+  const cloudy = condition !== "ensolarado";
+  const partlyCloudy = condition === "parcialmente_nublado";
+
+  if (!cloudy || partlyCloudy) {
+    doc.setDrawColor(217, 119, 6);
+    doc.setFillColor(245, 158, 11);
+    const sunX = partlyCloudy ? x - 1.3 : x;
+    const sunY = partlyCloudy ? y - 0.8 : y;
+    doc.circle(sunX, sunY, 2.1, "F");
+    doc.setLineWidth(0.45);
+    for (let angle = 0; angle < 360; angle += 45) {
+      const radians = (angle * Math.PI) / 180;
+      doc.line(
+        sunX + Math.cos(radians) * 3.1,
+        sunY + Math.sin(radians) * 3.1,
+        sunX + Math.cos(radians) * 4.1,
+        sunY + Math.sin(radians) * 4.1,
+      );
+    }
+  }
+
+  if (cloudy) {
+    const cloudX = partlyCloudy ? x + 1.5 : x;
+    const cloudY = partlyCloudy ? y + 1.2 : y;
+    doc.setFillColor(rainy ? 14 : 100, rainy ? 165 : 116, rainy ? 233 : 139);
+    doc.circle(cloudX - 2.2, cloudY + 0.2, 1.8, "F");
+    doc.circle(cloudX, cloudY - 0.8, 2.25, "F");
+    doc.circle(cloudX + 2.4, cloudY + 0.15, 1.75, "F");
+    doc.roundedRect(cloudX - 3.8, cloudY, 7.6, 2.4, 1, 1, "F");
+    if (rainy) {
+      doc.setDrawColor(2, 132, 199);
+      doc.setLineWidth(0.45);
+      const drops = condition === "chuva_forte" ? [-2.4, -0.8, 0.8, 2.4] : [-1.7, 0, 1.7];
+      drops.forEach((offset, index) => {
+        const dropY = cloudY + 3.4 + (index % 2) * 0.5;
+        doc.line(cloudX + offset, dropY, cloudX + offset - 0.55, dropY + 1.35);
+      });
+    }
+  }
+}
+
+function WeatherUiIcon({ condition, className }: { condition: WeatherCondition; className?: string }) {
+  if (condition === "ensolarado") return <Sun className={className} />;
+  if (condition === "parcialmente_nublado") return <CloudSun className={className} />;
+  if (isRainyWeather(condition)) return <CloudRain className={className} />;
+  return <Cloud className={className} />;
+}
+
 export function DailyExecutionReport() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [rows, setRows] = useState<ScheduledMaintenance[]>([]);
@@ -422,6 +517,7 @@ export function DailyExecutionReport() {
   const [workDrafts, setWorkDrafts] = useState<Record<string, string>>({});
   const [author, setAuthor] = useState("");
   const [note, setNote] = useState("");
+  const [weatherByDate, setWeatherByDate] = useState<Record<string, DailyWeather>>({});
   const [loadingPortfolio, setLoadingPortfolio] = useState(false);
   const [loadingExecutions, setLoadingExecutions] = useState(false);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
@@ -431,6 +527,14 @@ export function DailyExecutionReport() {
   const [savingAllPreventives, setSavingAllPreventives] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const weather = weatherByDate[selectedDate] ?? DEFAULT_WEATHER;
+
+  const updateWeather = (patch: Partial<DailyWeather>) => {
+    setWeatherByDate((current) => ({
+      ...current,
+      [selectedDate]: { ...(current[selectedDate] ?? DEFAULT_WEATHER), ...patch },
+    }));
+  };
 
   const loadPortfolio = useCallback(async (notify = false) => {
     setLoadingPortfolio(true);
@@ -568,6 +672,7 @@ export function DailyExecutionReport() {
     setRows(safeRead<ScheduledMaintenance[]>(ROWS_KEY, []));
     setAuthor(window.localStorage.getItem(AUTHOR_KEY) ?? "");
     setNote(window.localStorage.getItem(NOTE_KEY) ?? "");
+    setWeatherByDate(safeRead<Record<string, DailyWeather>>(WEATHER_KEY, {}));
     void Promise.all([
       loadSharedSchedule(false, true),
       loadPortfolio(false),
@@ -578,6 +683,7 @@ export function DailyExecutionReport() {
   useEffect(() => window.localStorage.setItem(ROWS_KEY, JSON.stringify(rows)), [rows]);
   useEffect(() => window.localStorage.setItem(AUTHOR_KEY, author), [author]);
   useEffect(() => window.localStorage.setItem(NOTE_KEY, note), [note]);
+  useEffect(() => window.localStorage.setItem(WEATHER_KEY, JSON.stringify(weatherByDate)), [weatherByDate]);
 
   useEffect(() => {
     let scheduleTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1017,7 +1123,6 @@ export function DailyExecutionReport() {
       const freshCorrectiveByOs = buildCorrectiveByOs(freshPortfolio);
       const stateOf = (row: WeeklyPlanningRow) => rowCompletionState(row, freshCompletions, freshCorrectiveByOs);
       const performed = pdfRows.filter((row) => stateOf(row) !== "pendente").length;
-      const pending = pdfRows.filter((row) => stateOf(row) === "pendente").length;
       const rate = pdfRows.length ? Math.round((performed / pdfRows.length) * 100) : 0;
 
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
@@ -1052,30 +1157,67 @@ export function DailyExecutionReport() {
 
       const metricY = 35;
       const metricGap = 3.5;
-      const metricW = (width - margin * 2 - metricGap * 3) / 4;
+      const metricH = 17.5;
+      const metricW = (width - margin * 2 - metricGap * 2) / 3;
       const metrics = [
         ["ATIVIDADES", String(pdfRows.length), [248, 250, 252], [71, 85, 105]],
-        ["REALIZADAS", String(performed), [236, 253, 245], [5, 150, 105]],
-        ["PENDENTES", String(pending), [255, 251, 235], [217, 119, 6]],
         ["EXECUÇÃO", `${rate}%`, [239, 246, 255], [2, 132, 199]],
       ] as const;
       metrics.forEach(([label, value, fill, accent], index) => {
         const x = margin + index * (metricW + metricGap);
         doc.setFillColor(fill[0], fill[1], fill[2]);
         doc.setDrawColor(226, 232, 240);
-        doc.roundedRect(x, metricY, metricW, 14.5, 1.4, 1.4, "FD");
+        doc.roundedRect(x, metricY, metricW, metricH, 1.4, 1.4, "FD");
         doc.setFillColor(accent[0], accent[1], accent[2]);
-        doc.roundedRect(x, metricY, 1.8, 14.5, 0.8, 0.8, "F");
+        doc.roundedRect(x, metricY, 1.8, metricH, 0.8, 0.8, "F");
         doc.setFont("helvetica", "bold");
         doc.setFontSize(6.2);
         doc.setTextColor(100, 116, 139);
         doc.text(label, x + 4.5, metricY + 4.5);
         doc.setTextColor(accent[0], accent[1], accent[2]);
         doc.setFontSize(13);
-        doc.text(value, x + 4.5, metricY + 11.8);
+        doc.text(value, x + 4.5, metricY + 12.7);
       });
 
-      const infoY = 53.5;
+      const climateX = margin + 2 * (metricW + metricGap);
+      const climateRain = weather.rained || isRainyWeather(weather.condition);
+      const climateAccent: [number, number, number] = climateRain
+        ? [2, 132, 199]
+        : weather.condition === "ensolarado"
+          ? [217, 119, 6]
+          : [71, 85, 105];
+      const climateFill: [number, number, number] = climateRain
+        ? [240, 249, 255]
+        : weather.condition === "ensolarado"
+          ? [255, 251, 235]
+          : [248, 250, 252];
+      const climateTemperature = weather.temperature.trim()
+        ? `${weather.temperature.trim().replace(".", ",")} °C`
+        : "Temperatura não informada";
+      doc.setFillColor(climateFill[0], climateFill[1], climateFill[2]);
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(climateX, metricY, metricW, metricH, 1.4, 1.4, "FD");
+      doc.setFillColor(climateAccent[0], climateAccent[1], climateAccent[2]);
+      doc.roundedRect(climateX, metricY, 1.8, metricH, 0.8, 0.8, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6.2);
+      doc.setTextColor(100, 116, 139);
+      doc.text("CLIMA", climateX + 4.5, metricY + 4.4);
+      doc.setTextColor(climateAccent[0], climateAccent[1], climateAccent[2]);
+      doc.setFontSize(9.2);
+      doc.text(weatherConditionLabel(weather.condition), climateX + 4.5, metricY + 9.8, { maxWidth: metricW - 21 });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.9);
+      doc.setTextColor(71, 85, 105);
+      doc.text(
+        `${climateTemperature}${climateRain ? " • Chuva registrada" : ""}`,
+        climateX + 4.5,
+        metricY + 14.4,
+        { maxWidth: metricW - 21 },
+      );
+      drawPdfWeatherIcon(doc, weather.condition, climateX + metricW - 10.2, metricY + 8.6);
+
+      const infoY = 56.5;
       const infoH = 14.5;
       const infoW = width - margin * 2;
       const ownerW = infoW * 0.3;
@@ -1105,7 +1247,7 @@ export function DailyExecutionReport() {
       autoTable(doc, {
         startY: infoY + infoH + 3,
         margin: { left: margin, right: margin, top: 35, bottom: 12 },
-        head: [["Status", "OS", "Tipo", "Equipe", "Local", "Atividade / O que foi feito", "Ativo", "SLA"]],
+        head: [["Status", "OS", "Tipo", "Equipe", "Local", "Atividade / O que foi feito", "Ativo"]],
         body: orderedPdfRows.map((row) => {
           const execution = freshCompletions.get(row.id) ??
             buildExecutionByDayOs(freshCompletions).get(executionDayOsKey(row.date, row.os));
@@ -1121,7 +1263,6 @@ export function DailyExecutionReport() {
             locationLabel(row),
             activityText,
             row.asset || "—",
-            row.sla ? formatDateBr(row.sla) : "—",
           ];
         }),
         theme: "grid",
@@ -1145,13 +1286,12 @@ export function DailyExecutionReport() {
         },
         columnStyles: {
           0: { cellWidth: 22, fontStyle: "bold", halign: "center" },
-          1: { cellWidth: 20, fontStyle: "bold" },
-          2: { cellWidth: 22 },
-          3: { cellWidth: 30 },
-          4: { cellWidth: 50 },
-          5: { cellWidth: 82 },
-          6: { cellWidth: 31 },
-          7: { cellWidth: 20 },
+          1: { cellWidth: 22, fontStyle: "bold" },
+          2: { cellWidth: 24, fontStyle: "bold" },
+          3: { cellWidth: 33, fontStyle: "bold" },
+          4: { cellWidth: 55, fontStyle: "bold" },
+          5: { cellWidth: 88 },
+          6: { cellWidth: 33, fontStyle: "bold" },
         },
         didParseCell: (cell) => {
           if (cell.section !== "body") return;
@@ -1173,6 +1313,23 @@ export function DailyExecutionReport() {
           } else if (cell.column.index === 0) {
             cell.cell.styles.fillColor = [254, 249, 195];
             cell.cell.styles.textColor = [180, 83, 9];
+          }
+
+          if ([1, 2, 3, 4, 6].includes(cell.column.index)) {
+            cell.cell.styles.fontStyle = "bold";
+          }
+
+          if (cell.column.index === 3) {
+            const teamRgb = hexToRgb(equipeHex(row.team));
+            cell.cell.styles.fillColor = tintRgb(teamRgb);
+            cell.cell.styles.textColor = darkenRgb(teamRgb);
+            cell.cell.styles.fontStyle = "bold";
+          }
+
+          if (cell.column.index === 2 && isCorrectiveActivity(row)) {
+            cell.cell.styles.fillColor = [254, 249, 195];
+            cell.cell.styles.textColor = [161, 98, 7];
+            cell.cell.styles.fontStyle = "bold";
           }
         },
         willDrawPage: drawHeader,
@@ -1574,6 +1731,67 @@ export function DailyExecutionReport() {
               <Input className="mt-1 h-9 text-xs" value={author} onChange={(event) => setAuthor(event.target.value)} placeholder="Nome do responsável" />
               <label className="mt-2.5 block text-[10px] font-medium text-muted-foreground">Observação do dia</label>
               <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={2} className="mt-1 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-xs" placeholder="Resumo, ocorrências ou observações" />
+
+              <div className="mt-3 rounded-xl border border-border bg-muted/20 p-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-sky-600">
+                    <WeatherUiIcon condition={weather.condition} className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-[10px] font-semibold">Clima do relatório</p>
+                    <p className="text-[9px] text-muted-foreground">Salvo separadamente para cada dia.</p>
+                  </div>
+                </div>
+
+                <div className="mt-2 grid grid-cols-[minmax(0,1fr)_92px] gap-2">
+                  <div>
+                    <label className="block text-[9px] font-medium text-muted-foreground">Condição</label>
+                    <select
+                      value={weather.condition}
+                      onChange={(event) => {
+                        const condition = event.target.value as WeatherCondition;
+                        updateWeather({
+                          condition,
+                          rained: isRainyWeather(condition) ? true : weather.rained,
+                        });
+                      }}
+                      className="mt-1 h-8 w-full rounded-md border border-input bg-background px-2 text-[10px]"
+                    >
+                      {WEATHER_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-medium text-muted-foreground">Temperatura</label>
+                    <div className="relative mt-1">
+                      <Thermometer className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={weather.temperature}
+                        onChange={(event) => updateWeather({ temperature: event.target.value })}
+                        className="h-8 pl-7 pr-6 text-[10px]"
+                        placeholder="27"
+                      />
+                      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-semibold text-muted-foreground">°C</span>
+                    </div>
+                  </div>
+                </div>
+
+                <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2 text-[10px] font-medium">
+                  <input
+                    type="checkbox"
+                    checked={weather.rained || isRainyWeather(weather.condition)}
+                    disabled={isRainyWeather(weather.condition)}
+                    onChange={(event) => updateWeather({ rained: event.target.checked })}
+                    className="h-3.5 w-3.5 rounded border-input"
+                  />
+                  <CloudRain className="h-3.5 w-3.5 text-sky-600" />
+                  Choveu no período
+                </label>
+              </div>
+
               <Button onClick={() => void generatePdf()} disabled={generating} className="mt-3 w-full gap-2" size="sm">
                 {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Baixar relatório do dia
               </Button>
