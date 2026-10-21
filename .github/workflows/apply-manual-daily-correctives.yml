@@ -27,11 +27,11 @@ jobs:
           p = Path('src/features/relatorio-diario/daily-execution-report.tsx')
           text = p.read_text(encoding='utf-8')
           block = '''      const freshPlanning = buildWeeklyPlanning({
-                  scheduledRows: rows,
-                  correctiveRows: freshPortfolio,
-                  targetCorrectivesPerTeamPerDay: 1,
-                });
-          '''
+        scheduledRows: rows,
+        correctiveRows: freshPortfolio,
+        targetCorrectivesPerTeamPerDay: 1,
+      });
+'''
           text = text.replace(block, '')
           p.write_text(text, encoding='utf-8')
           PY
@@ -65,7 +65,7 @@ jobs:
         run: npm run build
 
       - name: Typecheck
-        run: npm run typecheck
+        run: npx tsc --noEmit
 
       - name: Tests
         run: npm test
