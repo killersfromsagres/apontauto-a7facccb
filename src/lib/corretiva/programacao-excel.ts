@@ -7,6 +7,9 @@ export type ProgramacaoExportRow = OsCacheRow & {
   programacao_dia?: string | null;
   programacao_periodo?: string | null;
   programacao_equipe?: string | null;
+  situacao_exportacao?: "PENDENTE" | "PROGRAMADO" | "BACKORDER" | string | null;
+  peca_solicitada?: boolean | null;
+  esta_na_programacao?: boolean | null;
 };
 
 const argb = (hex: string) => `FF${hex.replace("#", "").toUpperCase()}`;
@@ -39,7 +42,7 @@ const BACKORDER_BRAND_ASSETS = {
     "/__l5e/assets-v1/76b6660e-a690-4ff2-8943-c6f831b5ded6/sherwin-williams.png",
 } as const;
 
-const COLUMN_WIDTHS = [15, 20, 24, 14, 14, 24, 58, 17, 21] as const;
+const COLUMN_WIDTHS = [14, 16, 20, 23, 14, 12, 22, 54, 16, 17, 18, 31] as const;
 
 const TEAM_STYLE: Record<string, { bg: string; fg: string; accent: string }> = {
   ELETRICA: { bg: "#FEF3C7", fg: "#92400E", accent: "#D97706" },
@@ -77,6 +80,8 @@ function isCompletedStatus(status: unknown) {
     "FECHADO",
     "ENCERRADA",
     "ENCERRADO",
+    "CANCELADA",
+    "CANCELADO",
   ].includes(normalize(status));
 }
 
@@ -98,11 +103,31 @@ function teamStyle(team: string | null | undefined) {
   return TEAM_STYLE.OUTROS;
 }
 
-function materialRequested(item: OsCacheRow) {
+function materialRequested(item: ProgramacaoExportRow) {
+  if (typeof item.peca_solicitada === "boolean") return item.peca_solicitada;
   return (
     normalize(item.material_status) === "SOLICITADO" ||
     Boolean(String(item.pecas_solicitadas ?? "").trim())
   );
+}
+
+function isProgrammed(item: ProgramacaoExportRow) {
+  if (typeof item.esta_na_programacao === "boolean") return item.esta_na_programacao;
+  return normalize(item.programacao_status).includes("PROGRAMACAO");
+}
+
+function exportSituation(item: ProgramacaoExportRow) {
+  const explicit = normalize(item.situacao_exportacao);
+  if (explicit) return explicit;
+  return isProgrammed(item) ? "PROGRAMADO" : "PENDENTE";
+}
+
+function programmingDetails(item: ProgramacaoExportRow) {
+  if (!isProgrammed(item)) return "—";
+  const pieces = [item.programacao_dia, item.programacao_periodo]
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean);
+  return pieces.length ? pieces.join(" · ") : "EM PROGRAMAÇÃO";
 }
 
 function formatDate(value: string | null | undefined) {
@@ -192,7 +217,7 @@ function configurePrint(sheet: ExcelJS.Worksheet, lastRow: number, generatedAt: 
       header: 0.08,
       footer: 0.18,
     },
-    printArea: `A1:I${lastRow}`,
+    printArea: `A1:L${lastRow}`,
     printTitlesRow: "2:2",
   };
 
@@ -216,7 +241,7 @@ function applyTitleBand(
   itemCount: number,
   backorderTheme: boolean,
 ) {
-  sheet.mergeCells("A1:I1");
+  sheet.mergeCells("A1:L1");
   const cell = sheet.getCell("A1");
   cell.value = `${reportTitle.toUpperCase()}  ·  ${teamLabel.toUpperCase()}  ·  ${itemCount} OS`;
   cell.fill = {
@@ -274,6 +299,7 @@ function buildOperationsSheet(
 
   const headers = [
     "OS",
+    "Situação",
     "Equipe",
     "Solicitante",
     "Prédio",
@@ -281,7 +307,9 @@ function buildOperationsSheet(
     "Local",
     "Descrição do Serviço",
     "Abertura",
-    "Material",
+    "Peça solicitada?",
+    "Está na programação?",
+    "Programação",
   ];
 
   const headerRow = sheet.getRow(2);
@@ -301,7 +329,7 @@ function buildOperationsSheet(
     };
     cell.alignment = {
       vertical: "middle",
-      horizontal: index === 6 ? "left" : "center",
+      horizontal: index === 7 ? "left" : "center",
       wrapText: true,
     };
     cell.border = {
@@ -320,8 +348,11 @@ function buildOperationsSheet(
     const palette = teamStyle(item.equipe);
     const zebra = itemIndex % 2 === 0 ? C.white : C.surface;
     const material = materialRequested(item);
+    const programmed = isProgrammed(item);
+    const situation = exportSituation(item);
     const values = [
       item.numero_os || "—",
+      situation,
       item.equipe || "Sem equipe",
       item.solicitante || "—",
       item.predio || "—",
@@ -329,7 +360,9 @@ function buildOperationsSheet(
       item.local || "—",
       item.nome_os || "Sem descrição informada",
       formatDate(item.data_criacao),
-      material ? "SOLICITADO" : "NÃO",
+      material ? "SIM" : "NÃO",
+      programmed ? "SIM" : "NÃO",
+      programmingDetails(item),
     ];
 
     values.forEach((value, index) => {
@@ -339,12 +372,12 @@ function buildOperationsSheet(
       cell.border = thinBorder;
       cell.alignment = {
         vertical: index === 6 ? "top" : "middle",
-        horizontal: index === 6 ? "left" : "center",
+        horizontal: index === 7 ? "left" : "center",
         wrapText: true,
       };
       cell.font = {
         name: FONT,
-        size: index === 6 ? 10.5 : 9.5,
+        size: index === 7 ? 10.5 : 9.5,
         color: { argb: C.ink },
       };
     });
@@ -358,7 +391,16 @@ function buildOperationsSheet(
       color: { argb: argb(palette.fg) },
     };
 
-    const teamCell = row.getCell(2);
+    const situationCell = row.getCell(2);
+    const situationPalette = situation === "BACKORDER"
+      ? { bg: C.backorderSoft, fg: C.backorder }
+      : situation === "PROGRAMADO"
+        ? { bg: C.tealSoft, fg: C.teal }
+        : { bg: C.amberSoft, fg: C.amber };
+    situationCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: situationPalette.bg } };
+    situationCell.font = { name: FONT_DISPLAY, size: 9, bold: true, color: { argb: situationPalette.fg } };
+
+    const teamCell = row.getCell(3);
     teamCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(palette.bg) } };
     teamCell.font = {
       name: FONT_DISPLAY,
@@ -367,16 +409,16 @@ function buildOperationsSheet(
       color: { argb: argb(palette.fg) },
     };
 
-    [3, 4, 5, 6].forEach((column) => {
+    [4, 5, 6, 7].forEach((column) => {
       row.getCell(column).font = {
         name: FONT,
         size: 9.5,
-        bold: column === 3,
+        bold: column === 4,
         color: { argb: C.ink },
       };
     });
 
-    const descriptionCell = row.getCell(7);
+    const descriptionCell = row.getCell(8);
     descriptionCell.font = {
       name: FONT,
       size: 10.5,
@@ -390,7 +432,7 @@ function buildOperationsSheet(
       indent: 1,
     };
 
-    const openingCell = row.getCell(8);
+    const openingCell = row.getCell(9);
     openingCell.font = {
       name: FONT,
       size: 9,
@@ -398,7 +440,7 @@ function buildOperationsSheet(
       color: { argb: C.slate },
     };
 
-    const materialCell = row.getCell(9);
+    const materialCell = row.getCell(10);
     materialCell.font = {
       name: FONT_DISPLAY,
       size: 9,
@@ -411,11 +453,28 @@ function buildOperationsSheet(
       fgColor: { argb: material ? C.amberSoft : zebra },
     };
 
+    const programmedCell = row.getCell(11);
+    programmedCell.font = {
+      name: FONT_DISPLAY,
+      size: 9,
+      bold: true,
+      color: { argb: programmed ? C.teal : C.muted },
+    };
+    programmedCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: programmed ? C.tealSoft : zebra },
+    };
+
+    const programmingCell = row.getCell(12);
+    programmingCell.font = { name: FONT, size: 9, bold: programmed, color: { argb: programmed ? C.teal : C.muted } };
+    programmingCell.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
+
     row.height = compactRowHeight(item.nome_os);
   });
 
   if (!items.length) {
-    sheet.mergeCells("A3:I5");
+    sheet.mergeCells("A3:L5");
     const empty = sheet.getCell("A3");
     empty.value = "Nenhum chamado aberto disponível para esta planilha.";
     empty.font = {
@@ -431,7 +490,7 @@ function buildOperationsSheet(
   }
 
   const lastRow = Math.max(2, rowNumber - 1);
-  sheet.autoFilter = "A2:I2";
+  sheet.autoFilter = "A2:L2";
   configurePrint(sheet, lastRow, generatedAt);
   return sheet;
 }
@@ -439,7 +498,7 @@ function buildOperationsSheet(
 export function buildProgramacaoWorkbook(
   osList: ProgramacaoExportRow[],
   equipeFiltro: string,
-  aba: "corretiva" | "preventiva" | "backorder",
+  aba: "corretiva" | "preventiva" | "backorder" | "operacional",
   generatedAt = new Date(),
 ) {
   const openItems = onlyOpenItems(osList);
@@ -449,7 +508,9 @@ export function buildProgramacaoWorkbook(
       ? "Backorders"
       : aba === "preventiva"
         ? "Programação de Backorder"
-        : "Programação de Corretivas";
+        : aba === "operacional"
+          ? "Controle Operacional de Corretivas"
+          : "Programação de Corretivas";
 
   setWorkbookMetadata(workbook, title, generatedAt);
 
@@ -538,7 +599,7 @@ async function applyBackorderBranding(workbook: ExcelJS.Workbook) {
 export async function generateProgramacaoExcel(
   osList: ProgramacaoExportRow[],
   equipeFiltro: string,
-  aba: "corretiva" | "preventiva" | "backorder",
+  aba: "corretiva" | "preventiva" | "backorder" | "operacional",
 ) {
   const generatedAt = new Date();
   const openItems = onlyOpenItems(osList);
@@ -560,7 +621,7 @@ export async function generateProgramacaoExcel(
     new Blob([buffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     }),
-    `${aba === "backorder" ? "backorders" : `programacao_${aba}`}_${slug || "todas_equipes"}_${generatedAt.toISOString().slice(0, 10)}.xlsx`,
+    `${aba === "backorder" ? "backorders" : aba === "operacional" ? "corretivas_pendentes_programadas_backorder" : `programacao_${aba}`}_${slug || "todas_equipes"}_${generatedAt.toISOString().slice(0, 10)}.xlsx`,
   );
 
   return {

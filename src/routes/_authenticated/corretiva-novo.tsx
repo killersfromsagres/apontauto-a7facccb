@@ -74,6 +74,11 @@ function isCompletedStatus(status: unknown) {
   return normalized === "concluida" || normalized === "concluido";
 }
 
+function isClosedExportStatus(status: unknown) {
+  const normalized = String(status ?? "").trim().toLowerCase();
+  return isCompletedStatus(normalized) || normalized === "cancelada" || normalized === "cancelado";
+}
+
 function exportKey(os: any) {
   return String(os?.id || os?.numero_os || "")
     .trim()
@@ -155,6 +160,27 @@ function formatReservationPeriod(reservation: CorrectiveProgramReservation) {
   return `${start} a ${end}`;
 }
 
+async function loadRequestedPartOsIds(rows: any[]) {
+  const ids = [...new Set(rows.map((row) => String(row?.id ?? "").trim()).filter(Boolean))];
+  const requested = new Set<string>();
+  const chunkSize = 300;
+
+  for (let index = 0; index < ids.length; index += chunkSize) {
+    const chunk = ids.slice(index, index + chunkSize);
+    const { data, error } = await supabase
+      .from("corretiva_pecas")
+      .select("os_id")
+      .in("os_id", chunk);
+    if (error) throw error;
+    (data ?? []).forEach((piece: any) => {
+      const osId = String(piece?.os_id ?? "").trim();
+      if (osId) requested.add(osId);
+    });
+  }
+
+  return requested;
+}
+
 function normalizeSearchValue(value: unknown) {
   return String(value ?? "")
     .normalize("NFD")
@@ -208,6 +234,7 @@ function CorretivaNovoPage() {
   const [onlyReprogramming, setOnlyReprogramming] = useState(false);
   const [onlyCompleted, setOnlyCompleted] = useState(false);
   const [reprogrammingId, setReprogrammingId] = useState<string | null>(null);
+  const [isExportingOperational, setIsExportingOperational] = useState(false);
 
   const applyLoadedList = async (list: any[], cache = false) => {
     setOsList(list);
@@ -290,7 +317,7 @@ function CorretivaNovoPage() {
     () =>
       exportBaseRows.filter(
         (os) =>
-          !isCompletedStatus(os.status) &&
+          !isClosedExportStatus(os.status) &&
           !findProgramReservation(os, programReservations),
       ),
     [exportBaseRows, programReservations],
@@ -377,12 +404,49 @@ function CorretivaNovoPage() {
       exportBaseRows.filter((os) => {
         const info =
           backorderMap.get(String(os.id ?? os.numero_os ?? "")) ?? getBackorderInfo(os);
-        return info.isBackorder && !isCompletedStatus(os.status);
+        return info.isBackorder && !isClosedExportStatus(os.status);
       }),
     [exportBaseRows, backorderMap],
   );
 
   const backorderVisibleCount = backorderExportRows.length;
+
+  const operationalExportRows = useMemo(
+    () => exportBaseRows.filter((os) => !isClosedExportStatus(os.status)),
+    [exportBaseRows],
+  );
+
+  const enrichExportRows = async (rows: any[]) => {
+    const requestedPartOsIds = await loadRequestedPartOsIds(rows);
+
+    return rows.map((os) => {
+      const reservation = findProgramReservation(os, programReservations);
+      const info =
+        backorderMap.get(String(os.id ?? os.numero_os ?? "")) ?? getBackorderInfo(os);
+      const programmed = Boolean(reservation);
+      const hasPieceRequest =
+        requestedPartOsIds.has(String(os.id ?? "")) ||
+        String(os.material_status ?? "").trim().toLowerCase() === "solicitado" ||
+        Boolean(String(os.pecas_solicitadas ?? "").trim());
+
+      return {
+        ...os,
+        situacao_exportacao: info.isBackorder
+          ? "BACKORDER"
+          : programmed
+            ? "PROGRAMADO"
+            : "PENDENTE",
+        peca_solicitada: hasPieceRequest,
+        esta_na_programacao: programmed,
+        programacao_status: programmed ? "EM PROGRAMAÇÃO" : os.programacao_status,
+        programacao_dia: reservation
+          ? reservationDayLabel(reservation.dayIndex) || "Semana programada"
+          : null,
+        programacao_periodo: reservation ? formatReservationPeriod(reservation) : null,
+        programacao_equipe: reservation?.equipe ?? os.programacao_equipe ?? null,
+      };
+    });
+  };
 
   const selectedIndex = selectedOs
     ? filtered.findIndex((item) => item.id === selectedOs.id)
@@ -557,6 +621,37 @@ function CorretivaNovoPage() {
     }
   };
 
+  const exportOperationalExcel = async () => {
+    if (!operationalExportRows.length || isExportingOperational) {
+      if (!operationalExportRows.length) {
+        toast.error("Não há chamados pendentes, programados ou Backorders para exportar.");
+      }
+      return;
+    }
+
+    setIsExportingOperational(true);
+    const loadingToast = toast.loading("Conferindo peças e programação antes de gerar o Excel...");
+    try {
+      const rows = await enrichExportRows(operationalExportRows);
+      const pending = rows.filter((row) => row.situacao_exportacao === "PENDENTE").length;
+      const programmed = rows.filter((row) => row.situacao_exportacao === "PROGRAMADO").length;
+      const backorders = rows.filter((row) => row.situacao_exportacao === "BACKORDER").length;
+      await generateProgramacaoExcel(rows, "Todas as equipes", "operacional");
+      toast.success(
+        `Excel operacional gerado: ${pending} pendente(s), ${programmed} programado(s) e ${backorders} Backorder(s).`,
+        { id: loadingToast },
+      );
+    } catch (error: any) {
+      console.error("[CorretivaNovo] Erro no Excel operacional:", error);
+      toast.error(
+        error?.message || "Não foi possível conferir peças e gerar a planilha operacional.",
+        { id: loadingToast },
+      );
+    } finally {
+      setIsExportingOperational(false);
+    }
+  };
+
   const exportAvailableExcel = async () => {
     if (!availableExportRows.length) {
       return toast.error(
@@ -565,7 +660,7 @@ function CorretivaNovoPage() {
     }
     try {
       await generateProgramacaoExcel(
-        availableExportRows,
+        await enrichExportRows(availableExportRows),
         "Todas as equipes · Disponíveis",
         "corretiva",
       );
@@ -584,7 +679,7 @@ function CorretivaNovoPage() {
     }
     try {
       await generateProgramacaoExcel(
-        backorderExportRows,
+        await enrichExportRows(backorderExportRows),
         "Todas as equipes",
         "backorder",
       );
@@ -603,7 +698,7 @@ function CorretivaNovoPage() {
     }
     try {
       await generateProgramacaoExcel(
-        programmedExportRows,
+        await enrichExportRows(programmedExportRows),
         "EM PROGRAMAÇÃO · Controle de campo",
         "corretiva",
       );
@@ -719,9 +814,24 @@ function CorretivaNovoPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[290px]">
+              <DropdownMenuItem
+                onClick={exportOperationalExcel}
+                disabled={!operationalExportRows.length || isExportingOperational}
+                className="gap-2"
+              >
+                {isExportingOperational ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
+                ) : (
+                  <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+                )}
+                <span className="flex-1 font-semibold">Excel completo · Pendentes + Programados + Backorders</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {operationalExportRows.length}
+                </span>
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={exportAvailableExcel} className="gap-2">
                 <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                <span className="flex-1">Baixar todos disponíveis</span>
+                <span className="flex-1">Baixar somente pendentes</span>
                 <span className="text-[10px] text-muted-foreground">
                   {availableExportRows.length}
                 </span>
