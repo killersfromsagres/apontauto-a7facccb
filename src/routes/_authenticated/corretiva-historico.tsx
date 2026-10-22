@@ -189,6 +189,7 @@ function HistoricoPage() {
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
   const [pendingOsId, setPendingOsId] = useState<string | null>(null);
   const [reopeningOsId, setReopeningOsId] = useState<string | null>(null);
+  const [returningDailyKey, setReturningDailyKey] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const queryClient = useQueryClient();
   const { isAdmin } = useIsAdmin();
@@ -434,6 +435,42 @@ function HistoricoPage() {
     [isAdmin, open?.id, queryClient, reopeningOsId],
   );
 
+  const handleReturnDailyToProgramming = useCallback(
+    async (os: OsRow, record: DailyReportExecution) => {
+      if (returningDailyKey || isCanonicalHistoryStatus(os.status)) return;
+      const confirmed = window.confirm(
+        `Voltar a OS ${os.numero_os} para programação? A conclusão lançada no Relatório Diário de ${record.atividade_data.split("-").reverse().join("/")} será removida. O status atual do Corretiva Novo não será alterado.`,
+      );
+      if (!confirmed) return;
+
+      setReturningDailyKey(record.item_key);
+      try {
+        const { data, error } = await (supabase as any)
+          .from("relatorio_diario_execucoes")
+          .delete()
+          .eq("item_key", record.item_key)
+          .eq("os", record.os)
+          .select("item_key")
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error("Este registro do Relatório Diário não existe mais. Atualize o histórico e tente novamente.");
+
+        if (open?.id === os.id) setOpen(null);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["corretiva-historico-relatorio-diario"] }),
+          queryClient.invalidateQueries({ queryKey: ["corretiva-historico"] }),
+        ]);
+        toast.success(`OS ${os.numero_os} voltou para programação. A conclusão do Relatório Diário foi removida sem alterar o Corretiva Novo.`);
+      } catch (error: any) {
+        console.error("[CorretivaHistorico] Erro ao devolver OS para programação:", error);
+        toast.error(error?.message || "Não foi possível devolver o chamado para programação.");
+      } finally {
+        setReturningDailyKey(null);
+      }
+    },
+    [open?.id, queryClient, returningDailyKey],
+  );
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return rows.filter((os) => {
@@ -623,6 +660,7 @@ function HistoricoPage() {
                 const verifiedBy = registro ? verificacaoAutorLabel(registro) : null;
                 const saving = pendingOsId === os.id;
                 const reopening = reopeningOsId === os.id;
+                const returningToProgramming = returningDailyKey === dailyRecord?.item_key;
                 const StatusIcon = cancelada ? XCircle : CheckCircle2;
                 const teamStyle = equipeStyles(os.equipe);
                 const selected = open?.id === os.id;
@@ -738,6 +776,20 @@ function HistoricoPage() {
                           >
                             <FileSpreadsheet className="h-3.5 w-3.5" />
                             Ver conclusão do relatório
+                          </Button>
+                        )}
+                        {dailyOnly && dailyRecord && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            title="Remover a conclusão do Relatório Diário e deixar o chamado disponível novamente para programação"
+                            onClick={() => void handleReturnDailyToProgramming(os, dailyRecord)}
+                            disabled={Boolean(returningDailyKey)}
+                            className="h-9 gap-1.5 rounded-lg border-amber-500/30 bg-amber-500/10 px-2.5 text-[10px] font-semibold text-amber-700 hover:bg-amber-500/15 dark:text-amber-300"
+                          >
+                            {returningToProgramming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
+                            Voltar para programação
                           </Button>
                         )}
                         {os.status === "concluida" && isAdmin && (
