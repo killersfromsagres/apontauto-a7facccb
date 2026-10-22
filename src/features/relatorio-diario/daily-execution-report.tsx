@@ -75,6 +75,7 @@ type CompletionRecord = {
   atividade: string;
   equipe: string | null;
   descricao: string | null;
+  observacao?: string | null;
   concluida_em: string;
   concluida_por?: string | null;
 };
@@ -398,7 +399,7 @@ function buildDailyRows({
         area: inferMaintenanceArea(team, "Relatório Diário", record.descricao || ""),
         asset: "",
         equipment: "",
-        observation: "",
+        observation: record.observacao || "",
         sourceFile: "Relatório Diário",
         requester: "",
         sourceStatus: "",
@@ -533,6 +534,7 @@ export function DailyExecutionReport() {
   const [correctiveTeamFilter, setCorrectiveTeamFilter] = useState("todos");
   const [sourceStatusFilter, setSourceStatusFilter] = useState("todos");
   const [workDrafts, setWorkDrafts] = useState<Record<string, string>>({});
+  const [observationDrafts, setObservationDrafts] = useState<Record<string, string>>({});
   const [author, setAuthor] = useState("");
   const [note, setNote] = useState("");
   const [weatherByDate, setWeatherByDate] = useState<Record<string, DailyWeather>>({});
@@ -542,6 +544,7 @@ export function DailyExecutionReport() {
   const [importing, setImporting] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [savingPreventives, setSavingPreventives] = useState<Set<string>>(() => new Set());
+  const [savingObservations, setSavingObservations] = useState<Set<string>>(() => new Set());
   const [savingAllPreventives, setSavingAllPreventives] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -615,7 +618,7 @@ export function DailyExecutionReport() {
     try {
       const { data, error } = await (supabase as any)
         .from("relatorio_diario_execucoes")
-        .select("item_key,atividade_data,os,atividade,equipe,descricao,concluida_em,concluida_por")
+        .select("item_key,atividade_data,os,atividade,equipe,descricao,observacao,concluida_em,concluida_por")
         .order("atividade_data", { ascending: false })
         .limit(10000);
       if (error) throw error;
@@ -887,9 +890,16 @@ export function DailyExecutionReport() {
     }
   }
 
-  async function upsertExecution(row: WeeklyPlanningRow, description: string | null) {
+  async function upsertExecution(
+    row: WeeklyPlanningRow,
+    description: string | null,
+    observation?: string | null,
+  ) {
     const current = completions.get(row.id);
     const completedAt = current?.concluida_em || new Date().toISOString();
+    const normalizedObservation = observation === undefined
+      ? current?.observacao ?? null
+      : observation?.trim() || null;
     const payload = {
       item_key: row.id,
       atividade_data: row.date,
@@ -897,13 +907,14 @@ export function DailyExecutionReport() {
       atividade: row.activity,
       equipe: row.team || null,
       descricao: description,
+      observacao: normalizedObservation,
       concluida_em: completedAt,
       updated_at: new Date().toISOString(),
     };
     const { data, error } = await (supabase as any)
       .from("relatorio_diario_execucoes")
       .upsert(payload, { onConflict: "item_key" })
-      .select("item_key,atividade_data,os,atividade,equipe,descricao,concluida_em,concluida_por")
+      .select("item_key,atividade_data,os,atividade,equipe,descricao,observacao,concluida_em,concluida_por")
       .single();
     if (error) throw error;
     setCompletions((map) => {
@@ -927,6 +938,30 @@ export function DailyExecutionReport() {
     });
   }
 
+  const observationDraftValue = (row: WeeklyPlanningRow) =>
+    observationDrafts[row.id] ?? completions.get(row.id)?.observacao ?? row.observation ?? "";
+
+  async function saveCompletedObservation(row: WeeklyPlanningRow) {
+    const current = completions.get(row.id);
+    if (!current || savingObservations.has(row.id)) return;
+    const nextObservation = observationDraftValue(row).trim();
+    const currentObservation = String(current.observacao ?? "").trim();
+    if (nextObservation === currentObservation) return;
+
+    setSavingObservations((saving) => new Set(saving).add(row.id));
+    try {
+      await upsertExecution(row, current.descricao, nextObservation || null);
+    } catch (error: any) {
+      toast.error(error?.message || "Não foi possível salvar a observação.");
+    } finally {
+      setSavingObservations((saving) => {
+        const next = new Set(saving);
+        next.delete(row.id);
+        return next;
+      });
+    }
+  }
+
   async function togglePreventive(row: WeeklyPlanningRow) {
     if (savingAllPreventives || savingPreventives.has(row.id)) return;
 
@@ -939,6 +974,7 @@ export function DailyExecutionReport() {
       atividade: row.activity,
       equipe: row.team || null,
       descricao: row.name || row.equipment || null,
+      observacao: observationDraftValue(row).trim() || previous?.observacao || null,
       concluida_em: previous?.concluida_em || new Date().toISOString(),
       concluida_por: previous?.concluida_por ?? null,
     };
@@ -959,7 +995,7 @@ export function DailyExecutionReport() {
 
     try {
       if (completing) {
-        await upsertExecution(row, optimistic.descricao);
+        await upsertExecution(row, optimistic.descricao, optimistic.observacao ?? null);
         toast.success(`Preventiva ${row.os} marcada como concluída.`);
       } else {
         await deleteExecution(row);
@@ -999,6 +1035,7 @@ export function DailyExecutionReport() {
       atividade: row.activity,
       equipe: row.team || null,
       descricao: row.name || row.equipment || null,
+      observacao: observationDraftValue(row).trim() || null,
       concluida_em: now,
       concluida_por: null,
     }));
@@ -1020,7 +1057,7 @@ export function DailyExecutionReport() {
       const { data, error } = await (supabase as any)
         .from("relatorio_diario_execucoes")
         .upsert(payload, { onConflict: "item_key" })
-        .select("item_key,atividade_data,os,atividade,equipe,descricao,concluida_em,concluida_por");
+        .select("item_key,atividade_data,os,atividade,equipe,descricao,observacao,concluida_em,concluida_por");
       if (error) throw error;
 
       setCompletions((current) => {
@@ -1065,6 +1102,7 @@ export function DailyExecutionReport() {
       String(row.name ?? "").trim() ||
       String(row.equipment ?? "").trim() ||
       "Concluída via Relatório Diário";
+    const observation = observationDraftValue(row).trim() || null;
     const optimistic: CompletionRecord = {
       item_key: row.id,
       atividade_data: row.date,
@@ -1072,6 +1110,7 @@ export function DailyExecutionReport() {
       atividade: "Corretiva",
       equipe: row.team || null,
       descricao: description,
+      observacao: observation,
       concluida_em: new Date().toISOString(),
       concluida_por: null,
     };
@@ -1087,7 +1126,7 @@ export function DailyExecutionReport() {
     });
 
     try {
-      await upsertExecution(row, description);
+      await upsertExecution(row, description, observation);
       toast.success(
         `OS ${row.os} adicionada e concluída via Relatório Diário. Ela já aparece no Corretiva Histórico com essa origem.`,
       );
@@ -1113,12 +1152,13 @@ export function DailyExecutionReport() {
     if (!current) return;
     const description = draftValue(row).trim();
     if (!description) return toast.warning("O campo “O que foi feito” não pode ficar vazio.");
+    const observation = observationDraftValue(row).trim() || null;
     setSavingKey(row.id);
     try {
-      await upsertExecution(row, description);
-      toast.success(`Descrição da OS ${row.os} atualizada.`);
+      await upsertExecution(row, description, observation);
+      toast.success(`OS ${row.os} atualizada.`);
     } catch (error: any) {
-      toast.error(error?.message || "Não foi possível salvar a descrição.");
+      toast.error(error?.message || "Não foi possível salvar a descrição e a observação.");
     } finally {
       setSavingKey(null);
     }
@@ -1296,7 +1336,7 @@ export function DailyExecutionReport() {
       autoTable(doc, {
         startY: infoY + infoH + 3,
         margin: { left: margin, right: margin, top: 35, bottom: 12 },
-        head: [["Status", "OS", "Tipo", "Equipe", "Local", "Atividade / O que foi feito", "Ativo"]],
+        head: [["Status", "OS", "Tipo", "Equipe", "Local", "Atividade / O que foi feito", "Observação"]],
         body: orderedPdfRows.map((row) => {
           const execution = freshCompletions.get(row.id) ??
             buildExecutionByDayOs(freshCompletions).get(executionDayOsKey(row.date, row.os));
@@ -1304,6 +1344,7 @@ export function DailyExecutionReport() {
           const activityText = isCorrectiveActivity(row) && execution?.descricao
             ? `Executado: ${execution.descricao}${normalizeDailyFilterText(execution.descricao) !== normalizeDailyFilterText(original) ? `\nChamado: ${original}` : ""}`
             : original;
+          const executionObservation = String(execution?.observacao ?? row.observation ?? "").trim();
           return [
             stateOf(row) === "concluida" ? "CONCLUÍDO" : stateOf(row) === "pendente_verificacao" ? "A VERIFICAR" : "PENDENTE",
             row.os,
@@ -1311,7 +1352,7 @@ export function DailyExecutionReport() {
             row.team || "—",
             locationLabel(row),
             activityText,
-            row.asset || "—",
+            executionObservation || "—",
           ];
         }),
         theme: "grid",
@@ -1335,12 +1376,12 @@ export function DailyExecutionReport() {
         },
         columnStyles: {
           0: { cellWidth: 22, fontStyle: "bold", halign: "center" },
-          1: { cellWidth: 22, fontStyle: "bold" },
-          2: { cellWidth: 24, fontStyle: "bold" },
-          3: { cellWidth: 33, fontStyle: "bold" },
-          4: { cellWidth: 55, fontStyle: "bold" },
-          5: { cellWidth: 88 },
-          6: { cellWidth: 33, fontStyle: "bold" },
+          1: { cellWidth: 20, fontStyle: "bold" },
+          2: { cellWidth: 22, fontStyle: "bold" },
+          3: { cellWidth: 30, fontStyle: "bold" },
+          4: { cellWidth: 45, fontStyle: "bold" },
+          5: { cellWidth: 80 },
+          6: { cellWidth: 58 },
         },
         didParseCell: (cell) => {
           if (cell.section !== "body") return;
@@ -1364,7 +1405,7 @@ export function DailyExecutionReport() {
             cell.cell.styles.textColor = [180, 83, 9];
           }
 
-          if ([1, 2, 3, 4, 6].includes(cell.column.index)) {
+          if ([1, 2, 3, 4].includes(cell.column.index)) {
             cell.cell.styles.fontStyle = "bold";
           }
 
@@ -1566,11 +1607,12 @@ export function DailyExecutionReport() {
                   {fixedPreventives.map((row, index) => {
                     const completed = completions.has(row.id);
                     const savingPreventive = savingPreventives.has(row.id);
+                    const savingObservation = savingObservations.has(row.id);
                     return (
                       <div
                         key={row.id}
                         className={cn(
-                          "grid gap-2 border-l-[3px] px-3 py-2 lg:grid-cols-[42px_90px_145px_minmax(0,1fr)_155px] lg:items-center",
+                          "grid gap-2 border-l-[3px] px-3 py-2 lg:grid-cols-[42px_90px_145px_minmax(0,1fr)_minmax(170px,230px)_155px] lg:items-center",
                           completed && "bg-emerald-500/[0.06]",
                         )}
                         style={{ borderLeftColor: completed ? "#10b981" : equipeHex(row.team) }}
@@ -1584,6 +1626,22 @@ export function DailyExecutionReport() {
                         <div className="min-w-0">
                           <p className="truncate text-[11px] font-medium">{row.name || row.equipment || "Preventiva sem descrição"}</p>
                           <p className="mt-0.5 truncate text-[9px] text-muted-foreground">{locationLabel(row)}</p>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <label className="text-[8px] font-semibold text-muted-foreground">Observação</label>
+                            {savingObservation && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                          </div>
+                          <textarea
+                            value={observationDraftValue(row)}
+                            onChange={(event) => setObservationDrafts((current) => ({ ...current, [row.id]: event.target.value }))}
+                            onBlur={() => void saveCompletedObservation(row)}
+                            rows={1}
+                            maxLength={240}
+                            disabled={savingObservation}
+                            className="mt-0.5 h-7 w-full resize-none rounded-md border border-input bg-background px-2 py-1 text-[9px] leading-4"
+                            placeholder="Ex.: Concluída; aguardando peça."
+                          />
                         </div>
                         <Button
                           size="sm"
@@ -1677,6 +1735,11 @@ export function DailyExecutionReport() {
                     const text = record
                       ? workDrafts[effectiveRow.id] ?? record.descricao ?? ""
                       : historicalRecord?.descricao ?? workDrafts[effectiveRow.id] ?? "";
+                    const observationText = observationDrafts[effectiveRow.id]
+                      ?? record?.observacao
+                      ?? historicalRecord?.observacao
+                      ?? effectiveRow.observation
+                      ?? "";
                     const teamColor = equipeHex(effectiveRow.team);
 
                     return (
@@ -1685,7 +1748,7 @@ export function DailyExecutionReport() {
                         className={cn("border-l-[3px] px-3 py-2", (record || historicalRecord) && "bg-emerald-500/[0.035]")}
                         style={{ borderLeftColor: record || historicalRecord ? "#10b981" : teamColor }}
                       >
-                        <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_335px_168px] xl:items-center">
+                        <div className="grid gap-2 xl:grid-cols-[minmax(0,1fr)_280px_240px_168px] xl:items-center">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-1.5">
                               <span className="font-mono text-[11px] font-bold">OS {effectiveRow.os}</span>
@@ -1737,6 +1800,22 @@ export function DailyExecutionReport() {
                                 historicalRecord ? "cursor-default bg-emerald-500/[0.04] text-muted-foreground" : "bg-background",
                               )}
                               placeholder={String(source.observacao_conclusao ?? "").trim() ? `Sugestão: ${String(source.observacao_conclusao).trim()}` : "Serviço executado (opcional)"}
+                            />
+                          </div>
+
+                          <div className="min-w-0">
+                            <label className="text-[9px] font-semibold text-muted-foreground">Observação</label>
+                            <textarea
+                              value={observationText}
+                              onChange={(event) => setObservationDrafts((current) => ({ ...current, [effectiveRow.id]: event.target.value }))}
+                              rows={1}
+                              maxLength={240}
+                              readOnly={Boolean(historicalRecord)}
+                              className={cn(
+                                "mt-1 h-8 w-full resize-none rounded-md border border-input px-2 py-1.5 text-[10px] leading-4",
+                                historicalRecord ? "cursor-default bg-emerald-500/[0.04] text-muted-foreground" : "bg-background",
+                              )}
+                              placeholder="Ex.: Concluída; aguardando peça."
                             />
                           </div>
 
