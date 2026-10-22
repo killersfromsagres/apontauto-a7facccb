@@ -43,7 +43,7 @@ jobs:
         run: npm install --global npm@11.6.2 --no-audit --no-fund
 
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
 
       - name: Build production
         run: npm run build
@@ -60,6 +60,7 @@ jobs:
           set -euo pipefail
           git config user.name "OpenAI automation"
           git config user.email "actions@users.noreply.github.com"
+          git restore package-lock.json || true
           git add src/lib/corretiva/programacao-excel.ts src/routes/_authenticated/corretiva-novo.tsx src/lib/corretiva/programacao-excel-operacional.test.ts
           git commit -m "feat: melhorar exportacao operacional de corretivas"
           echo "FUNCTIONAL_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
