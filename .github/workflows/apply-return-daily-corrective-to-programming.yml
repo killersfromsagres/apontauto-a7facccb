@@ -1,0 +1,64 @@
+name: Apply return daily corrective to programming
+
+on:
+  push:
+    branches:
+      - Apont-Auto
+    paths:
+      - .github/workflows/apply-return-daily-corrective-to-programming.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-validate-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Apont-Auto
+        uses: actions/checkout@v4
+        with:
+          ref: Apont-Auto
+
+      - name: Apply requested behavior
+        run: python .github/patch_return_daily_corrective_to_programming.py
+
+      - name: Verify source rule
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('src/routes/_authenticated/corretiva-historico.tsx').read_text(encoding='utf-8')
+          assert 'handleReturnDailyToProgramming' in text
+          assert 'Voltar para programação' in text
+          assert '.from("relatorio_diario_execucoes")' in text
+          assert '.delete()' in text
+          assert 'O status atual do Corretiva Novo não será alterado.' in text
+          assert 'dailyOnly && dailyRecord' in text
+          print('Return-to-programming behavior verified in source.')
+          PY
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Build production
+        run: npm run build
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Related tests
+        run: npx vitest run src/features/relatorio-diario/lib/daily-maintenance.test.ts
+
+      - name: Commit implementation and clean temporary files
+        run: |
+          git config user.name "OpenAI automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/routes/_authenticated/corretiva-historico.tsx
+          git rm .github/patch_return_daily_corrective_to_programming.py .github/workflows/apply-return-daily-corrective-to-programming.yml
+          git commit -m "Adiciona retorno de corretiva para programacao"
+          git push origin HEAD:Apont-Auto
