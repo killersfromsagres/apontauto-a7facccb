@@ -16,6 +16,7 @@ import {
   Search,
   Sun,
   Thermometer,
+  Trash2,
   Upload,
   UserRound,
   Wrench,
@@ -542,6 +543,7 @@ export function DailyExecutionReport() {
   const [loadingExecutions, setLoadingExecutions] = useState(false);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [clearingPreventives, setClearingPreventives] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [savingPreventives, setSavingPreventives] = useState<Set<string>>(() => new Set());
   const [savingObservations, setSavingObservations] = useState<Set<string>>(() => new Set());
@@ -867,7 +869,10 @@ export function DailyExecutionReport() {
     setImporting(true);
     try {
       const results = await Promise.all(accepted.map(parseScheduleFile));
-      const imported = results.flatMap((result) => result.rows);
+      // Deduplica a mesma OS/equipe/dia antes do RPC. O PostgreSQL não aceita
+      // que o mesmo item_key seja atualizado duas vezes na mesma operação em lote.
+      const parsedRows = results.flatMap((result) => result.rows);
+      const imported = stableMergeSchedules([], parsedRows);
       if (!imported.length) throw new Error("Nenhuma OS programada foi encontrada nas planilhas.");
       const replaceCurrent = shouldReplaceSchedule(rows, imported);
       const nextRows = replaceCurrent ? stableMergeSchedules([], imported) : stableMergeSchedules(rows, imported);
@@ -882,11 +887,65 @@ export function DailyExecutionReport() {
       if (importedDates.length) setSelectedDate(importedDates[0]);
       toast.success(`${imported.length} atividade(s) carregadas mantendo a ordem das planilhas.`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Falha ao importar as planilhas.");
+      console.error("[RelatorioDiario] Falha ao importar planilhas:", error);
+      const issue = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown } | null;
+      const details = [issue?.message, issue?.details, issue?.hint]
+        .filter((value) => typeof value === "string" && value.trim())
+        .map(String);
+      const message = details.length
+        ? `Falha ao importar as planilhas: ${details.join(" • ")}`
+        : "Falha ao importar as planilhas. Verifique o formato do arquivo e tente novamente.";
+      toast.error(message);
     } finally {
       setImporting(false);
       setDragging(false);
       if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  async function clearPreventiveSchedule() {
+    const preventiveRows = rows.filter(isPreventiveActivity);
+    if (!preventiveRows.length || clearingPreventives || importing || savingAllPreventives || savingPreventives.size > 0) return;
+
+    const confirmed = window.confirm(
+      `Remover ${preventiveRows.length} preventiva(s) da programação compartilhada? As corretivas programadas e o histórico de execuções serão preservados.`,
+    );
+    if (!confirmed) return;
+
+    const itemKeys = Array.from(new Set(
+      preventiveRows.map((row) => String(row.id ?? "").trim()).filter(Boolean),
+    ));
+    if (!itemKeys.length) {
+      toast.error("Não foi possível identificar as preventivas para limpar.");
+      return;
+    }
+
+    setClearingPreventives(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("relatorio_diario_programacao_rows")
+        .delete()
+        .in("item_key", itemKeys);
+      if (error) throw error;
+
+      const nextRows = rows.filter((row) => !isPreventiveActivity(row));
+      setRows(nextRows);
+      window.localStorage.setItem(ROWS_KEY, JSON.stringify(nextRows));
+      await loadSharedSchedule(false, false);
+      toast.success(`${itemKeys.length} preventiva(s) removida(s) da programação. O histórico de execuções foi preservado.`);
+    } catch (error) {
+      console.error("[RelatorioDiario] Falha ao limpar preventivas:", error);
+      const issue = error as { message?: unknown; details?: unknown; hint?: unknown } | null;
+      const details = [issue?.message, issue?.details, issue?.hint]
+        .filter((value) => typeof value === "string" && value.trim())
+        .map(String);
+      toast.error(
+        details.length
+          ? `Não foi possível limpar as preventivas: ${details.join(" • ")}`
+          : "Não foi possível limpar as preventivas. Nenhuma outra atividade foi alterada.",
+      );
+    } finally {
+      setClearingPreventives(false);
     }
   }
 
@@ -1556,6 +1615,22 @@ export function DailyExecutionReport() {
                 <span className="mt-0.5 block text-[10px] text-muted-foreground">A ordem de leitura das planilhas é mantida.</span>
               </span>
             </button>
+            <div className="mt-2 flex justify-end">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => void clearPreventiveSchedule()}
+                disabled={!rows.some(isPreventiveActivity) || clearingPreventives || importing || savingAllPreventives || savingPreventives.size > 0}
+                className="h-8 gap-1.5 border-destructive/25 text-[10px] text-destructive hover:bg-destructive/10"
+              >
+                {clearingPreventives ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                {clearingPreventives ? "Limpando preventivas..." : "Limpar preventivas"}
+              </Button>
+            </div>
+            <p className="mt-1 text-[9px] leading-4 text-muted-foreground">
+              Remove somente as preventivas da programação; corretivas e histórico de execuções são mantidos.
+            </p>
           </div>
         </div>
       </section>
