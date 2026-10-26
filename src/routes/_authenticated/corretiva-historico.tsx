@@ -724,6 +724,16 @@ function HistoricoPage() {
                             >
                               {dailyOnly ? `${sourceStatusLabel(os.status)} no Corretiva Novo` : cancelada ? "Cancelada" : "Finalizada"}
                             </Badge>
+                            {os.status === "concluida" && (
+                              <Badge variant="outline" className="rounded-lg border-emerald-500/30 bg-emerald-500/10 text-[9px] font-bold text-emerald-700 dark:text-emerald-300">
+                                <CheckCircle2 className="mr-1 h-3 w-3" /> Concluída via Corretiva Novo
+                              </Badge>
+                            )}
+                            {os.status === "cancelada" && (
+                              <Badge variant="outline" className="rounded-lg border-destructive/25 bg-destructive/8 text-[9px] font-bold text-destructive">
+                                <XCircle className="mr-1 h-3 w-3" /> Cancelada via Corretiva Novo
+                              </Badge>
+                            )}
                             {dailyRecord && (
                               <Badge variant="outline" className="rounded-lg border-sky-500/30 bg-sky-500/10 text-[9px] font-bold text-sky-700 dark:text-sky-300">
                                 <FileSpreadsheet className="mr-1 h-3 w-3" /> Concluída via Relatório Diário
@@ -963,6 +973,16 @@ function OsDetail({
                   {statusIsCancelled ? <XCircle className="mr-1 h-3 w-3" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}
                   {dailyOnly ? "Concluído no Relatório Diário" : statusIsCancelled ? "Cancelada" : "Finalizada"}
                 </Badge>
+                {canonicalCompleted && (
+                  <Badge variant="outline" className="rounded-lg border-emerald-500/30 bg-emerald-500/10 text-[9px] font-bold text-emerald-700 dark:text-emerald-300">
+                    <CheckCircle2 className="mr-1 h-3 w-3" /> Concluído via Corretiva Novo
+                  </Badge>
+                )}
+                {statusIsCancelled && (
+                  <Badge variant="outline" className="rounded-lg border-destructive/25 bg-destructive/8 text-[9px] font-bold text-destructive">
+                    <XCircle className="mr-1 h-3 w-3" /> Cancelado via Corretiva Novo
+                  </Badge>
+                )}
                 {os?.equipe && <Badge variant="outline" className={cn("rounded-lg text-[9px]", equipeStyles(os.equipe).badge)}>{os.equipe}</Badge>}
                 {completedAt && <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground"><CalendarClock className="h-3.5 w-3.5" />{completedAt}</span>}
               </div>
