@@ -42,22 +42,7 @@ begin
     now()
   from jsonb_array_elements(coalesce(_rows, '[]'::jsonb)) as elem
   where nullif(elem->>'id', '') is not null
-    and coalesce(elem->>'date', '') ~ '^\d{4}-\d{2}-\d{2}
-  on conflict (item_key) do update set
-    atividade_data = excluded.atividade_data,
-    source_file = excluded.source_file,
-    payload = excluded.payload,
-    imported_by = excluded.imported_by,
-    updated_at = now();
-
-  get diagnostics affected = row_count;
-  return affected;
-end;
-$$;
-
-revoke all on function public.save_relatorio_diario_programacao(jsonb, boolean) from public;
-grant execute on function public.save_relatorio_diario_programacao(jsonb, boolean) to authenticated;
-
+    and coalesce(elem->>'date', '') ~ '^\d{4}-\d{2}-\d{2}$'
   on conflict (item_key) do update set
     atividade_data = excluded.atividade_data,
     source_file = excluded.source_file,
