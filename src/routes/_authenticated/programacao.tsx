@@ -33,6 +33,16 @@ import { toast } from "sonner";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -278,6 +288,36 @@ function ProgramacaoPage() {
   const [processing, setProcessing] = useState(false);
   const [slaProcessing, setSlaProcessing] = useState(false);
   const [historyBusyId, setHistoryBusyId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<HistoricoItem | null>(null);
+
+  const confirmDeleteHistorico = async (): Promise<void> => {
+    const item = pendingDelete;
+    if (!item) return;
+    setPendingDelete(null);
+    try {
+      // Guarda a planilha antes de excluir para permitir "Desfazer".
+      const blob = await getHistoricoBlob(item).catch(() => undefined);
+      await deleteHistorico(item);
+      await reloadHistorico();
+      toast.success(`Programação "${item.slotLabel}" excluída.`, {
+        duration: 10000,
+        action: blob
+          ? {
+              label: "Desfazer",
+              onClick: () => {
+                void (async () => {
+                  await saveHistorico({ ...item, blob, storagePath: undefined });
+                  await reloadHistorico();
+                  toast.success("Programação restaurada.");
+                })();
+              },
+            }
+          : undefined,
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível excluir a programação.");
+    }
+  };
   const [generated, setGenerated] = useState<GeneratedFile[]>([]);
   const [alerts, setAlerts] = useState<FileAlert[]>([]);
   const [statusMessages, setStatusMessages] = useState<string[]>([]);
@@ -1334,10 +1374,7 @@ function ProgramacaoPage() {
                             size="icon"
                             variant="ghost"
                             className="h-7 w-7 shrink-0 rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                            onClick={async () => {
-                              await deleteHistorico(item);
-                              await reloadHistorico();
-                            }}
+                            onClick={() => setPendingDelete(item)}
                             aria-label="Excluir"
                             title="Excluir do histórico"
                           >
@@ -1353,6 +1390,27 @@ function ProgramacaoPage() {
           </div>
         </GlassCard>
       </div>
+      <AlertDialog open={pendingDelete !== null} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir esta programação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a programação{" "}
+              <strong>{pendingDelete?.slotLabel}</strong> (semana {pendingDelete?.week}) do histórico semanal?
+              Depois de confirmar, você terá alguns segundos para desfazer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => void confirmDeleteHistorico()}
+            >
+              Sim, excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 }
