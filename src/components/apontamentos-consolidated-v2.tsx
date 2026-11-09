@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { toast } from "sonner";
 import {
@@ -75,6 +75,13 @@ import {
   type TipoAusencia,
 } from "@/lib/apontamento/ausencias";
 import { generateApontamentosMultiSheetWorkbook } from "@/lib/apontamento/multi-exporter";
+import {
+  acknowledgeAusenciasQueue,
+  loadAusenciasQueue,
+  markAusenciaPending,
+  mergeAusenciasWithPending,
+  saveAusenciasQueue,
+} from "@/lib/apontamento/ausencias-sync";
 import { supabase } from "@/integrations/supabase/client";
 
 type Categoria = "abastecimento" | "limpeza" | "jardinagem";
@@ -225,6 +232,9 @@ export function ApontamentosConsolidatedV2() {
   const [ausenciaDraft, setAusenciaDraft] = useState<AusenciaDraft>(emptyAusenciaDraft);
   const [syncing, setSyncing] = useState(false);
   const [cloudReady, setCloudReady] = useState(false);
+  const ausenciasRef = useRef(ausencias);
+  const syncPromiseRef = useRef<Promise<boolean> | null>(null);
+  const syncAgainRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -234,50 +244,113 @@ export function ApontamentosConsolidatedV2() {
     }
   }, [states]);
 
-  useEffect(() => {
-    saveAusencias(ausencias);
-  }, [ausencias]);
-
-  const syncAusencias = useCallback(async (showFeedback = false) => {
-    setSyncing(true);
-    const local = loadAusencias();
-
-    try {
-      const client = supabase as any;
-      const { data, error } = await client
-        .from("apontamento_ausencias")
-        .select("id,matricula,tipo,inicio,fim,observacao,criado_em,atualizado_em")
-        .order("inicio", { ascending: false });
-
-      if (error) throw error;
-
-      let remote = (data ?? []).map(fromDbRow) as Ausencia[];
-      const remoteIds = new Set(remote.map((item) => item.id));
-      const missingLocal = local.filter((item) => !remoteIds.has(item.id));
-
-      if (missingLocal.length) {
-        const { error: uploadError } = await client
-          .from("apontamento_ausencias")
-          .upsert(missingLocal.map(toDbRow), { onConflict: "id" });
-        if (uploadError) throw uploadError;
-        remote = [...remote, ...missingLocal];
-      }
-
-      const merged = Array.from(new Map(remote.map((item) => [item.id, item])).values());
-      setAusencias(merged);
-      saveAusencias(merged);
-      setCloudReady(true);
-      if (showFeedback) toast.success("Faltas e férias sincronizadas com o sistema.");
-    } catch (error: any) {
-      setCloudReady(false);
-      setAusencias(local);
-      if (showFeedback) {
-        toast.warning(error?.message || "Sem sincronização com o banco; mantendo dados deste navegador.");
-      }
-    } finally {
-      setSyncing(false);
-    }
+  const commitAusencias = useCallback((next: Ausencia[]) => {
+    ausenciasRef.current = next;
+    saveAusencias(next);
+    setAusencias(next);
   }, []);
+
+  const syncAusencias = useCallback((showFeedback = false): Promise<boolean> => {
+    if (syncPromiseRef.current) {
+      syncAgainRef.current = true;
+      return syncPromiseRef.current;
+    }
+
+    const promise = (async () => {
+      setSyncing(true);
+      try {
+        do {
+          syncAgainRef.current = false;
+          const client = supabase as any;
+          const { data: initialRows, error: initialError } = await client
+            .from("apontamento_ausencias")
+            .select("id,matricula,tipo,inicio,fim,observacao,criado_em,atualizado_em");
+          if (initialError) throw initialError;
+
+          const remoteIds = new Set((initialRows ?? []).map((row: any) => String(row.id)));
+          let queue = loadAusenciasQueue(loadAusencias());
+
+          // Exclusões têm prioridade: nunca reenviar registros removidos.
+          const deleteSnapshot = { ...queue.deletes };
+          const idsToDelete = Object.keys(deleteSnapshot).filter((id) => remoteIds.has(id));
+          if (idsToDelete.length) {
+            const { data: deletedRows, error: deleteError } = await client
+              .from("apontamento_ausencias")
+              .delete()
+              .in("id", idsToDelete)
+              .select("id");
+            if (deleteError) throw deleteError;
+            const deletedIds = new Set((deletedRows ?? []).map((row: any) => String(row.id)));
+            if (idsToDelete.some((id) => !deletedIds.has(id))) {
+              throw new Error("Sem permissão para excluir uma ou mais ausências no Supabase.");
+            }
+            queue = acknowledgeAusenciasQueue(
+              loadAusenciasQueue(loadAusencias()),
+              "deletes",
+              Object.fromEntries(idsToDelete.map((id) => [id, deleteSnapshot[id]])),
+            );
+            saveAusenciasQueue(queue);
+          }
+
+          queue = loadAusenciasQueue(loadAusencias());
+          const upsertSnapshot = { ...queue.upserts };
+          const pendingItems = loadAusencias().filter(
+            (item) => Object.prototype.hasOwnProperty.call(upsertSnapshot, item.id) &&
+              !Object.prototype.hasOwnProperty.call(queue.deletes, item.id),
+          );
+          if (pendingItems.length) {
+            const { error: uploadError } = await client
+              .from("apontamento_ausencias")
+              .upsert(pendingItems.map(toDbRow), { onConflict: "id" });
+            if (uploadError) throw uploadError;
+            queue = acknowledgeAusenciasQueue(
+              loadAusenciasQueue(loadAusencias()),
+              "upserts",
+              Object.fromEntries(pendingItems.map((item) => [item.id, upsertSnapshot[item.id]])),
+            );
+            saveAusenciasQueue(queue);
+          }
+
+          // A leitura final evita reintroduzir dados excluídos e traz alterações de outros usuários.
+          const { data: currentRows, error: readError } = await client
+            .from("apontamento_ausencias")
+            .select("id,matricula,tipo,inicio,fim,observacao,criado_em,atualizado_em")
+            .order("inicio", { ascending: false });
+          if (readError) throw readError;
+          queue = loadAusenciasQueue(loadAusencias());
+          const merged = mergeAusenciasWithPending(
+            (currentRows ?? []).map(fromDbRow),
+            loadAusencias(),
+            queue,
+          );
+          commitAusencias(merged);
+          saveAusenciasQueue({ ...queue, initialized: true });
+        } while (syncAgainRef.current);
+
+        setCloudReady(true);
+        if (showFeedback) toast.success("Faltas e férias sincronizadas com o sistema.");
+        return true;
+      } catch (error: any) {
+        setCloudReady(false);
+        if (showFeedback) {
+          const schemaMissing = error?.code === "PGRST205" ||
+            /apontamento_ausencias.*schema cache/i.test(String(error?.message ?? ""));
+          toast.warning(schemaMissing
+            ? "A tabela de ausências ainda não existe no Supabase. Dados mantidos neste navegador; aplique a migração do banco."
+            : error?.message || "Sem conexão com o banco. Alterações mantidas neste navegador.");
+        }
+        return false;
+      } finally {
+        setSyncing(false);
+      }
+    })();
+
+    syncPromiseRef.current = promise;
+    void promise.finally(() => {
+      if (syncPromiseRef.current === promise) syncPromiseRef.current = null;
+    });
+    return promise;
+  }, [commitAusencias]);
 
   useEffect(() => {
     void syncAusencias(false);
@@ -352,7 +425,7 @@ export function ApontamentosConsolidatedV2() {
       return false;
     }
 
-    const overlap = ausencias.find(
+    const overlap = ausenciasRef.current.find(
       (item) =>
         item.id !== draft.id &&
         item.matricula === draft.matricula &&
@@ -365,7 +438,7 @@ export function ApontamentosConsolidatedV2() {
       return false;
     }
 
-    const original = draft.id ? ausencias.find((item) => item.id === draft.id) : undefined;
+    const original = draft.id ? ausenciasRef.current.find((item) => item.id === draft.id) : undefined;
     const now = new Date().toISOString();
     const registro: Ausencia = {
       id: original?.id ?? criarAusenciaId(),
@@ -378,7 +451,9 @@ export function ApontamentosConsolidatedV2() {
       atualizadoEm: now,
     };
 
-    setAusencias((prev) => [registro, ...prev.filter((item) => item.id !== registro.id)]);
+    markAusenciaPending(registro.id, "upsert");
+    commitAusencias([registro, ...ausenciasRef.current.filter((item) => item.id !== registro.id)]);
+    setCloudReady(false);
 
     // Remove da seleção atual apenas se a data daquele apontamento estiver dentro
     // do período. O colaborador volta automaticamente a ficar disponível após o fim.
@@ -396,45 +471,30 @@ export function ApontamentosConsolidatedV2() {
       return next;
     });
 
-    try {
-      const client = supabase as any;
-      const { error } = await client
-        .from("apontamento_ausencias")
-        .upsert(toDbRow(registro), { onConflict: "id" });
-      if (error) throw error;
-      setCloudReady(true);
-    } catch (error: any) {
-      setCloudReady(false);
-      toast.warning(
-        error?.message || "Registro salvo neste navegador, mas ainda não sincronizado com o banco.",
-      );
-    }
-
-    toast.success(
-      draft.tipo === "ferias"
-        ? `Férias salvas por ${duration} dia${duration === 1 ? "" : "s"}, até ${formatDate(draft.fim)} inclusive.`
-        : `Falta salva por ${duration} dia${duration === 1 ? "" : "s"}.`,
-    );
+    const synced = await syncAusencias(false);
+    const label = draft.tipo === "ferias"
+      ? `Férias salvas por ${duration} dia${duration === 1 ? "" : "s"}, até ${formatDate(draft.fim)} inclusive.`
+      : `Falta salva por ${duration} dia${duration === 1 ? "" : "s"}.`;
+    if (synced) toast.success(label);
+    else toast.warning(`${label} Sincronização pendente; dados mantidos neste navegador.`);
     setAusenciaDraft(emptyAusenciaDraft(draft.inicio));
     return true;
   };
 
   const removerAusencia = async (id: string) => {
-    const atual = ausencias.find((item) => item.id === id);
+    const atual = ausenciasRef.current.find((item) => item.id === id);
     if (!atual) return;
-    setAusencias((prev) => prev.filter((item) => item.id !== id));
 
-    try {
-      const client = supabase as any;
-      const { error } = await client.from("apontamento_ausencias").delete().eq("id", id);
-      if (error) throw error;
-    } catch (error: any) {
-      setAusencias((prev) => [atual, ...prev]);
-      toast.error(error?.message || "Não foi possível remover o registro do banco.");
-      return;
-    }
+    // Persistir a exclusão antes de chamar a rede impede o retorno do registro
+    // após um refresh ou durante falhas PGRST205/sem conexão.
+    markAusenciaPending(id, "delete");
+    commitAusencias(ausenciasRef.current.filter((item) => item.id !== id));
+    setCloudReady(false);
+    if (ausenciaDraft.id === id) setAusenciaDraft(emptyAusenciaDraft());
 
-    toast.success("Registro removido.");
+    const synced = await syncAusencias(false);
+    if (synced) toast.success("Registro removido.");
+    else toast.warning("Registro removido neste navegador. Exclusão no Supabase pendente.");
   };
 
   const downloadAll = async () => {
