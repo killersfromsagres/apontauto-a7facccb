@@ -2865,6 +2865,18 @@ export type Database = {
           patrimonio: string | null
           pecas_solicitadas: string | null
           predio: string | null
+          programacao_dia_indice: number | null
+          programacao_equipe: string | null
+          programacao_nao_realizada_em: string | null
+          programacao_nao_realizada_motivo: string | null
+          programacao_nao_realizada_observacao: string | null
+          programacao_periodo_fim: string | null
+          programacao_periodo_inicio: string | null
+          programacao_reservada_em: string | null
+          programacao_retorno_fila_em: string | null
+          programacao_status: string
+          programacao_tentativas: number
+          programacao_ultima_acao_por: string | null
           solicitante: string | null
           status: Database["public"]["Enums"]["corretiva_os_status"]
           tipo: string | null
@@ -2895,6 +2907,18 @@ export type Database = {
           patrimonio?: string | null
           pecas_solicitadas?: string | null
           predio?: string | null
+          programacao_dia_indice?: number | null
+          programacao_equipe?: string | null
+          programacao_nao_realizada_em?: string | null
+          programacao_nao_realizada_motivo?: string | null
+          programacao_nao_realizada_observacao?: string | null
+          programacao_periodo_fim?: string | null
+          programacao_periodo_inicio?: string | null
+          programacao_reservada_em?: string | null
+          programacao_retorno_fila_em?: string | null
+          programacao_status?: string
+          programacao_tentativas?: number
+          programacao_ultima_acao_por?: string | null
           solicitante?: string | null
           status?: Database["public"]["Enums"]["corretiva_os_status"]
           tipo?: string | null
@@ -2925,6 +2949,18 @@ export type Database = {
           patrimonio?: string | null
           pecas_solicitadas?: string | null
           predio?: string | null
+          programacao_dia_indice?: number | null
+          programacao_equipe?: string | null
+          programacao_nao_realizada_em?: string | null
+          programacao_nao_realizada_motivo?: string | null
+          programacao_nao_realizada_observacao?: string | null
+          programacao_periodo_fim?: string | null
+          programacao_periodo_inicio?: string | null
+          programacao_reservada_em?: string | null
+          programacao_retorno_fila_em?: string | null
+          programacao_status?: string
+          programacao_tentativas?: number
+          programacao_ultima_acao_por?: string | null
           solicitante?: string | null
           status?: Database["public"]["Enums"]["corretiva_os_status"]
           tipo?: string | null
