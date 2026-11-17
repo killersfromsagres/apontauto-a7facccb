@@ -14,6 +14,7 @@ export interface DemAsset {
 export interface DemPerson {
   id: string;
   user_id: string | null;
+  login_id?: string | null;
   name: string;
   email: string;
   kind: "solicitante" | "tecnico";

@@ -4,16 +4,16 @@ O módulo usa o Supabase existente do Apont Auto. A interface é implementada ne
 
 ## Acessos
 
-- `/cliente`: portal independente, com login por e-mail e senha. O solicitante vê os próprios chamados. Técnicos também veem atividades atribuídas ao seu cadastro.
+- `/cliente`: portal independente, com login por ID e senha. O solicitante vê os próprios chamados. Técnicos também veem atividades atribuídas ao seu cadastro.
 - `/central-chamados`: administração, disponível para as contas que já possuem o papel `admin` no banco. A autorização é validada no banco e no serviço de criação de contas.
 - O login administrativo existente continua em `/auth`. Contas criadas para o portal são direcionadas para `/cliente`.
 
 ## Começar a operação
 
-1. Na Central de Chamados, abra **Pessoas e acessos**. Cadastre nome, e-mail, perfil e senha inicial individual. O e-mail é o login. Para colaboradores que só receberão apontamentos, desmarque a criação de acesso ao portal.
+1. Na Central de Chamados, abra **Clientes**. Cadastre o nome, escolha um ID único de 3 a 40 caracteres e defina a senha individual. O cliente usa apenas ID e senha; nenhum e-mail é solicitado. IDs podem conter letras, números, ponto, hífen ou sublinhado, e zeros à esquerda são preservados. Para cadastrar a equipe técnica, use a aba **Colaboradores**.
 2. Compartilhe o endereço `/cliente` com os solicitantes e entregue o acesso individualmente. A abertura tem três etapas: local, descrição/urgência e conferência.
 3. Os chamados chegam à fila em tempo real, com aviso de nova solicitação. Se a conexão ao vivo cair, a tela informa a recuperação e atualiza a cada 30 segundos.
-4. Abra o chamado para definir colaborador, data, situação e criticidade. O nome e e-mail do solicitante são copiados do cadastro pelo banco, sem digitação manual na abertura.
+4. Abra o chamado para definir colaborador, data, situação e criticidade. O nome do solicitante é copiado do cadastro pelo banco, sem digitação manual na abertura.
 5. Registre os minutos trabalhados, a data e a atividade de cada colaborador. Para concluir, é obrigatório ter apontamento e descrever a solução.
 
 ## Criticidade e prazo
@@ -53,3 +53,7 @@ As migrações `20261117142155` a `20261117144746` instalam as tabelas, regras d
 `scripts/import-demarchi-reference.mjs` reproduz a extração da planilha sem modificá-la. `scripts/test-demarchi.integration.sql` verifica permissões, SLAs, programação, apontamento, histórico e geração de preventivas numa transação revertida ao final. Os testes de domínio ficam em `src/features/demarchi/domain.test.ts`.
 
 O Prisma/Cimo não pôde ser inspecionado internamente neste ambiente. A implementação foi construída com os requisitos informados e a hierarquia e os planos reais da planilha. Credenciais do Prisma não são armazenadas nem utilizadas pelo módulo.
+
+## Login dos clientes
+
+A tela de acesso exibe somente a logo, o título Manutenção Demarchi e os campos ID e senha, em tema escuro. O botão de acesso administrativo foi removido dessa tela. A autenticação continua usando o mecanismo de sessões do Supabase, com uma identidade técnica derivada do ID e invisível na interface. O vínculo do ID é gravado na criação da conta e validado no servidor. A senha nunca é gravada nas tabelas do módulo. Clientes podem ser ativados ou desativados e seus nomes podem ser editados pela administração.

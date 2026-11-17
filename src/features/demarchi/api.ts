@@ -128,7 +128,8 @@ export async function addComment(ticketId: string, message: string) {
 }
 export async function createAccount(input: {
   name: string;
-  email: string;
+  email?: string;
+  loginId?: string;
   password: string;
   kind: string;
   specialty: string;

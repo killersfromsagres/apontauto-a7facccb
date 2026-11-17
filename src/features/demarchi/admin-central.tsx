@@ -57,6 +57,7 @@ import {
 } from "./components/shared";
 import { TicketDetail } from "./components/ticket-detail";
 import { AssetsRegister, PeopleRegister, PlansRegister, Pager } from "./components/registers";
+import { ClientsRegister } from "./components/clients-register";
 import "./demarchi.css";
 
 const TABS = [
@@ -65,7 +66,8 @@ const TABS = [
   { key: "backorders", label: "Backorders", icon: ListFilter },
   { key: "preventivas", label: "Preventivas", icon: Wrench },
   { key: "ativos", label: "Ativos e locais", icon: Building2 },
-  { key: "pessoas", label: "Pessoas e acessos", icon: Users },
+  { key: "clientes", label: "Clientes", icon: Users },
+  { key: "pessoas", label: "Colaboradores", icon: Users },
   { key: "produtividade", label: "Produtividade", icon: BarChart3 },
 ];
 export function AdminCentral() {
@@ -437,6 +439,7 @@ function AdminWorkspace() {
             )}
             {tab === "ativos" && <AssetsRegister assets={assets} refresh={data.refresh} />}
             {tab === "pessoas" && <PeopleRegister people={people} refresh={data.refresh} />}
+            {tab === "clientes" && <ClientsRegister people={people} refresh={data.refresh} />}
             {tab === "preventivas" && (
               <PlansRegister plans={plans} assets={assets} refresh={data.refresh} />
             )}

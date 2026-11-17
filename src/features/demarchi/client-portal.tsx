@@ -10,10 +10,15 @@ import {
   MapPin,
   Plus,
   Send,
+  Eye,
+  EyeOff,
+  KeyRound,
+  LockKeyhole,
+  Loader2,
   ShieldCheck,
-  Wrench,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { clientAuthIdentity } from "../../../supabase/functions/_shared/demarchi-login";
 import { createTicket } from "./api";
 import {
   PRIORITIES,
@@ -31,9 +36,11 @@ import "./demarchi.css";
 
 export function ClientPortal() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
-  const [email, setEmail] = useState(""),
+  const [loginId, setLoginId] = useState(""),
     [password, setPassword] = useState(""),
-    [logging, setLogging] = useState(false);
+    [logging, setLogging] = useState(false),
+    [showPassword, setShowPassword] = useState(false),
+    [loginError, setLoginError] = useState("");
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
@@ -41,42 +48,42 @@ export function ClientPortal() {
   }, []);
   async function login(e: React.FormEvent) {
     e.preventDefault();
+    if (logging) return;
+    setLoginError("");
     setLogging(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
+        email: clientAuthIdentity(loginId),
         password,
       });
       if (error) throw error;
       setPassword("");
     } catch (e: any) {
-      toast.error(
-        /invalid login/i.test(e.message)
-          ? "E-mail ou senha inválidos."
-          : "Não foi possível entrar. Confira sua conexão e tente novamente.",
-      );
+      const message = /invalid login/i.test(e.message)
+        ? "ID ou senha inválidos. Confira os dados e tente novamente."
+        : /Informe um ID/.test(e.message)
+          ? e.message
+          : "Não foi possível entrar. Confira sua conexão e tente novamente.";
+      setLoginError(message);
     } finally {
       setLogging(false);
     }
   }
   if (session === undefined)
     return (
-      <main className="dem-app dem-client">
+      <main className="dem-app dem-client dem-client-auth">
         <div className="dem-loading" role="status">
           Carregando seu acesso…
         </div>
       </main>
     );
   return (
-    <main className="dem-app dem-client">
-      <header className="dem-client-header">
-        <a href="/cliente" className="dem-brand">
-          <img src="/apontauto-logo.png" alt="Apont Auto" />
-          <span>
-            Demarchi<small>Portal de manutenção</small>
-          </span>
-        </a>
-        {session ? (
+    <main className={`dem-app dem-client${!session ? " dem-client-auth" : ""}`}>
+      {session && (
+        <header className="dem-client-header">
+          <a href="/cliente" className="dem-brand">
+            <img src="/apontauto-logo.png" alt="Apont Auto" />
+          </a>
           <button
             className="dem-btn dem-btn-ghost"
             onClick={() =>
@@ -87,72 +94,102 @@ export function ClientPortal() {
           >
             <LogOut size={17} /> Sair
           </button>
-        ) : (
-          <a href="/auth" className="dem-admin-link">
-            Acesso administrativo
-          </a>
-        )}
-      </header>
+        </header>
+      )}
       {session ? (
         <ClientWorkspace key={session.user.id} />
       ) : (
-        <section className="dem-login">
-          <div className="dem-login-copy">
-            <span className="dem-eyebrow">MANUTENÇÃO DEMARCHI</span>
-            <h1>
-              Precisou de um reparo?
-              <br />
-              Abra seu chamado aqui.
-            </h1>
-            <p>
-              Escolha o local, conte o que aconteceu e acompanhe o atendimento. Seu nome já fica
-              vinculado à solicitação.
-            </p>
-            <ol>
-              <li>
-                <MapPin size={20} /> Escolha o local
-              </li>
-              <li>
-                <Wrench size={20} /> Descreva o problema
-              </li>
-              <li>
-                <CheckCircle2 size={20} /> Acompanhe a solução
-              </li>
-            </ol>
-          </div>
-          <form className="dem-login-card" onSubmit={login}>
-            <ShieldCheck size={28} />
-            <h2>Entre no seu portal</h2>
-            <p>Use o e-mail cadastrado pela administração.</p>
-            <Field label="Seu e-mail">
-              <input
-                type="email"
-                autoComplete="username"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="voce@empresa.com.br"
-              />
-            </Field>
-            <Field label="Sua senha">
-              <input
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </Field>
-            <button className="dem-btn" disabled={logging}>
-              {logging ? "Entrando…" : "Entrar"}
-              <ArrowRight size={18} />
-            </button>
-            <small>Precisa de acesso? Solicite seu cadastro ao administrador de manutenção.</small>
-            <div className="dem-legal">
+        <section className="dem-access-shell" aria-labelledby="dem-access-title">
+          <div className="dem-access-card">
+            <img
+              className="dem-access-logo"
+              src="/apontauto-logo.png"
+              alt="Apont Auto"
+              width="96"
+              height="96"
+            />
+            <h1 id="dem-access-title">Manutenção Demarchi</h1>
+            <form className="dem-access-form" onSubmit={login}>
+              <label className="dem-access-field" htmlFor="dem-client-id">
+                <span>ID de acesso</span>
+                <div className="dem-access-input">
+                  <KeyRound size={19} aria-hidden="true" />
+                  <input
+                    id="dem-client-id"
+                    name="username"
+                    type="text"
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    required
+                    minLength={3}
+                    maxLength={40}
+                    pattern="[A-Za-z0-9][A-Za-z0-9._\-]{2,39}"
+                    value={loginId}
+                    onChange={(e) => {
+                      setLoginId(e.target.value);
+                      setLoginError("");
+                    }}
+                    placeholder="Digite seu ID"
+                    aria-invalid={!!loginError}
+                    aria-describedby={loginError ? "dem-login-error" : undefined}
+                  />
+                </div>
+              </label>
+              <label className="dem-access-field" htmlFor="dem-client-password">
+                <span>Senha</span>
+                <div className="dem-access-input">
+                  <LockKeyhole size={19} aria-hidden="true" />
+                  <input
+                    id="dem-client-password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setLoginError("");
+                    }}
+                    placeholder="Digite sua senha"
+                    aria-invalid={!!loginError}
+                  />
+                  <button
+                    type="button"
+                    className="dem-access-reveal"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    aria-pressed={showPassword}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </label>
+              {loginError && (
+                <p className="dem-access-error" id="dem-login-error" role="alert">
+                  {loginError}
+                </p>
+              )}
+              <button type="submit" className="dem-access-submit" disabled={logging}>
+                {logging ? (
+                  <>
+                    <Loader2 size={18} className="dem-access-spinner" aria-hidden />
+                    Entrando…
+                  </>
+                ) : (
+                  <>
+                    Entrar
+                    <ArrowRight size={18} aria-hidden />
+                  </>
+                )}
+              </button>
+            </form>
+            <div className="dem-access-legal">
               <a href="/privacidade">Privacidade</a>
               <a href="/termos">Termos de uso</a>
             </div>
-          </form>
+          </div>
         </section>
       )}
     </main>
@@ -234,7 +271,7 @@ function ClientWorkspace() {
         <div className="dem-empty">
           <ShieldCheck size={32} />
           <h2>Seu acesso ao portal ainda não foi cadastrado.</h2>
-          <p>Peça ao administrador para vincular seu nome e e-mail.</p>
+          <p>Peça ao administrador para cadastrar seu ID de acesso.</p>
           <a className="dem-btn" href="/central-chamados">
             Sou administrador
           </a>

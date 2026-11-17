@@ -283,8 +283,9 @@ export function PeopleRegister({
     [withLogin, setWithLogin] = useState(true),
     [busy, setBusy] = useState(false),
     [search, setSearch] = useState("");
+  const team = people.filter((p) => p.kind === "tecnico");
   function create() {
-    setEditing({ name: "", email: "", kind: "solicitante", specialty: "", active: true });
+    setEditing({ name: "", email: "", kind: "tecnico", specialty: "", active: true });
     setPassword("");
     setWithLogin(true);
   }
@@ -293,19 +294,17 @@ export function PeopleRegister({
       <div className="dem-section-title">
         <div>
           <h2>
-            <Users size={20} /> Pessoas e acessos
+            <Users size={20} /> Colaboradores
           </h2>
-          <p>
-            Solicitantes abrem chamados. Colaboradores técnicos recebem atividades e apontamentos.
-          </p>
+          <p>Cadastre os colaboradores técnicos que receberão atividades e apontamentos.</p>
         </div>
         <button className="dem-btn" onClick={create}>
-          <Plus size={17} /> Cadastrar pessoa
+          <Plus size={17} /> Cadastrar colaborador
         </button>
       </div>
       <SearchBox value={search} onChange={setSearch} placeholder="Pesquisar nome ou e-mail" />
       <div className="dem-people-grid">
-        {people
+        {team
           .filter((p) => `${p.name} ${p.email}`.toLowerCase().includes(search.toLowerCase()))
           .map((p) => (
             <article className="dem-person-card" key={p.id}>
@@ -341,16 +340,16 @@ export function PeopleRegister({
             </article>
           ))}
       </div>
-      {!people.length && (
+      {!team.length && (
         <div className="dem-empty">
           <Users size={32} />
-          <h3>Cadastre seu primeiro solicitante ou colaborador.</h3>
-          <p>O e-mail será o login. O nome ficará salvo nos chamados e relatórios.</p>
+          <h3>Cadastre seu primeiro colaborador.</h3>
+          <p>O nome do colaborador ficará salvo nos apontamentos e relatórios.</p>
         </div>
       )}
       {editing && (
         <Modal
-          title={editing.id ? "Editar cadastro" : "Cadastrar pessoa e acesso"}
+          title={editing.id ? "Editar cadastro" : "Cadastrar colaborador e acesso"}
           close={() => setEditing(null)}
         >
           <form
@@ -397,7 +396,7 @@ export function PeopleRegister({
               hint={
                 editing.user_id
                   ? "O e-mail de login permanece o definido na criação do acesso."
-                  : "Com acesso ao portal, este e-mail será o login."
+                  : "Com acesso ao sistema, este e-mail será o login."
               }
             >
               <input
@@ -416,7 +415,6 @@ export function PeopleRegister({
                     setEditing({ ...editing, kind: e.target.value as DemPerson["kind"] })
                   }
                 >
-                  <option value="solicitante">Solicitante / cliente</option>
                   <option value="tecnico">Colaborador técnico</option>
                 </select>
               </Field>
