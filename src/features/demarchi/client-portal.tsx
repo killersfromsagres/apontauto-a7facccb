@@ -33,6 +33,7 @@ import { useDemarchi } from "./use-demarchi";
 import { AssetPicker, dateLabel, Field, PriorityBadge, StatusBadge } from "./components/shared";
 import { TicketDetail } from "./components/ticket-detail";
 import "./demarchi.css";
+import "./demarchi-premium.css";
 
 export function ClientPortal() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -110,7 +111,8 @@ export function ClientPortal() {
               width="96"
               height="96"
             />
-            <h1 id="dem-access-title">Manutenção Demarchi</h1>
+            <h1 id="dem-access-title">Bem-vindo de volta.</h1>
+            <p className="dem-access-subtitle">Portal de Manutenção Demarchi<br />Acesse suas solicitações e acompanhe os atendimentos.</p>
             <form className="dem-access-form" onSubmit={login}>
               <label className="dem-access-field" htmlFor="dem-client-id">
                 <span>ID de acesso</span>

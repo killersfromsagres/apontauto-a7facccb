@@ -1,0 +1,130 @@
+/* Demarchi 2026 — visual-only enhancement; preserves ticket/auth workflows. */
+.dem-client {
+  --dem-bg: #101a26;
+  --dem-panel: #172434;
+  --dem-line: rgba(170,195,216,.17);
+  --dem-text: #eaf2f8;
+  --dem-muted: #a1b1c1;
+  --dem-blue: #77c5ed;
+  background: radial-gradient(ellipse at 80% 0%, #1b3448 0%, transparent 44%), #0d1722;
+  color: var(--dem-text);
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-feature-settings: "cv11", "ss01";
+}
+.dem-client :is(button,input,textarea,select,a):focus-visible {
+  outline: 2px solid #91d6f7;
+  outline-offset: 3px;
+}
+.dem-client button { cursor: pointer; }
+.dem-client button:disabled { cursor: not-allowed; opacity: .65; }
+.dem-client-header { max-width: 1150px; padding-block: 25px 10px; }
+.dem-client-header .dem-btn-ghost {
+  border: 1px solid var(--dem-line);
+  background: rgba(255,255,255,.045);
+  color: var(--dem-text);
+}
+.dem-client-container { max-width: 1050px; margin-top: 48px; }
+.dem-client-intro { margin-bottom: 31px; }
+.dem-client-intro h1 { color: #f2f7fb; font-size: clamp(29px,3.5vw,39px); font-weight: 650; letter-spacing: -.045em; }
+.dem-client-intro .dem-eyebrow { color: #81cbe9; }
+.dem-live { color: #c6d9e2; }
+.dem-client-actions { grid-template-columns: minmax(0,1fr) 210px; gap: 15px; margin-bottom: 35px; }
+.dem-new-call {
+  border: 1px solid rgba(143,217,245,.23);
+  border-radius: 15px;
+  background: linear-gradient(110deg,#116e91,#0b5b7d);
+  box-shadow: 0 12px 28px rgba(0,0,0,.13);
+  transition: transform .18s ease,filter .18s ease;
+}
+.dem-new-call:hover { transform: translateY(-2px); filter: brightness(1.09); }
+.dem-new-call strong { font-size: 19px; }
+.dem-client-count, .dem-client-ticket, .dem-wizard, .dem-client .dem-empty, .dem-client .dem-success {
+  background: linear-gradient(145deg,rgba(28,43,60,.96),rgba(19,32,47,.98));
+  border: 1px solid var(--dem-line);
+  box-shadow: 0 10px 32px rgba(0,0,0,.10);
+}
+.dem-client-count { border-radius: 15px; }
+.dem-client-count strong { color: #8cd8f4; }
+.dem-client-ticket { border-radius: 14px; padding: 22px; transition: transform .18s ease,border-color .18s ease,box-shadow .18s ease; }
+.dem-client-ticket:hover { transform: translateY(-2px); border-color: rgba(132,205,239,.53); box-shadow: 0 14px 34px rgba(0,0,0,.21); }
+.dem-client-ticket h3, .dem-section-title h2 { color: #f0f6fb; }
+.dem-client-ticket footer { border-color: var(--dem-line); }
+.dem-client .dem-btn { background: #187da5; color: #fff; border: 1px solid rgba(141,215,243,.2); border-radius: 11px; }
+.dem-client .dem-btn:hover { background: #228eb8; }
+.dem-client .dem-btn-secondary, .dem-client .dem-btn-ghost { background: rgba(255,255,255,.055); color: #e8f3fa; }
+.dem-client .dem-btn-secondary:hover, .dem-client .dem-btn-ghost:hover { background: rgba(255,255,255,.10); }
+.dem-client .dem-priority-baixa { background: rgba(67,163,213,.13); color: #a0ddf7; border-color: rgba(101,186,227,.3); }
+.dem-client .dem-priority-alta { background: rgba(210,154,52,.12); color: #f4cb81; border-color: rgba(220,174,81,.3); }
+.dem-client .dem-priority-emergencial { background: rgba(223,83,102,.13); color: #ffb7c0; border-color: rgba(223,83,102,.3); }
+.dem-client .dem-status-encerrado { color: #92ddbc; }
+.dem-client .dem-status-vencido { color: #ffabb8; }
+.dem-client .dem-modal { background: #101b29; border: 1px solid rgba(166,196,219,.23); border-radius: 19px; box-shadow: 0 32px 100px rgba(0,0,0,.58); }
+.dem-client .dem-modal > header { background: #101b29; border-color: var(--dem-line); }
+.dem-client .dem-note { background: #1b2a3c; border-color: var(--dem-line); }
+.dem-client .dem-modal :is(input,select,textarea), .dem-client .dem-wizard :is(input,select,textarea) {
+  background: #101d2c; border: 1px solid rgba(164,194,218,.22); color: #eef6fa; border-radius: 10px;
+}
+.dem-client .dem-modal :is(input,select,textarea):focus, .dem-client .dem-wizard :is(input,select,textarea):focus { border-color: #79c9ed; }
+.dem-client .dem-steps li > span { background: #263a4d; color: #b9cddd; }
+.dem-client .dem-steps li.current > span,.dem-client .dem-steps li.done > span { background: #1681ab; color: #fff; }
+.dem-client .dem-priority-options label, .dem-client .dem-review { background: #152538; border-color: var(--dem-line); }
+.dem-client-auth {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  background: #0c1823;
+  overflow: hidden;
+}
+.dem-client-auth::before {
+  content: "";
+  position: fixed;
+  z-index: -2;
+  inset: -22px;
+  background-image: linear-gradient(110deg,rgba(5,16,28,.72),rgba(8,24,38,.46)),url("https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=1800&q=78");
+  background-size: cover;
+  background-position: center;
+  filter: blur(9px) saturate(.73);
+  transform: scale(1.045);
+}
+.dem-client-auth::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background: radial-gradient(ellipse at 52% 43%,transparent 0%,rgba(4,12,22,.57) 100%);
+  pointer-events: none;
+}
+.dem-client-auth .dem-access-shell { max-width: 490px; }
+.dem-client-auth .dem-access-card {
+  padding: clamp(30px,4vw,46px);
+  border-radius: 26px;
+  background: linear-gradient(145deg,rgba(27,43,62,.78),rgba(11,23,38,.85));
+  border: 1px solid rgba(215,233,246,.22);
+  box-shadow: 0 28px 85px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.1);
+  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(22px);
+}
+.dem-client-auth .dem-access-logo { width: 88px; height: 88px; margin-bottom: 17px; }
+.dem-client-auth .dem-access-card h1 { font-size: clamp(27px,4vw,35px); font-weight: 600; letter-spacing: -.045em; margin-bottom: 10px; }
+.dem-access-subtitle { text-align: center; color: #b5c6d6; font-size: 13px; line-height: 1.6; margin: 0 0 30px; }
+.dem-client-auth .dem-access-field { margin-bottom: 20px; }
+.dem-client-auth .dem-access-input { border-radius: 13px; background: rgba(9,21,35,.42); border-color: rgba(197,219,238,.23); }
+.dem-client-auth .dem-access-input:focus-within { border-color: #90c9ef; box-shadow: 0 0 0 3px rgba(112,187,237,.15); }
+.dem-client-auth .dem-access-submit { border-radius: 999px; min-height: 55px; background: #f2f6f9; color: #142435; font-weight: 650; transition: transform .18s ease,background .18s ease; }
+.dem-client-auth .dem-access-submit:hover { background: white; transform: translateY(-1px); }
+.dem-client-auth .dem-access-legal { opacity: .85; }
+@media (max-width: 700px) {
+  .dem-client-header { padding: 16px 20px; }
+  .dem-client-container { margin-top: 23px; padding-inline: 18px; }
+  .dem-client-intro { align-items: flex-start; flex-direction: column; gap: 13px; }
+  .dem-client-actions { grid-template-columns: 1fr; }
+  .dem-client-count { min-height: 90px; }
+  .dem-client-tickets { grid-template-columns: 1fr; }
+  .dem-new-call { padding: 20px; }
+  .dem-client-auth .dem-access-card { padding: 30px 23px; }
+  .dem-client-auth .dem-access-shell { max-width: 430px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dem-client *, .dem-client *::before, .dem-client *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
