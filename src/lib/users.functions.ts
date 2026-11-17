@@ -45,10 +45,14 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 function getAuthEnv() {
-  const url = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
+  const url =
+    import.meta.env.VITE_SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    process.env.SUPABASE_URL;
   const publishableKey =
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY;
 
   if (!url || !publishableKey) {
     throw new Error(

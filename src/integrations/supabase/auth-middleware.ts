@@ -33,8 +33,16 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 
 export const requireSupabaseAuth = createMiddleware({ type: "function" }).server(
   async ({ next }) => {
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+    // Validate sessions against the same backend embedded in the browser build.
+    // Hosting runtime variables can still point to a previously linked project.
+    const SUPABASE_URL =
+      import.meta.env.VITE_SUPABASE_URL ||
+      process.env.VITE_SUPABASE_URL ||
+      process.env.SUPABASE_URL;
+    const SUPABASE_PUBLISHABLE_KEY =
+      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.SUPABASE_PUBLISHABLE_KEY;
 
     if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
       const missing = [
