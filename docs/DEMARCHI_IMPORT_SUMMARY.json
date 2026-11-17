@@ -1,0 +1,14 @@
+{
+  "source": "formula.xlsx",
+  "assets": 2857,
+  "levels": {
+    "planta": 1,
+    "predio": 87,
+    "andar": 152,
+    "ambiente": 2192,
+    "equipamento": 425
+  },
+  "plans": 3344,
+  "importedPlansActive": false,
+  "oldDataPreserved": true
+}

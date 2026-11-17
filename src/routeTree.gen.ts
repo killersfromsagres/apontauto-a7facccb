@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AdminRecoveryRouteImport } from './routes/admin-recovery'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ClienteRouteImport } from './routes/cliente'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
@@ -22,6 +23,7 @@ import { Route as AuthenticatedAbastecimentoRouteImport } from './routes/_authen
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
 import { Route as AuthenticatedAvaliacaoChamadosRouteImport } from './routes/_authenticated/avaliacao-chamados'
 import { Route as AuthenticatedBaseAtivosRouteImport } from './routes/_authenticated/base-ativos'
+import { Route as AuthenticatedCentralChamadosRouteImport } from './routes/_authenticated/central-chamados'
 import { Route as AuthenticatedConfiabilidadeRouteImport } from './routes/_authenticated/confiabilidade'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedControleMateriaisRouteImport } from './routes/_authenticated/controle-materiais'
@@ -111,6 +113,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClienteRoute = ClienteRouteImport.update({
+  id: '/cliente',
+  path: '/cliente',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContatoRoute = ContatoRouteImport.update({
   id: '/contato',
   path: '/contato',
@@ -159,6 +166,12 @@ const AuthenticatedBaseAtivosRoute = AuthenticatedBaseAtivosRouteImport.update({
   path: '/base-ativos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCentralChamadosRoute =
+  AuthenticatedCentralChamadosRouteImport.update({
+    id: '/central-chamados',
+    path: '/central-chamados',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConfiabilidadeRoute =
   AuthenticatedConfiabilidadeRouteImport.update({
     id: '/confiabilidade',
@@ -561,6 +574,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin-recovery': typeof AdminRecoveryRoute
   '/auth': typeof AuthRoute
+  '/cliente': typeof ClienteRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -570,6 +584,7 @@ export interface FileRoutesByFullPath {
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/avaliacao-chamados': typeof AuthenticatedAvaliacaoChamadosRoute
   '/base-ativos': typeof AuthenticatedBaseAtivosRoute
+  '/central-chamados': typeof AuthenticatedCentralChamadosRoute
   '/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
@@ -644,6 +659,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin-recovery': typeof AdminRecoveryRoute
   '/auth': typeof AuthRoute
+  '/cliente': typeof ClienteRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -653,6 +669,7 @@ export interface FileRoutesByTo {
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/avaliacao-chamados': typeof AuthenticatedAvaliacaoChamadosRoute
   '/base-ativos': typeof AuthenticatedBaseAtivosRoute
+  '/central-chamados': typeof AuthenticatedCentralChamadosRoute
   '/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
@@ -728,6 +745,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/admin-recovery': typeof AdminRecoveryRoute
   '/auth': typeof AuthRoute
+  '/cliente': typeof ClienteRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -737,6 +755,7 @@ export interface FileRoutesById {
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
   '/_authenticated/avaliacao-chamados': typeof AuthenticatedAvaliacaoChamadosRoute
   '/_authenticated/base-ativos': typeof AuthenticatedBaseAtivosRoute
+  '/_authenticated/central-chamados': typeof AuthenticatedCentralChamadosRoute
   '/_authenticated/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/controle-materiais': typeof AuthenticatedControleMateriaisRoute
@@ -813,6 +832,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin-recovery'
     | '/auth'
+    | '/cliente'
     | '/contato'
     | '/privacidade'
     | '/sitemap.xml'
@@ -822,6 +842,7 @@ export interface FileRouteTypes {
     | '/apontamentos'
     | '/avaliacao-chamados'
     | '/base-ativos'
+    | '/central-chamados'
     | '/confiabilidade'
     | '/configuracoes'
     | '/controle-materiais'
@@ -896,6 +917,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin-recovery'
     | '/auth'
+    | '/cliente'
     | '/contato'
     | '/privacidade'
     | '/sitemap.xml'
@@ -905,6 +927,7 @@ export interface FileRouteTypes {
     | '/apontamentos'
     | '/avaliacao-chamados'
     | '/base-ativos'
+    | '/central-chamados'
     | '/confiabilidade'
     | '/configuracoes'
     | '/controle-materiais'
@@ -979,6 +1002,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/admin-recovery'
     | '/auth'
+    | '/cliente'
     | '/contato'
     | '/privacidade'
     | '/sitemap.xml'
@@ -988,6 +1012,7 @@ export interface FileRouteTypes {
     | '/_authenticated/apontamentos'
     | '/_authenticated/avaliacao-chamados'
     | '/_authenticated/base-ativos'
+    | '/_authenticated/central-chamados'
     | '/_authenticated/confiabilidade'
     | '/_authenticated/configuracoes'
     | '/_authenticated/controle-materiais'
@@ -1064,6 +1089,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AdminRecoveryRoute: typeof AdminRecoveryRoute
   AuthRoute: typeof AuthRoute
+  ClienteRoute: typeof ClienteRoute
   ContatoRoute: typeof ContatoRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -1114,6 +1140,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cliente': {
+      id: '/cliente'
+      path: '/cliente'
+      fullPath: '/cliente'
+      preLoaderRoute: typeof ClienteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contato': {
@@ -1177,6 +1210,13 @@ declare module '@tanstack/react-router' {
       path: '/base-ativos'
       fullPath: '/base-ativos'
       preLoaderRoute: typeof AuthenticatedBaseAtivosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/central-chamados': {
+      id: '/_authenticated/central-chamados'
+      path: '/central-chamados'
+      fullPath: '/central-chamados'
+      preLoaderRoute: typeof AuthenticatedCentralChamadosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/confiabilidade': {
@@ -1748,6 +1788,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
   AuthenticatedAvaliacaoChamadosRoute: typeof AuthenticatedAvaliacaoChamadosRoute
   AuthenticatedBaseAtivosRoute: typeof AuthenticatedBaseAtivosRoute
+  AuthenticatedCentralChamadosRoute: typeof AuthenticatedCentralChamadosRoute
   AuthenticatedConfiabilidadeRoute: typeof AuthenticatedConfiabilidadeRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedControleMateriaisRoute: typeof AuthenticatedControleMateriaisRoute
@@ -1795,6 +1836,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
   AuthenticatedAvaliacaoChamadosRoute: AuthenticatedAvaliacaoChamadosRoute,
   AuthenticatedBaseAtivosRoute: AuthenticatedBaseAtivosRoute,
+  AuthenticatedCentralChamadosRoute: AuthenticatedCentralChamadosRoute,
   AuthenticatedConfiabilidadeRoute: AuthenticatedConfiabilidadeRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedControleMateriaisRoute: AuthenticatedControleMateriaisRoute,
@@ -1853,6 +1895,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AdminRecoveryRoute: AdminRecoveryRoute,
   AuthRoute: AuthRoute,
+  ClienteRoute: ClienteRoute,
   ContatoRoute: ContatoRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,

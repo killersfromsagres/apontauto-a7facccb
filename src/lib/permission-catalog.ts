@@ -14,6 +14,15 @@ export type PermissionGroup = {
 
 export const PERMISSION_GROUPS = [
   {
+    key: "demarchi",
+    label: "Atendimento Demarchi",
+    description: "Chamados, clientes, programação, locais e produtividade.",
+    modules: [
+      { key: "central-chamados", label: "Central de Chamados (Administração)", requiresAdmin: true },
+      { key: "portal-cliente", label: "Portal do Cliente" },
+    ],
+  },
+  {
     key: "visao-geral",
     label: "Visão Geral",
     description: "Painéis iniciais, indicadores e comunicação.",

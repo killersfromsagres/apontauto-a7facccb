@@ -2,3 +2,8 @@ project_id = "fbhpdqykoptxnrbdcspr"
 
 [functions.maintenance-team-classifier]
 verify_jwt = true
+
+# The function validates the caller with Auth.getUser and checks the persisted
+# administrator role before every mutation (compatible with current JWT keys).
+[functions.demarchi-accounts]
+verify_jwt = false

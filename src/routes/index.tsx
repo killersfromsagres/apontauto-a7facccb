@@ -28,6 +28,7 @@ export const Route = createFileRoute("/")({
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
     if (!data.session) throw redirect({ to: "/auth" });
+    if (data.session.user.app_metadata?.demarchi_portal) throw redirect({ to: "/cliente" });
     return { user: data.session.user };
   },
   head: () => ({

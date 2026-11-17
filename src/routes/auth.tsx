@@ -121,7 +121,7 @@ export const Route = createFileRoute("/auth")({
     // depender da latência da rede. A sessão persistida local é suficiente
     // para decidir o redirecionamento inicial; RLS protege os dados depois.
     const { data } = await supabase.auth.getSession();
-    if (data.session?.user) throw redirect({ to: "/" });
+    if (data.session?.user) throw redirect({ to: data.session.user.app_metadata?.demarchi_portal ? "/cliente" : "/" });
   },
   component: AuthPage,
 });
@@ -143,6 +143,7 @@ function AuthPage() {
   }>({});
 
   const pendingCreds = useRef<{ email: string } | null>(null);
+  const pendingDestination = useRef<"/" | "/cliente">("/");
   const submittingRef = useRef(false);
 
   // Apenas pré-preenche o usuário salvo. Não há round-trip remoto nem splash
@@ -193,6 +194,7 @@ function AuthPage() {
 
     try {
       const data = await signInWithRetry(loginEmail, password);
+      pendingDestination.current = data.user?.app_metadata?.demarchi_portal ? "/cliente" : "/";
 
       // O aceite é uma tarefa secundária. Nunca transforma um login já
       // autenticado em falha por indisponibilidade momentânea do banco.
@@ -207,7 +209,7 @@ function AuthPage() {
       const saved = loadLogin();
       if (saved?.email?.toLowerCase() === loginEmail.toLowerCase()) {
         touchCredentials();
-        navigate({ to: "/" });
+        navigate({ to: pendingDestination.current });
         return;
       }
 
@@ -241,7 +243,7 @@ function AuthPage() {
 
     pendingCreds.current = null;
     setAskSave(false);
-    navigate({ to: "/" });
+    navigate({ to: pendingDestination.current });
   };
 
   const forgotPassword = async () => {
@@ -266,6 +268,7 @@ function AuthPage() {
 
   return (
     <div className="auth-bg relative flex min-h-dvh items-center justify-center px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]">
+      <a href="/cliente" className="absolute right-4 top-5 z-20 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs text-white/80 backdrop-blur-sm hover:bg-white/10">Portal do cliente · Abrir chamado</a>
       <main className="relative z-10 grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[1.1fr_minmax(0,420px)]">
         <section className="hidden lg:block">
           <img

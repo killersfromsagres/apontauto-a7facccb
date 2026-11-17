@@ -13,6 +13,10 @@ export type MenuItem = { key: string; title: string; short?: string; url: string
 export type MenuSection = { kind: "item"; item: MenuItem } | { kind: "group"; key: string; title: string; icon: LucideIcon; items: MenuItem[] };
 
 export const sections: MenuSection[] = [
+  { kind: "group", key: "demarchi-grp", title: "Atendimento Demarchi", icon: ClipboardList, items: [
+    { key: "central-chamados", title: "Central de Chamados", short: "Central", url: "/central-chamados", icon: ClipboardList, keywords: ["cliente", "solicitante", "demarchi", "produtividade", "preventivas", "prisma", "backorders"] },
+    { key: "portal-cliente", title: "Portal do Cliente", short: "Chamados", url: "/cliente", icon: PlusCircle, keywords: ["abrir chamado", "solicitar manutenção"] },
+  ]},
   { kind: "group", key: "acoes-rapidas-grp", title: "Ações e Atalhos", icon: PlusCircle, items: [
     { key: "notificacoes", title: "Notificações", short: "Avisos", url: "/notificacoes", icon: Bell, keywords: ["alertas", "avisos", "comunicados"] },
     { key: "favoritos", title: "Meus Favoritos", short: "Favoritos", url: "#", icon: Star },
@@ -109,7 +113,7 @@ export function menuKeysForPath(pathname: string): string[] | null {
 }
 
 const RESTRICTED_KEYS = ["dashboard-chamados", "abastecimento", "avaliacao-chamados", "abastecimento-agua", "agua-execucao", "frota-checklist", "frota-historico", "frota-gestao", "notificacoes-admin", "confiabilidade", "gestao-executiva", "planejamento-grp", "refrigeracao", "refrigeracao-historico", "rondas-calhas", "rondas-calhas-historico", "mensageria"];
-const ADMIN_ONLY_KEYS = new Set(["usuarios", "configuracoes", "corretiva-gestor", "refrigeracao-gestor"]);
+const ADMIN_ONLY_KEYS = new Set(["usuarios", "configuracoes", "corretiva-gestor", "refrigeracao-gestor", "central-chamados"]);
 const QUICK_KEYS = ["corretiva-novo", "refrigeracao", "programacao", "assets-fill", "seguranca-trabalho", "lavanderia", "painel-legal", "qualidade-dados"];
 
 export function isRestrictedModule(key: string): boolean { return RESTRICTED_KEYS.includes(key); }
