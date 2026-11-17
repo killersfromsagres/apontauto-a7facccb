@@ -134,10 +134,16 @@ export async function createAccount(input: {
   kind: string;
   specialty: string;
 }) {
+  return accountRequest(input);
+}
+export async function removeClientAccount(personId: string) {
+  return accountRequest({ action: "remove", personId });
+}
+async function accountRequest(input: Record<string, unknown>) {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  if (!session) throw new Error("Entre novamente para cadastrar o acesso.");
+  if (!session) throw new Error("Entre novamente para gerenciar o acesso.");
   const response = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/demarchi-accounts`,
     {

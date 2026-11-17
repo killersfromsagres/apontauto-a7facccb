@@ -440,13 +440,13 @@ export function PeopleRegister({
                 {withLogin && (
                   <Field
                     label="Senha inicial"
-                    hint="Mínimo de 10 caracteres. Entregue o acesso individualmente ao titular."
+                    hint="Mínimo de 6 caracteres. Entregue o acesso individualmente ao titular."
                   >
                     <input
                       type="password"
                       autoComplete="new-password"
                       required
-                      minLength={10}
+                      minLength={6}
                       maxLength={128}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}

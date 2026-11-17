@@ -59,11 +59,13 @@ export function ClientPortal() {
       if (error) throw error;
       setPassword("");
     } catch (e: any) {
-      const message = /invalid login/i.test(e.message)
-        ? "ID ou senha inválidos. Confira os dados e tente novamente."
-        : /Informe um ID/.test(e.message)
-          ? e.message
-          : "Não foi possível entrar. Confira sua conexão e tente novamente.";
+      const message = /banned|user_banned/i.test(`${e.message} ${e.code || ""}`)
+        ? "Este acesso está inativo. Fale com a administração."
+        : /invalid login/i.test(e.message)
+          ? "ID ou senha inválidos. Confira os dados e tente novamente."
+          : /Informe um ID/.test(e.message)
+            ? e.message
+            : "Não foi possível entrar. Confira sua conexão e tente novamente.";
       setLoginError(message);
     } finally {
       setLogging(false);
@@ -123,15 +125,15 @@ export function ClientPortal() {
                     autoCorrect="off"
                     spellCheck={false}
                     required
-                    minLength={3}
+                    minLength={8}
                     maxLength={40}
-                    pattern="[A-Za-z0-9][A-Za-z0-9._\-]{2,39}"
+                    pattern="[Ss][Hh][Ee][Rr][Ww][Ii][Nn][0-9]{1,33}"
                     value={loginId}
                     onChange={(e) => {
                       setLoginId(e.target.value);
                       setLoginError("");
                     }}
-                    placeholder="Digite seu ID"
+                    placeholder="Ex.: Sherwin001234"
                     aria-invalid={!!loginError}
                     aria-describedby={loginError ? "dem-login-error" : undefined}
                   />
@@ -278,7 +280,7 @@ function ClientWorkspace() {
         </div>
       </div>
     );
-  if (!me.active)
+  if (!me.active || me.removed_at)
     return (
       <div className="dem-client-container">
         <div className="dem-error">

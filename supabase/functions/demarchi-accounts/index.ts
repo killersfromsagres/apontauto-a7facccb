@@ -1,5 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.110.2";
-import { clientAuthIdentity, isClientId, normalizeClientId } from "../_shared/demarchi-login.ts";
+import {
+  isValidAccountPassword,
+  clientAuthIdentity,
+  isClientId,
+  normalizeClientId,
+} from "../_shared/demarchi-login.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -24,13 +29,59 @@ Deno.serve(async (request: Request) => {
     .eq("user_id", auth.user.id)
     .eq("role", "admin");
   if (roleError || !roles?.length)
-    return reply({ error: "Apenas administradores podem criar acessos." }, 403);
+    return reply({ error: "Apenas administradores podem gerenciar acessos." }, 403);
   let input: Record<string, unknown>;
   try {
     input = await request.json();
   } catch {
     return reply({ error: "Formulário inválido." }, 400);
   }
+  if (input.action === "remove") {
+    if (typeof input.personId !== "string" || !/^[0-9a-f-]{36}$/i.test(input.personId))
+      return reply({ error: "Cliente inválido." }, 400);
+    const { data: person, error: personError } = await admin
+      .from("dem_people")
+      .select("id,user_id,kind,removed_at")
+      .eq("id", input.personId)
+      .maybeSingle();
+    if (personError || !person || person.kind !== "solicitante")
+      return reply({ error: "Cliente não encontrado." }, 404);
+    if (person.user_id === auth.user.id)
+      return reply({ error: "Você não pode remover o próprio acesso." }, 403);
+    if (person.user_id) {
+      const { data: targetRoles, error: targetRoleError } = await admin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", person.user_id)
+        .eq("role", "admin");
+      if (targetRoleError || targetRoles?.length)
+        return reply({ error: "Contas administradoras não podem ser removidas nesta seção." }, 403);
+    }
+    if (person.removed_at) return reply({ ok: true });
+    // Block new authentication, while the profile/RLS change also blocks
+    // existing tokens. Preserve Auth IDs and historical requests.
+    if (person.user_id) {
+      const { error: banError } = await admin.auth.admin.updateUserById(person.user_id, {
+        ban_duration: "876000h",
+      });
+      if (banError)
+        return reply({ error: "Não foi possível bloquear o acesso. Tente novamente." }, 500);
+    }
+    const { error: removalError } = await admin.rpc("dem_archive_client_account", {
+      admin_id: auth.user.id,
+      person_id: person.id,
+    });
+    if (removalError)
+      return reply(
+        {
+          error:
+            "O acesso foi bloqueado, mas o cadastro não foi removido da lista. Tente novamente.",
+        },
+        500,
+      );
+    return reply({ ok: true });
+  }
+  if (input.action && input.action !== "create") return reply({ error: "Operação inválida." }, 400);
   const name = typeof input.name === "string" ? input.name.trim() : "";
   const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
   const password = typeof input.password === "string" ? input.password : "";
@@ -44,15 +95,14 @@ Deno.serve(async (request: Request) => {
     (clientAccount
       ? !isClientId(loginId)
       : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) ||
-    password.length < 10 ||
-    password.length > 128 ||
+    !isValidAccountPassword(password) ||
     !["solicitante", "tecnico"].includes(String(kind))
   ) {
     return reply(
       {
         error: clientAccount
-          ? "Informe nome, ID válido e senha de 10 a 128 caracteres."
-          : "Informe nome, e-mail válido e senha de 10 a 128 caracteres.",
+          ? "Informe nome, ID no formato Sherwin + número e senha de 6 a 128 caracteres."
+          : "Informe nome, e-mail válido e senha de 6 a 128 caracteres.",
       },
       400,
     );

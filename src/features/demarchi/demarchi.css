@@ -1857,3 +1857,54 @@
     padding: 10px;
   }
 }
+
+.dem-id-compose {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--dem-line);
+  border-radius: 10px;
+  background: var(--dem-bg);
+  overflow: hidden;
+}
+.dem-id-compose > span {
+  display: block;
+  flex-shrink: 0;
+  padding: 12px 14px;
+  color: var(--dem-blue);
+  font-weight: 600;
+  font-size: 14px;
+  border-right: 1px solid var(--dem-line);
+  background: rgba(120, 180, 220, 0.06);
+}
+.dem-app .dem-id-compose input {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  min-width: 0;
+  flex: 1;
+}
+.dem-id-compose:focus-within {
+  border-color: var(--dem-blue);
+  box-shadow: 0 0 0 3px rgba(100, 180, 220, 0.1);
+}
+.dem-remove-client {
+  color: #ef9cab;
+}
+.dem-remove-client:hover {
+  border-color: rgba(239, 156, 171, 0.5);
+  background: rgba(190, 80, 100, 0.1);
+}
+.dem-removal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+.dem-btn.dem-btn-danger {
+  background: #b93954;
+  color: #fff;
+}
+.dem-btn.dem-btn-danger:hover {
+  background: #ce4663;
+}

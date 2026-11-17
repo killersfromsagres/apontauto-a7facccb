@@ -1,9 +1,14 @@
 import { useState } from "react";
-import { KeyRound, Pencil, Plus, UserRound } from "lucide-react";
+import { KeyRound, Pencil, Plus, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { createAccount, savePerson } from "../api";
+import { createAccount, removeClientAccount, savePerson } from "../api";
 import type { DemPerson } from "../domain";
-import { normalizeClientId } from "../../../../supabase/functions/_shared/demarchi-login";
+import {
+  CLIENT_PASSWORD_MIN_LENGTH,
+  clientIdNumber,
+  displayClientId,
+  normalizeClientId,
+} from "../../../../supabase/functions/_shared/demarchi-login";
 import { Field, Modal, SearchBox } from "./shared";
 
 export function ClientsRegister({
@@ -17,7 +22,8 @@ export function ClientsRegister({
   const [editing, setEditing] = useState<Partial<DemPerson> | null>(null);
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const clients = people.filter((p) => p.kind === "solicitante");
+  const [removing, setRemoving] = useState<DemPerson | null>(null);
+  const clients = people.filter((p) => p.kind === "solicitante" && !p.removed_at);
   const filtered = clients.filter((p) =>
     `${p.name} ${p.login_id || ""}`.toLowerCase().includes(search.toLowerCase()),
   );
@@ -29,10 +35,7 @@ export function ClientsRegister({
             <UserRound size={20} />
             Clientes
           </h2>
-          <p>
-            Crie o ID e a senha de cada cliente. O nome ficará vinculado aos chamados abertos por
-            ele.
-          </p>
+          <p>Informe a numeração do ID e defina a senha. O prefixo Sherwin já vem preenchido.</p>
         </div>
         <button
           type="button"
@@ -67,7 +70,9 @@ export function ClientsRegister({
             </span>
             <div>
               <h3>{p.name}</h3>
-              <p className="dem-mono">ID: {p.login_id || "Não definido"}</p>
+              <p className="dem-mono">
+                ID: {p.login_id ? displayClientId(p.login_id) : "Não definido"}
+              </p>
               <span className="dem-badge">{p.active ? "Ativo" : "Inativo"}</span>
             </div>
             <button
@@ -78,6 +83,16 @@ export function ClientsRegister({
             >
               <Pencil size={17} />
             </button>
+            <button
+              type="button"
+              className="dem-icon-btn dem-remove-client"
+              disabled={busy}
+              aria-label={`Remover cliente ${p.name}`}
+              title="Remover cliente"
+              onClick={() => setRemoving(p)}
+            >
+              <Trash2 size={17} />
+            </button>
           </article>
         ))}
       </div>
@@ -87,7 +102,7 @@ export function ClientsRegister({
           <h3>
             {clients.length ? "Nenhum cliente encontrado." : "Cadastre seu primeiro cliente."}
           </h3>
-          <p>Informe o nome, escolha um ID e defina a senha de acesso.</p>
+          <p>Informe o nome, a numeração do ID Sherwin e a senha de acesso.</p>
         </div>
       )}
       {editing && (
@@ -147,30 +162,35 @@ export function ClientsRegister({
               hint={
                 editing.id
                   ? "ID definido na criação do acesso."
-                  : "Use de 3 a 40 caracteres: letras, números, ponto, hífen ou sublinhado."
+                  : `Preencha somente os números. Login: Sherwin${clientIdNumber(editing.login_id || "") || "001234"}.`
               }
             >
-              <input
-                required
-                minLength={3}
-                maxLength={40}
-                pattern="[A-Za-z0-9][A-Za-z0-9._\-]{2,39}"
-                readOnly={!!editing.id}
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                autoComplete="off"
-                value={editing.login_id || ""}
-                onChange={(e) => setEditing({ ...editing, login_id: e.target.value })}
-                placeholder="Ex.: 001234 ou cliente.demarchi"
-              />
+              <div className="dem-id-compose">
+                <span aria-hidden="true">Sherwin</span>
+                <input
+                  required
+                  aria-label="Numeração do ID Sherwin"
+                  inputMode="numeric"
+                  minLength={1}
+                  maxLength={33}
+                  pattern="[0-9]{1,33}"
+                  readOnly={!!editing.id}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  autoComplete="off"
+                  value={clientIdNumber(editing.login_id || "")}
+                  onChange={(e) => setEditing({ ...editing, login_id: e.target.value })}
+                  placeholder="001234"
+                />
+              </div>
             </Field>
             {!editing.id && (
-              <Field label="Senha de acesso" hint="Mínimo de 10 caracteres.">
+              <Field label="Senha de acesso" hint="Mínimo de 6 caracteres.">
                 <input
                   type="password"
                   required
-                  minLength={10}
+                  minLength={CLIENT_PASSWORD_MIN_LENGTH}
                   maxLength={128}
                   autoComplete="new-password"
                   value={password}
@@ -193,6 +213,55 @@ export function ClientsRegister({
               {busy ? "Salvando…" : editing.id ? "Salvar alterações" : "Criar acesso do cliente"}
             </button>
           </form>
+        </Modal>
+      )}
+      {removing && (
+        <Modal
+          title="Remover cliente"
+          close={() => {
+            if (!busy) setRemoving(null);
+          }}
+        >
+          <div className="dem-section-form">
+            <p>
+              Remover o acesso de <strong>{removing.name}</strong>
+              {removing.login_id && <> ({displayClientId(removing.login_id)})</>}?
+            </p>
+            <p className="dem-help">
+              O cliente não poderá mais acessar o portal. Os chamados e o histórico serão
+              preservados.
+            </p>
+            <div className="dem-removal-actions">
+              <button
+                type="button"
+                className="dem-btn dem-btn-secondary"
+                disabled={busy}
+                onClick={() => setRemoving(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="dem-btn dem-btn-danger"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await removeClientAccount(removing.id);
+                    await refresh();
+                    setRemoving(null);
+                    toast.success("Acesso do cliente removido.");
+                  } catch (e: any) {
+                    toast.error(e.message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {busy ? "Removendo…" : "Remover acesso"}
+              </button>
+            </div>
+          </div>
         </Modal>
       )}
     </section>
