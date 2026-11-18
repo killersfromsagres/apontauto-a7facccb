@@ -550,6 +550,16 @@ export function DailyExecutionReport() {
     today.setDate(today.getDate() - weekday);
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   });
+  const selectedIsoWeek = (() => {
+    const monday = new Date(`${scheduleStartDate}T12:00:00Z`);
+    const thursday = new Date(monday);
+    thursday.setUTCDate(thursday.getUTCDate() + 3);
+    const isoYear = thursday.getUTCFullYear();
+    const firstThursday = new Date(Date.UTC(isoYear, 0, 4, 12));
+    firstThursday.setUTCDate(firstThursday.getUTCDate() - (firstThursday.getUTCDay() + 6) % 7 + 3);
+    const week = 1 + Math.round((thursday.getTime() - firstThursday.getTime()) / 604800000);
+    return `${isoYear}-W${String(week).padStart(2, "0")}`;
+  })();
   const [clearingPreventives, setClearingPreventives] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [savingPreventives, setSavingPreventives] = useState<Set<string>>(() => new Set());
@@ -892,31 +902,13 @@ export function DailyExecutionReport() {
     }
     setImporting(true);
     try {
-      const results = await Promise.all(accepted.map(parseScheduleFile));
+      const results = await Promise.all(accepted.map((file) => parseScheduleFile(file, overrideScheduleDates ? scheduleStartDate : undefined)));
       // Deduplica a mesma OS/equipe/dia antes do RPC. O PostgreSQL não aceita
       // que o mesmo item_key seja atualizado duas vezes na mesma operação em lote.
       const parsedRows = results.flatMap((result) => result.rows);
-      // Datas da planilha podem estar desatualizadas. Ao substituir, mantemos
-      // os blocos na ordem da programacao e atribuimos datas consecutivas
-      // a partir da data inicial escolhida pelo usuario.
-      let datedRows = parsedRows;
-      if (overrideScheduleDates) {
-        if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(scheduleStartDate) ||
-            Number.isNaN(new Date(`${scheduleStartDate}T12:00:00`).getTime())) {
-          throw new Error("Selecione uma data inicial válida para a programação.");
-        }
-        const originalDates = Array.from(new Set(parsedRows.map((row) => row.date))).sort();
-        const replacements = new Map(originalDates.map((date, index) => {
-          const target = new Date(`${scheduleStartDate}T12:00:00`);
-          target.setDate(target.getDate() + index);
-          const iso = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}-${String(target.getDate()).padStart(2, "0")}`;
-          return [date, iso] as const;
-        }));
-        datedRows = parsedRows.map((row) => {
-          const date = replacements.get(row.date) ?? row.date;
-          return { ...row, date, id: [date, row.os, row.team || row.area || row.sourceFile].join("|") };
-        });
-      }
+      // O parser usa o dia escrito no cabeçalho (SEGUNDA ... SEXTA),
+      // nunca a data incorreta da planilha quando a semana foi escolhida.
+      const datedRows = parsedRows;
       const imported = stableMergeSchedules([], datedRows);
       if (!imported.length) throw new Error("Nenhuma OS programada foi encontrada nas planilhas.");
       const replaceCurrent = shouldReplaceSchedule(rows, imported);
@@ -1633,12 +1625,32 @@ export function DailyExecutionReport() {
               </label>
               {overrideScheduleDates && (
                 <label className="flex flex-col gap-1 text-xs font-medium">
+                  Semana da programação
+                  <input type="week" value={selectedIsoWeek} onChange={(event) => {
+                    const match = /^(\\d{4})-W(\\d{2})$/.exec(event.target.value);
+                    if (!match) return;
+                    const year = Number(match[1]);
+                    const week = Number(match[2]);
+                    const jan4 = new Date(Date.UTC(year, 0, 4, 12));
+                    jan4.setUTCDate(jan4.getUTCDate() - (jan4.getUTCDay() + 6) % 7 + (week - 1) * 7);
+                    setScheduleStartDate(jan4.toISOString().slice(0, 10));
+                  }} className="h-9 rounded-md border border-input bg-background px-3 text-sm" />
+                </label>
+              )}
+              {overrideScheduleDates && (
+                <label className="flex flex-col gap-1 text-xs font-medium">
                   Data inicial da semana (segunda-feira)
-                  <input type="date" value={scheduleStartDate} onChange={(event) => setScheduleStartDate(event.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm" />
+                  <input type="date" value={scheduleStartDate} onChange={(event) => {
+                    if (!event.target.value) return;
+                    const chosen = new Date(`${event.target.value}T12:00:00`);
+                    if (Number.isNaN(chosen.getTime())) return;
+                    chosen.setDate(chosen.getDate() - (chosen.getDay() + 6) % 7);
+                    setScheduleStartDate(`${chosen.getFullYear()}-${String(chosen.getMonth() + 1).padStart(2, "0")}-${String(chosen.getDate()).padStart(2, "0")}`);
+                  }} className="h-9 rounded-md border border-input bg-background px-3 text-sm" />
                 </label>
               )}
               <p className="w-full text-[11px] text-muted-foreground">
-                As atividades serão distribuídas em dias consecutivos a partir da data escolhida, ignorando as datas antigas da planilha. O PDF usará a data selecionada no relatório.
+                A semana escolhida define as datas de segunda a sexta. O sistema lê os nomes dos dias na planilha e ignora as datas antigas. Selecione o dia no painel para emitir o PDF correspondente.
               </p>
             </div>
             <input
