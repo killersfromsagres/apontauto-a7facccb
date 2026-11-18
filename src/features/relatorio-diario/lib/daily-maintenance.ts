@@ -101,17 +101,6 @@ const findIndex = (headers: string[], aliases: string[]) => {
   return index >= 0 ? index : undefined;
 };
 
-const isDayTitle = (value: unknown) => {
-  const normalized = normalize(value);
-  return (
-    normalized.includes("SEGUNDA-FEIRA") ||
-    normalized.includes("TERCA-FEIRA") ||
-    normalized.includes("QUARTA-FEIRA") ||
-    normalized.includes("QUINTA-FEIRA") ||
-    normalized.includes("SEXTA-FEIRA")
-  );
-};
-
 const refrigerationGroup = (text: string) => {
   const normalized = normalize(text);
   if (!/(REFRIGERACAO|REFRIG|HVAC|AR CONDICIONADO)/.test(normalized)) return null;
