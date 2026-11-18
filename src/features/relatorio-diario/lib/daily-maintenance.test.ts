@@ -7,6 +7,24 @@ import {
   summarizeScheduleRows,
 } from "./daily-maintenance";
 
+describe("selected week overrides stale spreadsheet dates", () => {
+  it("maps weekday titles without relying on old dates", () => {
+    const matrix = [
+      ["SEGUNDA-FEIRA • 02/11/2026 • CIVIL"],
+      ["OS", "Nome", "Atividade", "Equipe"],
+      ["1001", "INSPEÇÃO", "Preventiva", "CIVIL"],
+      ["QUARTA-FEIRA • 04/11/2026 • CIVIL"],
+      ["OS", "Nome", "Atividade", "Equipe"],
+      ["1002", "INSPEÇÃO", "Preventiva", "CIVIL"],
+      ["SEXTA-FEIRA • CIVIL"],
+      ["OS", "Nome", "Atividade", "Equipe"],
+      ["1003", "INSPEÇÃO", "Preventiva", "CIVIL"],
+    ];
+    const rows = parseScheduleMatrix(matrix, "semana-47.xlsx", "2026-11-16");
+    expect(rows.map((row) => row.date)).toEqual(["2026-11-16", "2026-11-18", "2026-11-20"]);
+  });
+});
+
 describe("daily maintenance schedule parser", () => {
   it("keeps the programmed day even when rows contain SLA dates", () => {
     const rows = parseScheduleMatrix(
