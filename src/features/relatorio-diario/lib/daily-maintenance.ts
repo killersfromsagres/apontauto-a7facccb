@@ -167,7 +167,7 @@ export function scheduleWeekdayIndex(value: unknown): number | null {
 
 export function dateForScheduleWeekday(monday: string, weekdayIndex: number): string {
   const date = new Date(`${monday}T12:00:00`);
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(monday) || Number.isNaN(date.getTime()) || date.getDay() !== 1) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(monday) || Number.isNaN(date.getTime()) || date.getDay() !== 1) {
     throw new Error("Escolha uma segunda-feira válida como início da semana.");
   }
   date.setDate(date.getDate() + weekdayIndex);
