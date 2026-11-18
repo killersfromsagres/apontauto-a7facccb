@@ -169,7 +169,23 @@ export function summarizeScheduleRows(rows: ScheduledMaintenance[]): ScheduleDay
     }));
 }
 
-export function parseScheduleMatrix(matrix: unknown[][], sourceFile: string): ScheduledMaintenance[] {
+export function scheduleWeekdayIndex(value: unknown): number | null {
+  const title = normalize(value);
+  const weekdays = ["SEGUNDA", "TERCA", "QUARTA", "QUINTA", "SEXTA"];
+  const index = weekdays.findIndex((day) => new RegExp(`\\b${day}(?:-FEIRA)?\\b`).test(title));
+  return index < 0 ? null : index;
+}
+
+export function dateForScheduleWeekday(monday: string, weekdayIndex: number): string {
+  const date = new Date(`${monday}T12:00:00`);
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(monday) || Number.isNaN(date.getTime()) || date.getDay() !== 1) {
+    throw new Error("Escolha uma segunda-feira válida como início da semana.");
+  }
+  date.setDate(date.getDate() + weekdayIndex);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+export function parseScheduleMatrix(matrix: unknown[][], sourceFile: string, weekMonday?: string): ScheduledMaintenance[] {
   const rows: ScheduledMaintenance[] = [];
   let currentDate = "";
   let headers: string[] = [];
@@ -177,12 +193,13 @@ export function parseScheduleMatrix(matrix: unknown[][], sourceFile: string): Sc
   for (const rawRow of matrix) {
     const row = Array.isArray(rawRow) ? rawRow : [];
     const detectedDate = toIsoDate(String(row[0] ?? ""));
+    const weekdayIndex = scheduleWeekdayIndex(row[0]);
 
     // O dia programado vem somente da faixa de título do bloco
     // (ex.: "SEGUNDA-FEIRA • 05/10/2026 • ELÉTRICA...").
     // Datas internas da OS, principalmente Término SLA, nunca alteram o dia programado.
-    if (detectedDate && isDayTitle(row[0])) {
-      currentDate = detectedDate;
+    if (weekdayIndex !== null && (weekMonday || detectedDate)) {
+      currentDate = weekMonday ? dateForScheduleWeekday(weekMonday, weekdayIndex) : detectedDate!;
       headers = [];
       continue;
     }
@@ -236,7 +253,7 @@ export function parseScheduleMatrix(matrix: unknown[][], sourceFile: string): Sc
   return rows;
 }
 
-export async function parseScheduleFile(file: File): Promise<ImportResult> {
+export async function parseScheduleFile(file: File, weekMonday?: string): Promise<ImportResult> {
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
   const exactScheduleSheet = workbook.SheetNames.find((name) => normalize(name) === "PROGRAMACAO");
@@ -253,7 +270,7 @@ export async function parseScheduleFile(file: File): Promise<ImportResult> {
     defval: "",
     raw: false,
   });
-  const rows = parseScheduleMatrix(matrix, file.name);
+  const rows = parseScheduleMatrix(matrix, file.name, weekMonday);
 
   if (!rows.length) {
     throw new Error(
