@@ -543,6 +543,13 @@ export function DailyExecutionReport() {
   const [loadingExecutions, setLoadingExecutions] = useState(false);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [overrideScheduleDates, setOverrideScheduleDates] = useState(true);
+  const [scheduleStartDate, setScheduleStartDate] = useState(() => {
+    const today = new Date(`${todayIso()}T12:00:00`);
+    const weekday = (today.getDay() + 6) % 7;
+    today.setDate(today.getDate() - weekday);
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  });
   const [clearingPreventives, setClearingPreventives] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [savingPreventives, setSavingPreventives] = useState<Set<string>>(() => new Set());
@@ -889,7 +896,28 @@ export function DailyExecutionReport() {
       // Deduplica a mesma OS/equipe/dia antes do RPC. O PostgreSQL não aceita
       // que o mesmo item_key seja atualizado duas vezes na mesma operação em lote.
       const parsedRows = results.flatMap((result) => result.rows);
-      const imported = stableMergeSchedules([], parsedRows);
+      // Datas da planilha podem estar desatualizadas. Ao substituir, mantemos
+      // os blocos na ordem da programacao e atribuimos datas consecutivas
+      // a partir da data inicial escolhida pelo usuario.
+      let datedRows = parsedRows;
+      if (overrideScheduleDates) {
+        if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(scheduleStartDate) ||
+            Number.isNaN(new Date(`${scheduleStartDate}T12:00:00`).getTime())) {
+          throw new Error("Selecione uma data inicial válida para a programação.");
+        }
+        const originalDates = Array.from(new Set(parsedRows.map((row) => row.date))).sort();
+        const replacements = new Map(originalDates.map((date, index) => {
+          const target = new Date(`${scheduleStartDate}T12:00:00`);
+          target.setDate(target.getDate() + index);
+          const iso = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}-${String(target.getDate()).padStart(2, "0")}`;
+          return [date, iso] as const;
+        }));
+        datedRows = parsedRows.map((row) => {
+          const date = replacements.get(row.date) ?? row.date;
+          return { ...row, date, id: [date, row.os, row.team || row.area || row.sourceFile].join("|") };
+        });
+      }
+      const imported = stableMergeSchedules([], datedRows);
       if (!imported.length) throw new Error("Nenhuma OS programada foi encontrada nas planilhas.");
       const replaceCurrent = shouldReplaceSchedule(rows, imported);
       const nextRows = replaceCurrent ? stableMergeSchedules([], imported) : stableMergeSchedules(rows, imported);
@@ -1598,6 +1626,21 @@ export function DailyExecutionReport() {
           </div>
 
           <div className="rounded-xl border border-border bg-background/60 p-3">
+            <div className="mb-3 flex flex-wrap items-end gap-3 rounded-lg border border-border bg-background/70 p-3">
+              <label className="flex items-center gap-2 text-xs font-medium">
+                <input type="checkbox" checked={overrideScheduleDates} onChange={(event) => setOverrideScheduleDates(event.target.checked)} />
+                Corrigir datas da programação na importação
+              </label>
+              {overrideScheduleDates && (
+                <label className="flex flex-col gap-1 text-xs font-medium">
+                  Data inicial da semana (segunda-feira)
+                  <input type="date" value={scheduleStartDate} onChange={(event) => setScheduleStartDate(event.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm" />
+                </label>
+              )}
+              <p className="w-full text-[11px] text-muted-foreground">
+                As atividades serão distribuídas em dias consecutivos a partir da data escolhida, ignorando as datas antigas da planilha. O PDF usará a data selecionada no relatório.
+              </p>
+            </div>
             <input
               ref={inputRef}
               type="file"
