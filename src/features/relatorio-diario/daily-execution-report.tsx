@@ -864,8 +864,25 @@ export function DailyExecutionReport() {
 
   async function handleFiles(files: FileList | File[] | null) {
     if (!files?.length) return;
-    const accepted = Array.from(files).filter((file) => /\.(xlsx|xls)$/i.test(file.name));
-    if (!accepted.length) return toast.error("Selecione planilhas .xlsx ou .xls.");
+    // Alguns seletores de arquivos (especialmente no Android/Drive) entregam
+    // arquivos Excel sem a extensao original. Validamos tambem a assinatura
+    // real do arquivo, em vez de depender exclusivamente do nome.
+    const accepted = (await Promise.all(Array.from(files).map(async (file) => {
+      if (/\\.(xlsx|xls)$/i.test(file.name.trim())) return file;
+      if (file.size < 8) return null;
+      const signature = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+      const isZip = signature[0] === 0x50 && signature[1] === 0x4b &&
+        ((signature[2] === 0x03 && signature[3] === 0x04) ||
+         (signature[2] === 0x05 && signature[3] === 0x06));
+      const isOle = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]
+        .every((byte, index) => signature[index] === byte);
+      return isZip || isOle ? file : null;
+    }))).filter((file): file is File => file !== null);
+    if (!accepted.length) {
+      toast.error("Arquivo não reconhecido. Selecione uma planilha Excel .xlsx ou .xls.");
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
     setImporting(true);
     try {
       const results = await Promise.all(accepted.map(parseScheduleFile));
@@ -1584,7 +1601,7 @@ export function DailyExecutionReport() {
             <input
               ref={inputRef}
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
               multiple
               className="hidden"
               onChange={(event) => void handleFiles(event.target.files)}
