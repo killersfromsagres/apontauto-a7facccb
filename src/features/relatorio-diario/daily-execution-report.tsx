@@ -34,6 +34,7 @@ import {
   inferMaintenanceArea,
   normalizeOs,
   parseScheduleFile,
+  dateForScheduleWeekday,
   type ScheduledMaintenance,
 } from "@/features/relatorio-diario/lib/daily-maintenance";
 import {
@@ -779,13 +780,11 @@ export function DailyExecutionReport() {
   const correctiveByOs = useMemo(() => buildCorrectiveByOs(portfolio), [portfolio]);
   const executionByDayOs = useMemo(() => buildExecutionByDayOs(completions), [completions]);
   const correctiveExecutionByOs = useMemo(() => buildCorrectiveExecutionByOs(completions), [completions]);
-  const dates = planning.days.map((day) => day.date);
+  const visibleWeekDates = Array.from({ length: 5 }, (_, index) => dateForScheduleWeekday(scheduleStartDate, index));
 
   useEffect(() => {
-    if (!dates.length || dates.includes(selectedDate)) return;
-    const today = todayIso();
-    setSelectedDate(dates.includes(today) ? today : dates[0]);
-  }, [dates, selectedDate]);
+    if (!visibleWeekDates.includes(selectedDate)) setSelectedDate(scheduleStartDate);
+  }, [scheduleStartDate, selectedDate]);
 
   const fixedPreventives = useMemo(
     () => rows.filter((row) => row.date === selectedDate && isPreventiveActivity(row)),
@@ -1594,22 +1593,22 @@ export function DailyExecutionReport() {
                 : "Nenhuma programação compartilhada foi encontrada."}
             </p>
             <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-              {planning.days.map((day) => {
-                const summary = daySummary(day.date);
+              {visibleWeekDates.map((date) => {
+                const summary = daySummary(date);
                 return (
                   <button
-                    key={day.date}
+                    key={date}
                     type="button"
-                    onClick={() => setSelectedDate(day.date)}
+                    onClick={() => setSelectedDate(date)}
                     className={cn(
                       "min-w-[125px] rounded-lg border px-3 py-2 text-left transition-colors",
-                      day.date === selectedDate
+                      date === selectedDate
                         ? "border-slate-800 bg-slate-950 text-white dark:border-slate-200 dark:bg-slate-100 dark:text-slate-950"
                         : "border-border bg-card hover:bg-muted/40",
                     )}
                   >
-                    <span className="block text-[9px] font-semibold uppercase">{formatWeekdayBr(day.date, true)}</span>
-                    <span className="mt-0.5 block text-xs font-semibold">{formatDateBr(day.date)}</span>
+                    <span className="block text-[9px] font-semibold uppercase">{formatWeekdayBr(date, true)}</span>
+                    <span className="mt-0.5 block text-xs font-semibold">{formatDateBr(date)}</span>
                     <span className="mt-1 block text-[9px] opacity-75">{summary.done}/{summary.total} realizadas</span>
                   </button>
                 );
