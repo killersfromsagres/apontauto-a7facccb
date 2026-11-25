@@ -459,22 +459,7 @@ async function decodePdfLogo(src: string, signal: AbortSignal): Promise<HTMLImag
   }
 }
 
-function normalizePdfLogo(image: HTMLImageElement, preserveColors = false): PdfLogo {
-  if (preserveColors) {
-    // A referência colorida tem fundo branco original. Não converta seu conteúdo em máscara.
-    const canvas = document.createElement("canvas");
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-    const ctx = canvas.getContext("2d", { alpha: false });
-    if (!ctx || !canvas.width || !canvas.height) throw new Error("Logo inválida.");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(image, 0, 0);
-    return { dataUrl: canvas.toDataURL("image/jpeg", 0.99), ratio: canvas.width / canvas.height };
-  }
-
-  // Renderiza a máscara original em branco, sem caixa, sobre a cor exata do cabeçalho.
-  // A imagem final é RGB opaca: evita artefatos de alpha no jsPDF.
+function normalizePdfLogo(image: HTMLImageElement, whitePaper = false): PdfLogo {
   const source = document.createElement("canvas");
   const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
   source.width = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -482,57 +467,63 @@ function normalizePdfLogo(image: HTMLImageElement, preserveColors = false): PdfL
   const ctx = source.getContext("2d", { willReadFrequently: true });
   if (!ctx) throw new Error("Canvas indisponível.");
   ctx.drawImage(image, 0, 0, source.width, source.height);
-  const pixels = ctx.getImageData(0, 0, source.width, source.height).data;
+  const rgba = ctx.getImageData(0, 0, source.width, source.height);
+  const pixels = rgba.data;
   let left = source.width, top = source.height, right = -1, bottom = -1, visible = 0;
   for (let y = 0; y < source.height; y++) {
     for (let x = 0; x < source.width; x++) {
-      const alpha = pixels[(y * source.width + x) * 4 + 3];
+      const i = (y * source.width + x) * 4;
+      const originalAlpha = pixels[i + 3] / 255;
+      // Na referência Sherwin-Williams o papel é branco e a marca é colorida.
+      // Extrai a cobertura da tinta, preserva os vazados e as bordas suavizadas.
+      const ink = whitePaper
+        ? Math.max(0, Math.min(1, (255 - Math.min(pixels[i], pixels[i + 1], pixels[i + 2]) - 20) / 120))
+        : 1;
+      const alpha = Math.round(originalAlpha * ink * 255);
+      pixels[i] = 255;
+      pixels[i + 1] = 255;
+      pixels[i + 2] = 255;
+      pixels[i + 3] = alpha;
       if (alpha < 12) continue;
       visible++;
       left = Math.min(left, x); right = Math.max(right, x);
       top = Math.min(top, y); bottom = Math.max(bottom, y);
     }
   }
-  // Rejeita páginas HTML, fundos opacos e imagens vazias em vez de desenhar um retângulo.
   if (!visible || visible > source.width * source.height * 0.97) {
     throw new Error("Logo sem máscara transparente utilizável.");
   }
+  ctx.putImageData(rgba, 0, 0);
   const w = right - left + 1, h = bottom - top + 1;
-  ctx.globalCompositeOperation = "source-in";
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, source.width, source.height);
-
   const output = document.createElement("canvas");
   const targetScale = 960 / Math.max(w, h);
   output.width = Math.max(1, Math.round(w * targetScale));
   output.height = Math.max(1, Math.round(h * targetScale));
-  const out = output.getContext("2d", { alpha: false });
+  const out = output.getContext("2d");
   if (!out) throw new Error("Canvas indisponível.");
-  out.fillStyle = "#0a1223";
-  out.fillRect(0, 0, output.width, output.height);
   out.imageSmoothingEnabled = true;
   out.imageSmoothingQuality = "high";
   out.drawImage(source, left, top, w, h, 0, 0, output.width, output.height);
-  return { dataUrl: output.toDataURL("image/jpeg", 0.99), ratio: w / h };
+  // PNG RGBA real, gerado pelo navegador: sem fundo ou retângulo no PDF.
+  return { dataUrl: output.toDataURL("image/png"), ratio: w / h };
 }
 
-async function loadPdfLogo(doc: jsPDF, sources: string[], preserveColors = false): Promise<PdfLogo | null> {
+async function loadPdfLogo(doc: jsPDF, sources: string[], whitePaper = false): Promise<PdfLogo | null> {
   for (const src of sources) {
-    const cacheKey = `${preserveColors ? "color" : "white"}:${src}`;
+    const cacheKey = `${whitePaper ? "paper-mask" : "alpha-mask"}:${src}`;
     const cached = pdfLogoCache.get(cacheKey);
     if (cached) return cached;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 2500);
     try {
-      const logo = normalizePdfLogo(await decodePdfLogo(src, controller.signal), preserveColors);
+      const logo = normalizePdfLogo(await decodePdfLogo(src, controller.signal), whitePaper);
       const properties = doc.getImageProperties(logo.dataUrl);
-      if (properties.fileType !== "JPEG" || !properties.width || !properties.height) {
+      if (properties.fileType !== "PNG" || !properties.width || !properties.height) {
         throw new Error("Logo normalizada inválida.");
       }
       pdfLogoCache.set(cacheKey, logo);
       return logo;
     } catch (error) {
-      // Não exibe arquivos quebrados nem interrompe a exportação.
       console.warn("Fonte de logo indisponível:", src.startsWith("data:") ? "incorporada" : src, error);
     } finally {
       clearTimeout(timeout);
@@ -555,8 +546,8 @@ function drawContainedLogo(
       const boxRatio = boxWidth / boxHeight;
       const width = logo.ratio >= boxRatio ? boxWidth : boxHeight * logo.ratio;
       const height = logo.ratio >= boxRatio ? boxWidth / logo.ratio : boxHeight;
-      doc.addImage(logo.dataUrl, "JPEG", x + (boxWidth - width) / 2,
-        y + (boxHeight - height) / 2, width, height, undefined, "NONE");
+      doc.addImage(logo.dataUrl, "PNG", x + (boxWidth - width) / 2,
+        y + (boxHeight - height) / 2, width, height, undefined, "FAST");
       return;
     } catch (error) {
       console.warn("Não foi possível inserir a logo no PDF:", label, error);
@@ -1420,7 +1411,7 @@ export function DailyExecutionReport() {
         doc.line(56, 5, 56, 24);
         doc.line(width - 58, 5, width - 58, 24);
         drawContainedLogo(doc, sherwinLogo, "Sherwin-Williams", margin + 3, 8, 34, 13);
-        drawContainedLogo(doc, gpsLogo, "Grupo GPS", width - margin - 41, 8, 38, 13);
+        drawContainedLogo(doc, gpsLogo, "Grupo GPS", width - margin - 33, 8, 30, 13);
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(13.2);
