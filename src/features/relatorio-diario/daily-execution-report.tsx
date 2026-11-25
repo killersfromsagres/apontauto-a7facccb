@@ -54,7 +54,6 @@ import {
 } from "@/features/relatorio-diario/lib/weekly-planning";
 import { supabase } from "@/integrations/supabase/client";
 import { equipeHex } from "@/lib/corretiva/equipe";
-import { SHERWIN_WILLIAMS_LOGO_PNG } from "@/lib/materiais/pdf-brand-assets";
 import { cn } from "@/lib/utils";
 
 const ROWS_KEY = "apontauto:relatorio-diario:programacao:v1";
@@ -66,6 +65,9 @@ const CATALOG_RENDER_LIMIT = 300;
 
 const SHERWIN_WILLIAMS_LOGO_URL =
   "/__l5e/assets-v1/76b6660e-a690-4ff2-8943-c6f831b5ded6/sherwin-williams.png";
+// Wordmark público de alta resolução, extraído de material da própria Sherwin-Williams.
+const SHERWIN_WILLIAMS_WORDMARK_URL =
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/Sherwin-Williams_wordmark.svg/960px-Sherwin-Williams_wordmark.svg.png";
 const GRUPO_GPS_LOGO_URL =
   "/__l5e/assets-v1/d386a336-b420-4782-9d48-85d30cbb6fee/grupo-gps.png";
 // Cópia da logo pública do projeto para exportação sem depender do Lovable.
@@ -104,7 +106,8 @@ type CorrectiveProgrammingHistory = {
   created_at: string;
 };
 
-type PdfLogo = { dataUrl: string; ratio: number; lightBackground: boolean };
+type PdfLogo = { dataUrl: string; ratio: number };
+const pdfLogoCache = new Map<string, PdfLogo>();
 
 type WeatherCondition = "ensolarado" | "parcialmente_nublado" | "nublado" | "chuva" | "chuva_forte";
 
@@ -424,49 +427,109 @@ const formatSourceStatus = (value: unknown) => {
   return spaced.charAt(0).toLocaleUpperCase("pt-BR") + spaced.slice(1);
 };
 
-const blobToDataUrl = (blob: Blob) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () =>
-      typeof reader.result === "string"
-        ? resolve(reader.result)
-        : reject(new Error("Não foi possível ler a logo."));
-    reader.onerror = () => reject(reader.error ?? new Error("Não foi possível ler a logo."));
-    reader.readAsDataURL(blob);
-  });
-
-function readPdfLogo(doc: jsPDF, dataUrl: string, lightBackground = false): PdfLogo {
-  const properties = doc.getImageProperties(dataUrl);
-  if (properties.fileType !== "PNG" || !properties.width || !properties.height) {
-    throw new Error("Logo PNG inválida.");
+async function decodePdfLogo(src: string, signal: AbortSignal): Promise<HTMLImageElement> {
+  let objectUrl: string | undefined;
+  try {
+    if (!src.startsWith("data:")) {
+      const response = await fetch(src, { cache: "force-cache", signal });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      if (!blob.type.startsWith("image/")) throw new Error("Resposta não é uma imagem.");
+      objectUrl = URL.createObjectURL(blob);
+    }
+    return await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      const cleanup = () => {
+        signal.removeEventListener("abort", abort);
+        image.onload = null;
+        image.onerror = null;
+      };
+      const abort = () => {
+        cleanup();
+        image.src = "";
+        reject(new Error("Tempo limite da logo."));
+      };
+      if (signal.aborted) { abort(); return; }
+      signal.addEventListener("abort", abort, { once: true });
+      image.onload = () => {
+        cleanup();
+        if (image.naturalWidth > 0 && image.naturalHeight > 0) resolve(image);
+        else reject(new Error("Imagem vazia."));
+      };
+      image.onerror = () => { cleanup(); reject(new Error("Imagem inválida.")); };
+      image.src = objectUrl ?? src;
+    });
+  } finally {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
   }
-  return { dataUrl, ratio: properties.width / properties.height, lightBackground };
 }
 
-async function loadPdfLogo(
-  doc: jsPDF,
-  url: string,
-  fallbackDataUrl: string,
-  fallbackLightBackground = false,
-): Promise<PdfLogo | null> {
-  // A logo original pode não existir fora do ambiente Lovable.
-  // Limita a espera e usa a cópia incorporada, inclusive offline.
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 3000);
-  try {
-    const response = await fetch(url, { cache: "force-cache", signal: controller.signal });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return readPdfLogo(doc, await blobToDataUrl(await response.blob()));
-  } catch {
-    try {
-      return readPdfLogo(doc, fallbackDataUrl, fallbackLightBackground);
-    } catch (error) {
-      console.warn("Logo do relatório indisponível:", url, error);
-      return null;
+function normalizePdfLogo(image: HTMLImageElement): PdfLogo {
+  // Renderiza a máscara original em branco, sem caixa, sobre a cor exata do cabeçalho.
+  // A imagem final é RGB opaca: evita artefatos de alpha no jsPDF.
+  const source = document.createElement("canvas");
+  const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+  source.width = Math.max(1, Math.round(image.naturalWidth * scale));
+  source.height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const ctx = source.getContext("2d", { willReadFrequently: true });
+  if (!ctx) throw new Error("Canvas indisponível.");
+  ctx.drawImage(image, 0, 0, source.width, source.height);
+  const pixels = ctx.getImageData(0, 0, source.width, source.height).data;
+  let left = source.width, top = source.height, right = -1, bottom = -1, visible = 0;
+  for (let y = 0; y < source.height; y++) {
+    for (let x = 0; x < source.width; x++) {
+      const alpha = pixels[(y * source.width + x) * 4 + 3];
+      if (alpha < 12) continue;
+      visible++;
+      left = Math.min(left, x); right = Math.max(right, x);
+      top = Math.min(top, y); bottom = Math.max(bottom, y);
     }
-  } finally {
-    clearTimeout(timeout);
   }
+  // Rejeita páginas HTML, fundos opacos e imagens vazias em vez de desenhar um retângulo.
+  if (!visible || visible > source.width * source.height * 0.97) {
+    throw new Error("Logo sem máscara transparente utilizável.");
+  }
+  const w = right - left + 1, h = bottom - top + 1;
+  ctx.globalCompositeOperation = "source-in";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, source.width, source.height);
+
+  const output = document.createElement("canvas");
+  const targetScale = 960 / Math.max(w, h);
+  output.width = Math.max(1, Math.round(w * targetScale));
+  output.height = Math.max(1, Math.round(h * targetScale));
+  const out = output.getContext("2d", { alpha: false });
+  if (!out) throw new Error("Canvas indisponível.");
+  out.fillStyle = "#0a1223";
+  out.fillRect(0, 0, output.width, output.height);
+  out.imageSmoothingEnabled = true;
+  out.imageSmoothingQuality = "high";
+  out.drawImage(source, left, top, w, h, 0, 0, output.width, output.height);
+  return { dataUrl: output.toDataURL("image/jpeg", 0.99), ratio: w / h };
+}
+
+async function loadPdfLogo(doc: jsPDF, sources: string[]): Promise<PdfLogo | null> {
+  for (const src of sources) {
+    const cached = pdfLogoCache.get(src);
+    if (cached) return cached;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2500);
+    try {
+      const logo = normalizePdfLogo(await decodePdfLogo(src, controller.signal));
+      const properties = doc.getImageProperties(logo.dataUrl);
+      if (properties.fileType !== "JPEG" || !properties.width || !properties.height) {
+        throw new Error("Logo normalizada inválida.");
+      }
+      pdfLogoCache.set(src, logo);
+      return logo;
+    } catch (error) {
+      // Não exibe arquivos quebrados nem interrompe a exportação.
+      console.warn("Fonte de logo indisponível:", src.startsWith("data:") ? "incorporada" : src, error);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  return null;
 }
 
 function drawContainedLogo(
@@ -483,26 +546,17 @@ function drawContainedLogo(
       const boxRatio = boxWidth / boxHeight;
       const width = logo.ratio >= boxRatio ? boxWidth : boxHeight * logo.ratio;
       const height = logo.ratio >= boxRatio ? boxWidth / logo.ratio : boxHeight;
-      const imageX = x + (boxWidth - width) / 2;
-      const imageY = y + (boxHeight - height) / 2;
-      if (logo.lightBackground) {
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(imageX - 1, imageY - 1, width + 2, height + 2, 1, 1, "F");
-      }
-      doc.addImage(logo.dataUrl, "PNG", imageX, imageY, width, height, undefined, "FAST");
+      doc.addImage(logo.dataUrl, "JPEG", x + (boxWidth - width) / 2,
+        y + (boxHeight - height) / 2, width, height, undefined, "NONE");
       return;
     } catch (error) {
       console.warn("Não foi possível inserir a logo no PDF:", label, error);
-      if (logo.lightBackground) {
-        doc.setFillColor(10, 18, 35);
-        doc.rect(x, y, boxWidth, boxHeight, "F");
-      }
     }
   }
-  // Uma falha de branding não deve impedir o relatório operacional.
+  // Último recurso legível, nunca uma imagem corrompida.
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
+  doc.setFontSize(10);
   doc.text(label, x + boxWidth / 2, y + boxHeight / 2, { align: "center", baseline: "middle" });
 }
 
@@ -1339,8 +1393,8 @@ export function DailyExecutionReport() {
 
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       const [sherwinLogo, gpsLogo] = await Promise.all([
-        loadPdfLogo(doc, SHERWIN_WILLIAMS_LOGO_URL, SHERWIN_WILLIAMS_LOGO_PNG),
-        loadPdfLogo(doc, GRUPO_GPS_LOGO_URL, GPS_PDF_FALLBACK, true),
+        loadPdfLogo(doc, [SHERWIN_WILLIAMS_LOGO_URL, SHERWIN_WILLIAMS_WORDMARK_URL]),
+        loadPdfLogo(doc, [GRUPO_GPS_LOGO_URL, GPS_PDF_FALLBACK]),
       ]);
       const width = doc.internal.pageSize.getWidth();
       const height = doc.internal.pageSize.getHeight();
